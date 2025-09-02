@@ -7,6 +7,7 @@ The KWIK AI Tags plugin automatically generates relevant tags for WordPress post
 ## Features
 
 - **AI-Powered Tag Generation**: Uses the Gemma3:27b model to analyze content and suggest relevant tags
+- **Configurable Post Types**: Choose which post types should have AI tag generation enabled via Settings
 - **Block Image Support**: Extracts and analyzes images from WordPress blocks (Gutenberg editor)
 - **Multi-Source Analysis**: Combines tags from both image analysis and text content (50+ words)
 - **Comprehensive Image Detection**: Supports:
@@ -16,6 +17,10 @@ The KWIK AI Tags plugin automatically generates relevant tags for WordPress post
   - Media & Text blocks (`core/media-text`)
   - Cover blocks (`core/cover`)
   - Nested blocks and custom blocks
+- **Settings Page**: Easy configuration at Settings > KWIK AI Tags with:
+  - Post type selection
+  - Real-time Ollama connection status
+  - System requirements overview
 - **Preview Interface**: Review generated tags before applying them to your post
 - **Individual Tag Management**: Remove unwanted tags from the preview
 - **Seamless Integration**: Works directly in the WordPress post editor sidebar
@@ -33,16 +38,34 @@ The KWIK AI Tags plugin automatically generates relevant tags for WordPress post
 
 1. Copy the plugin folder to `wp-content/plugins/kwik-ai-tags/`
 2. Activate the plugin in the WordPress admin
-3. Ensure Ollama is running with the Gemma3:27b model
+3. Go to Settings > KWIK AI Tags to configure which post types should use AI tagging
+4. Ensure Ollama is running with the Gemma3:27b model
+
+## Configuration
+
+### Settings Page
+
+Access the settings at **Settings > KWIK AI Tags** in your WordPress admin:
+
+1. **Post Type Selection**: Check which post types should have AI tag generation
+2. **System Status**: View Ollama connection status and model availability
+3. **Requirements**: Review system requirements and setup instructions
+
+### Supported Post Types
+
+By default, the plugin is enabled for 'Posts', but you can enable it for any public post type:
+- Posts
+- Pages  
+- Custom Post Types (products, portfolios, etc.)
 
 ## Usage
 
 ### Generating Tags
 
-1. Edit or create a new post
-2. Add images to your post (via the media library)
-3. Look for the "AI Generated Tags" meta box in the sidebar
-4. Click "Generate AI Tags" to analyze your images
+1. Edit or create a new post (of an enabled post type)
+2. Add images to your post (via the media library or blocks)
+3. Look for the "AI Tags" meta box in the sidebar
+4. Click "Generate AI Tags" to analyze your images and text
 5. Review the suggested tags in the preview area
 6. Remove any unwanted tags by clicking the "×" button
 7. Click "Apply Tags" to add the tags to your post

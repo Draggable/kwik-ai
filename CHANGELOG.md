@@ -1,5 +1,46 @@
 # KWIK AI Tags Plugin - Changelog
 
+## Version 2.4 - Post Type Settings (September 2, 2025)
+
+### New Features
+- **Settings Page**: Added comprehensive settings page at Settings > KWIK AI Tags
+- **Post Type Selection**: Choose which post types should have AI tag generation enabled
+- **Connection Status**: Real-time Ollama connection and model availability checking
+- **Settings Link**: Quick access to settings from the plugins page
+
+### Settings Features
+- **Post Type Configuration**: Enable/disable AI tags for any public post type
+- **Visual Status Indicators**: Shows Ollama connection status and gemma3:27b model availability
+- **Requirement Information**: Clear documentation of system requirements
+- **Default Fallback**: Always falls back to 'post' type if no valid types selected
+
+### Technical Improvements
+- **New Functions**:
+  - `kwik_ai_tags_get_enabled_post_types()` - Centralized post type management
+  - `kwik_ai_tags_add_admin_menu()` - Settings page integration
+  - `kwik_ai_tags_settings_init()` - WordPress Settings API integration
+  - `kwik_ai_tags_test_ollama_connection()` - Real-time status checking
+  - `kwik_ai_tags_sanitize_post_types()` - Input validation and sanitization
+
+### User Interface
+- **Custom CSS**: Professional styling for settings page
+- **Responsive Design**: Works on all screen sizes
+- **Clear Instructions**: Help text and descriptions throughout
+- **Status Indicators**: Visual feedback for system status
+
+### Code Refactoring
+- Removed hardcoded post types (`'post', 'belt'`)
+- Centralized post type checking through settings
+- Dynamic meta box registration based on settings
+- Backward compatibility maintained
+
+### Migration
+- Existing installations automatically use 'post' as default
+- No data loss or configuration required
+- Plugin works immediately after update
+
+---
+
 ## Version 2.3 - Block Image Support (September 2, 2025)
 
 ### New Features
