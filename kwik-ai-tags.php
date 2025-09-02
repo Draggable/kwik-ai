@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: KWIK‑AI‑TAGS
- * Description: Auto‑tag posts with the Gemma3:27b model via Ollama. Analyzes both images (including block images) and text content (50+ words) with preview functionality. Configure which post types to enable via Settings > KWIK AI Tags.
- * Version: 2.4
+ * Description: Auto‑tag posts with the Gemma3:27b model via Ollama. Analyzes both images (including block images and custom TRB belt gallery blocks) and text content (50+ words) with preview functionality. Configure which post types to enable via Settings > KWIK AI Tags.
+ * Version: 2.5
  * Author: Your Name
  * Text Domain: kwik-ai-tags
  *
@@ -181,6 +181,29 @@ function kwik_ai_tags_meta_box_callback($post)
         $content = get_post_field('post_content', $post->ID);
         $block_images = kwik_ai_tags_extract_block_images($content);
         echo esc_html(count($block_images));
+        
+        // Check for TRB belt gallery blocks specifically
+        $trb_belt_gallery_count = 0;
+        $trb_belt_gallery_images = 0;
+        if (has_blocks($content)) {
+          $blocks = parse_blocks($content);
+          foreach ($blocks as $block) {
+            if ($block['blockName'] === 'trb/belt-gallery') {
+              $trb_belt_gallery_count++;
+              if (isset($block['attrs']['images']) && is_array($block['attrs']['images'])) {
+                foreach ($block['attrs']['images'] as $image) {
+                  if (isset($image['id']) || (isset($image['url']) && !preg_match('/\.(mp4|webm|ogg|mov|avi)$/i', $image['url']))) {
+                    $trb_belt_gallery_images++;
+                  }
+                }
+              }
+            }
+          }
+        }
+        
+        if ($trb_belt_gallery_count > 0) {
+          echo '<br>TRB Belt Galleries: ' . esc_html($trb_belt_gallery_count) . ' (with ' . esc_html($trb_belt_gallery_images) . ' images)';
+        }
         ?><br>
         Total Images: <?php
         $image_urls = [];
@@ -198,7 +221,6 @@ function kwik_ai_tags_meta_box_callback($post)
         $word_count = str_word_count(wp_strip_all_tags($content));
         echo esc_html($word_count);
         echo $word_count >= KWIK_AI_TAGS_MIN_WORDS ? ' (✓ text analysis enabled)' : ' (text analysis disabled)';
-        ?>
         ?>
       </div>
     <?php endif; ?>
@@ -262,7 +284,7 @@ function kwik_ai_tags_enqueue_scripts($hook)
     'debug' => WP_DEBUG,
     'strings' => [
       'error' => __('An error occurred. Please try again.', 'kwik-ai-tags'),
-      'noContent' => __('No images or insufficient text found. Please add images or write at least 50 words.', 'kwik-ai-tags'),
+      'noContent' => __('No images or insufficient text found. Please addddd images or write at least 50 words.', 'kwik-ai-tags'),
       'success' => __('Tags applied successfully!', 'kwik-ai-tags'),
     ]
   ]);
@@ -302,7 +324,7 @@ function kwik_ai_tags_ajax_generate()
 
   if (empty($attachments) && $word_count < KWIK_AI_TAGS_MIN_WORDS) {
     error_log('KWIK AI Tags: Insufficient content for analysis');
-    wp_send_json_error(__('Please add images or write at least 50 words to generate AI tags.', 'kwik-ai-tags'));
+    wp_send_json_error(__('Pleaseeee add images or write at least 50 words to generate AI tags.', 'kwik-ai-tags'));
   }
 
   error_log('KWIK AI Tags: Calling kwik_ai_tags_generate_for_post');
@@ -501,6 +523,27 @@ function kwik_ai_tags_extract_block_images(string $content): array
   if (has_blocks($content)) {
     $blocks = parse_blocks($content);
     $image_urls = kwik_ai_tags_extract_images_from_blocks($blocks);
+    
+    // Enhanced debug logging for TRB belt gallery blocks
+    if (WP_DEBUG) {
+      $trb_belt_galleries = 0;
+      foreach ($blocks as $block) {
+        if ($block['blockName'] === 'trb/belt-gallery') {
+          $trb_belt_galleries++;
+          error_log('KWIK AI Tags: Found TRB belt gallery block #' . $trb_belt_galleries);
+          if (isset($block['attrs']['images']) && is_array($block['attrs']['images'])) {
+            error_log('KWIK AI Tags: TRB belt gallery has ' . count($block['attrs']['images']) . ' items');
+            foreach ($block['attrs']['images'] as $index => $image) {
+              $log_data = [];
+              if (isset($image['id'])) $log_data[] = 'id=' . $image['id'];
+              if (isset($image['url'])) $log_data[] = 'url=' . $image['url'];
+              if (isset($image['title'])) $log_data[] = 'title=' . $image['title'];
+              error_log('KWIK AI Tags: TRB gallery item ' . $index . ': ' . implode(', ', $log_data));
+            }
+          }
+        }
+      }
+    }
   } else {
     // Fallback: Extract images from HTML content using regex
     $image_urls = kwik_ai_tags_extract_images_from_html($content);
@@ -546,6 +589,31 @@ function kwik_ai_tags_extract_images_from_blocks(array $blocks): array
           $url = wp_get_attachment_url($id);
           if ($url) {
             $image_urls[] = $url;
+          }
+        }
+      }
+    }
+
+    // Handle TRB Belt Gallery blocks (custom block)
+    elseif ($block['blockName'] === 'trb/belt-gallery') {
+      if (isset($block['attrs']['images']) && is_array($block['attrs']['images'])) {
+        foreach ($block['attrs']['images'] as $image) {
+          // Try to get URL from attachment ID first (most reliable)
+          if (isset($image['id']) && !empty($image['id'])) {
+            $url = wp_get_attachment_url($image['id']);
+            if ($url) {
+              // Skip video files (belt gallery can contain both images and videos)
+              if (!preg_match('/\.(mp4|webm|ogg|mov|avi)$/i', $url)) {
+                $image_urls[] = $url;
+              }
+            }
+          } 
+          // Fallback to direct URL if available
+          elseif (isset($image['url']) && !empty($image['url'])) {
+            // Skip video files (belt gallery can contain both images and videos)
+            if (!preg_match('/\.(mp4|webm|ogg|mov|avi)$/i', $image['url'])) {
+              $image_urls[] = $image['url'];
+            }
           }
         }
       }
