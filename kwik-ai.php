@@ -1,7 +1,7 @@
 <?php
 /**
- * Plugin Name: KWIK‑AI‑TAGS
- * Description: Auto‑tag posts with the Gemma3:27b model via Ollama. Analyzes both images (including block images and custom TRB belt gallery blocks) and text content (50+ words) with preview functionality. Configure which post types to enable via Settings > KWIK AI Tags.
+ * Plugin Name: Kwik AI
+ * Description: Auto‑tag posts with the Gemma3:27b model via Ollama. Analyzes both images (including block images and custom TRB belt gallery blocks) and text content (50+ words) with preview functionality. Configure which post types to enable via Settings > KWIK AI.
  * Version: 2.5
  * Author: Your Name
  * Text Domain: kwik-ai-tags
@@ -26,9 +26,11 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
 /**
  * Constants
  */
-define('KWIK_AI_TAGS_OLLAMA_HOST', 'http://localhost:11434'); // Change if Ollama runs elsewhere.
-define('KWIK_AI_TAGS_MAX_TAGS', 8); // Max tags to apply per post (increased for text+image)
-define('KWIK_AI_TAGS_MIN_WORDS', 50); // Minimum words required for text analysis
+define('KWIK_AI_OLLAMA_HOST', 'http://localhost:11434'); // Change if Ollama runs elsewhere.
+define('KWIK_AI_MAX_TAGS', 8); // Max tags to apply per post (increased for text+image)
+define('KWIK_AI_MIN_WORDS', 50); // Minimum words required for text analysis
+define('KWIK_AI_DOMAIN', 'kwik-ai');
+
 
 /**
  * Initialize the plugin
@@ -36,7 +38,7 @@ define('KWIK_AI_TAGS_MIN_WORDS', 50); // Minimum words required for text analysi
 add_action('init', 'kwik_ai_tags_init');
 function kwik_ai_tags_init()
 {
-  error_log('KWIK AI Tags: Plugin initializing');
+  error_log('Kwik AI: Plugin initializing');
 
   // Add meta box for AI tags preview
   add_action('add_meta_boxes', 'kwik_ai_tags_add_meta_box');
@@ -57,7 +59,7 @@ function kwik_ai_tags_init()
   // Add settings link to plugin page
   add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'kwik_ai_tags_add_settings_link');
 
-  error_log('KWIK AI Tags: Plugin initialized with hooks');
+  error_log('Kwik AI: Plugin initialized with hooks');
 }
 
 /**
@@ -68,7 +70,7 @@ function kwik_ai_tags_add_settings_link($links)
   $settings_link = sprintf(
     '<a href="%s">%s</a>',
     esc_url(admin_url('options-general.php?page=kwik-ai-tags-settings')),
-    esc_html__('Settings', 'kwik-ai-tags')
+    esc_html__('Settings', KWIK_AI_DOMAIN)
   );
   
   array_unshift($links, $settings_link);
@@ -111,14 +113,14 @@ function kwik_ai_tags_get_enabled_post_types()
  */
 function kwik_ai_tags_add_meta_box()
 {
-  error_log('KWIK AI Tags: Adding meta box');
+  error_log('Kwik AI: Adding meta box');
 
   $enabled_post_types = kwik_ai_tags_get_enabled_post_types();
   
   foreach ($enabled_post_types as $post_type) {
     add_meta_box(
       'kwik-ai-tags-preview-box',
-      __('AI Tags', 'kwik-ai-tags'),
+      __('AI Tags', KWIK_AI_DOMAIN),
       'kwik_ai_tags_meta_box_callback',
       $post_type,
       'side',
@@ -126,7 +128,7 @@ function kwik_ai_tags_add_meta_box()
     );
   }
 
-  error_log('KWIK AI Tags: Meta box added for post types: ' . implode(', ', $enabled_post_types));
+  error_log('Kwik AI: Meta box added for post types: ' . implode(', ', $enabled_post_types));
 }
 
 /**
@@ -134,31 +136,31 @@ function kwik_ai_tags_add_meta_box()
  */
 function kwik_ai_tags_meta_box_callback($post)
 {
-  error_log('KWIK AI Tags: Meta box callback called for post ' . $post->ID);
+  error_log('Kwik AI: Meta box callback called for post ' . $post->ID);
 
   wp_nonce_field('kwik_ai_tags_meta_box', 'kwik_ai_tags_nonce');
   ?>
   <div id="kwik-ai-tags-container">
     <p>
       <button type="button" id="kwik-ai-tags-generate" class="button button-secondary">
-        <?php esc_html_e('Generate AI Tags', 'kwik-ai-tags'); ?>
+        <?php esc_html_e('Generate AI Tags', KWIK_AI_DOMAIN); ?>
       </button>
     </p>
 
     <div id="kwik-ai-tags-loading" style="display: none;">
-      <p><?php esc_html_e('Analyzing content...', 'kwik-ai-tags'); ?></p>
+      <p><?php esc_html_e('Analyzing content...', KWIK_AI_DOMAIN); ?></p>
       <div class="kwik-ai-tags-spinner"></div>
     </div>
 
     <div id="kwik-ai-tags-preview" style="display: none;">
-      <h4><?php esc_html_e('Suggested Tags:', 'kwik-ai-tags'); ?></h4>
+      <h4><?php esc_html_e('Suggested Tags:', KWIK_AI_DOMAIN); ?></h4>
       <div id="kwik-ai-tags-list"></div>
       <p>
         <button type="button" id="kwik-ai-tags-apply" class="button button-primary">
-          <?php esc_html_e('Apply Tags', 'kwik-ai-tags'); ?>
+          <?php esc_html_e('Apply Tags', KWIK_AI_DOMAIN); ?>
         </button>
         <button type="button" id="kwik-ai-tags-regenerate" class="button button-secondary">
-          <?php esc_html_e('Regenerate', 'kwik-ai-tags'); ?>
+          <?php esc_html_e('Regenerate', KWIK_AI_DOMAIN); ?>
         </button>
       </p>
     </div>
@@ -172,7 +174,7 @@ function kwik_ai_tags_meta_box_callback($post)
         <strong>Debug Info:</strong><br>
         Post ID: <?php echo esc_html($post->ID); ?><br>
         Ajax URL: <?php echo esc_html(admin_url('admin-ajax.php')); ?><br>
-        Ollama Host: <?php echo esc_html(KWIK_AI_TAGS_OLLAMA_HOST); ?><br>
+        Ollama Host: <?php echo esc_html(KWIK_AI_OLLAMA_HOST); ?><br>
         Attached Images: <?php
         $attachments = get_attached_media('image', $post->ID);
         echo esc_html(count($attachments));
@@ -220,14 +222,14 @@ function kwik_ai_tags_meta_box_callback($post)
         Word Count: <?php
         $word_count = str_word_count(wp_strip_all_tags($content));
         echo esc_html($word_count);
-        echo $word_count >= KWIK_AI_TAGS_MIN_WORDS ? ' (✓ text analysis enabled)' : ' (text analysis disabled)';
+        echo $word_count >= KWIK_AI_MIN_WORDS ? ' (✓ text analysis enabled)' : ' (text analysis disabled)';
         ?>
       </div>
     <?php endif; ?>
   </div>
   <?php
 
-  error_log('KWIK AI Tags: Meta box HTML rendered');
+  error_log('Kwik AI: Meta box HTML rendered');
 }
 
 /**
@@ -238,26 +240,26 @@ function kwik_ai_tags_enqueue_scripts($hook)
   $enabled_post_types = kwik_ai_tags_get_enabled_post_types();
   
   // Debug logging
-  error_log('KWIK AI Tags: Hook = ' . $hook);
+  error_log('Kwik AI: Hook = ' . $hook);
 
   if ($hook !== 'post.php' && $hook !== 'post-new.php') {
-    error_log('KWIK AI Tags: Wrong hook, returning');
+    error_log('Kwik AI: Wrong hook, returning');
     return;
   }
 
   $screen = get_current_screen();
-  error_log('KWIK AI Tags: Screen post_type = ' . $screen->post_type);
+  error_log('Kwik AI: Screen post_type = ' . $screen->post_type);
 
   if (!in_array($screen->post_type, $enabled_post_types)) {
-    error_log('KWIK AI Tags: Post type not enabled, returning');
+    error_log('Kwik AI: Post type not enabled, returning');
     return;
   }
 
   $js_url = plugin_dir_url(__FILE__) . 'assets/admin.js';
   $css_url = plugin_dir_url(__FILE__) . 'assets/admin.css';
 
-  error_log('KWIK AI Tags: Enqueueing JS from: ' . $js_url);
-  error_log('KWIK AI Tags: Enqueueing CSS from: ' . $css_url);
+  error_log('Kwik AI: Enqueueing JS from: ' . $js_url);
+  error_log('Kwik AI: Enqueueing CSS from: ' . $css_url);
 
   wp_enqueue_script(
     'kwik-ai-tags-admin',
@@ -275,7 +277,7 @@ function kwik_ai_tags_enqueue_scripts($hook)
   );
 
   $post_id = get_the_ID();
-  error_log('KWIK AI Tags: Post ID = ' . $post_id);
+  error_log('Kwik AI: Post ID = ' . $post_id);
 
   wp_localize_script('kwik-ai-tags-admin', 'kwikAiTags', [
     'ajaxUrl' => admin_url('admin-ajax.php'),
@@ -283,13 +285,13 @@ function kwik_ai_tags_enqueue_scripts($hook)
     'postId' => $post_id,
     'debug' => WP_DEBUG,
     'strings' => [
-      'error' => __('An error occurred. Please try again.', 'kwik-ai-tags'),
-      'noContent' => __('No images or insufficient text found. Please add images or write at least 50 words.', 'kwik-ai-tags'),
-      'success' => __('Tags applied successfully!', 'kwik-ai-tags'),
+      'error' => __('An error occurred. Please try again.', KWIK_AI_DOMAIN),
+      'noContent' => __('No images or insufficient text found. Please add images or write at least 50 words.', KWIK_AI_DOMAIN),
+      'success' => __('Tags applied successfully!', KWIK_AI_DOMAIN),
     ]
   ]);
 
-  error_log('KWIK AI Tags: Scripts and styles enqueued successfully');
+  error_log('Kwik AI: Scripts and styles enqueued successfully');
 }
 
 /**
@@ -297,22 +299,22 @@ function kwik_ai_tags_enqueue_scripts($hook)
  */
 function kwik_ai_tags_ajax_generate()
 {
-  error_log('KWIK AI Tags: Generate AJAX called');
-  error_log('KWIK AI Tags: POST data: ' . print_r($_POST, true));
+  error_log('Kwik AI: Generate AJAX called');
+  error_log('Kwik AI: POST data: ' . print_r($_POST, true));
 
   check_ajax_referer('kwik_ai_tags_ajax', 'nonce');
 
   if (!current_user_can('edit_posts')) {
-    error_log('KWIK AI Tags: User does not have edit_posts capability');
-    wp_die(__('You do not have sufficient permissions.', 'kwik-ai-tags'));
+    error_log('Kwik AI: User does not have edit_posts capability');
+    wp_die(__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
   }
 
   $post_id = intval($_POST['post_id']);
-  error_log('KWIK AI Tags: Post ID: ' . $post_id);
+  error_log('Kwik AI: Post ID: ' . $post_id);
 
   if (!$post_id || get_post_status($post_id) === false) {
-    error_log('KWIK AI Tags: Invalid post ID');
-    wp_send_json_error(__('Invalid post ID.', 'kwik-ai-tags'));
+    error_log('Kwik AI: Invalid post ID');
+    wp_send_json_error(__('Invalid post ID.', KWIK_AI_DOMAIN));
   }
 
   // Check if post has images or sufficient text content
@@ -324,28 +326,28 @@ function kwik_ai_tags_ajax_generate()
   $block_images = kwik_ai_tags_extract_block_images($post_content);
   $total_images = count($attachments) + count($block_images);
 
-  error_log('KWIK AI Tags: Found ' . count($attachments) . ' attached images, ' . count($block_images) . ' block images, and ' . $word_count . ' words');
+  error_log('Kwik AI: Found ' . count($attachments) . ' attached images, ' . count($block_images) . ' block images, and ' . $word_count . ' words');
 
-  if ($total_images === 0 && $word_count < KWIK_AI_TAGS_MIN_WORDS) {
-    error_log('KWIK AI Tags: Insufficient content for analysis');
-    wp_send_json_error(__('Please add images or write at least 50 words to generate AI tags.', 'kwik-ai-tags'));
+  if ($total_images === 0 && $word_count < KWIK_AI_MIN_WORDS) {
+    error_log('Kwik AI: Insufficient content for analysis');
+    wp_send_json_error(__('Please add images or write at least 50 words to generate AI tags.', KWIK_AI_DOMAIN));
   }
 
-  error_log('KWIK AI Tags: Calling kwik_ai_tags_generate_for_post');
+  error_log('Kwik AI: Calling kwik_ai_tags_generate_for_post');
   $tags = kwik_ai_tags_generate_for_post($post_id);
-  error_log('KWIK AI Tags: Generated tags: ' . print_r($tags, true));
+  error_log('Kwik AI: Generated tags: ' . print_r($tags, true));
 
   if ($tags === false) {
-    error_log('KWIK AI Tags: Tag generation failed');
-    wp_send_json_error(__('Failed to generate tags. Please check if Ollama is running and try again.', 'kwik-ai-tags'));
+    error_log('Kwik AI: Tag generation failed');
+    wp_send_json_error(__('Failed to generate tags. Please check if Ollama is running and try again.', KWIK_AI_DOMAIN));
   }
 
   if (empty($tags)) {
-    error_log('KWIK AI Tags: No tags generated');
-    wp_send_json_error(__('No tags were generated. Try adding more descriptive images.', 'kwik-ai-tags'));
+    error_log('Kwik AI: No tags generated');
+    wp_send_json_error(__('No tags were generated. Try adding more descriptive images.', KWIK_AI_DOMAIN));
   }
 
-  error_log('KWIK AI Tags: Sending success response');
+  error_log('Kwik AI: Sending success response');
   wp_send_json_success(['tags' => $tags]);
 }
 
@@ -357,24 +359,24 @@ function kwik_ai_tags_ajax_apply()
   check_ajax_referer('kwik_ai_tags_ajax', 'nonce');
 
   if (!current_user_can('edit_posts')) {
-    wp_die(__('You do not have sufficient permissions.', 'kwik-ai-tags'));
+    wp_die(__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
   }
 
   $post_id = intval($_POST['post_id']);
   $tags = sanitize_text_field($_POST['tags']);
 
   if (!$post_id || get_post_status($post_id) === false) {
-    wp_send_json_error(__('Invalid post ID.', 'kwik-ai-tags'));
+    wp_send_json_error(__('Invalid post ID.', KWIK_AI_DOMAIN));
   }
 
   if (!$tags) {
-    wp_send_json_error(__('No tags provided.', 'kwik-ai-tags'));
+    wp_send_json_error(__('No tags provided.', KWIK_AI_DOMAIN));
   }
 
   $tag_array = array_filter(array_map('trim', explode(',', $tags)));
 
   if (empty($tag_array)) {
-    wp_send_json_error(__('No valid tags to apply.', 'kwik-ai-tags'));
+    wp_send_json_error(__('No valid tags to apply.', KWIK_AI_DOMAIN));
   }
 
   // Sanitize each tag
@@ -386,7 +388,7 @@ function kwik_ai_tags_ajax_apply()
     wp_send_json_error($result->get_error_message());
   }
 
-  wp_send_json_success(sprintf(__('Successfully applied %d tags to the post!', 'kwik-ai-tags'), count($tag_array)));
+  wp_send_json_success(sprintf(__('Successfully applied %d tags to the post!', KWIK_AI_DOMAIN), count($tag_array)));
 }
 
 /**
@@ -397,7 +399,7 @@ function kwik_ai_tags_ajax_apply()
  */
 function kwik_ai_tags_generate_for_post(int $post_id)
 {
-  error_log('KWIK AI Tags: Starting tag generation for post ' . $post_id);
+  error_log('Kwik AI: Starting tag generation for post ' . $post_id);
 
   $all_tags = [];
 
@@ -410,7 +412,7 @@ function kwik_ai_tags_generate_for_post(int $post_id)
 
   // Traditional attached images
   $attachments = get_attached_media('image', $post_id);
-  error_log('KWIK AI Tags: Found ' . count($attachments) . ' attached images');
+  error_log('Kwik AI: Found ' . count($attachments) . ' attached images');
 
   foreach ($attachments as $attachment) {
     $url = wp_get_attachment_url($attachment->ID);
@@ -422,19 +424,19 @@ function kwik_ai_tags_generate_for_post(int $post_id)
   // Images from block content (modern WordPress)
   $post_content = get_post_field('post_content', $post_id);
   $block_images = kwik_ai_tags_extract_block_images($post_content);
-  error_log('KWIK AI Tags: Found ' . count($block_images) . ' block images');
+  error_log('Kwik AI: Found ' . count($block_images) . ' block images');
 
   $image_urls = array_merge($image_urls, $block_images);
   $image_urls = array_unique($image_urls); // Remove duplicates
   $image_urls = kwik_ai_tags_deduplicate_sized_images($image_urls); // Remove sized duplicates
 
-  error_log('KWIK AI Tags: Total unique images: ' . count($image_urls));
+  error_log('Kwik AI: Total unique images: ' . count($image_urls));
 
   if (!empty($image_urls)) {
     $image_tags = kwik_ai_tags_generate_from_image_urls($post_id, $image_urls);
     if ($image_tags) {
       $all_tags = array_merge($all_tags, $image_tags);
-      error_log('KWIK AI Tags: Generated ' . count($image_tags) . ' tags from images: ' . implode(', ', $image_tags));
+      error_log('Kwik AI: Generated ' . count($image_tags) . ' tags from images: ' . implode(', ', $image_tags));
     }
   }
 
@@ -444,13 +446,13 @@ function kwik_ai_tags_generate_for_post(int $post_id)
   $post_content = get_post_field('post_content', $post_id);
   $word_count = str_word_count(wp_strip_all_tags($post_content));
 
-  error_log('KWIK AI Tags: Post has ' . $word_count . ' words');
+  error_log('Kwik AI: Post has ' . $word_count . ' words');
 
-  if ($word_count >= KWIK_AI_TAGS_MIN_WORDS) {
+  if ($word_count >= KWIK_AI_MIN_WORDS) {
     $text_tags = kwik_ai_tags_generate_from_text($post_id, $post_content);
     if ($text_tags) {
       $all_tags = array_merge($all_tags, $text_tags);
-      error_log('KWIK AI Tags: Generated ' . count($text_tags) . ' tags from text: ' . implode(', ', $text_tags));
+      error_log('Kwik AI: Generated ' . count($text_tags) . ' tags from text: ' . implode(', ', $text_tags));
     }
   }
 
@@ -458,15 +460,15 @@ function kwik_ai_tags_generate_for_post(int $post_id)
   /* 3. Combine, deduplicate, and limit tags */
   /* ----------------------------------------------------- */
   if (empty($all_tags)) {
-    error_log('KWIK AI Tags: No tags generated from any source');
+    error_log('Kwik AI: No tags generated from any source');
     return false;
   }
 
   // Remove duplicates and limit to max tags
   $unique_tags = array_unique($all_tags);
-  $final_tags = array_slice($unique_tags, 0, KWIK_AI_TAGS_MAX_TAGS);
+  $final_tags = array_slice($unique_tags, 0, KWIK_AI_MAX_TAGS);
 
-  error_log('KWIK AI Tags: Final tags (' . count($final_tags) . '): ' . implode(', ', $final_tags));
+  error_log('Kwik AI: Final tags (' . count($final_tags) . '): ' . implode(', ', $final_tags));
 
   return $final_tags;
 }
@@ -534,15 +536,15 @@ function kwik_ai_tags_extract_block_images(string $content): array
       foreach ($blocks as $block) {
         if ($block['blockName'] === 'trb/belt-gallery') {
           $trb_belt_galleries++;
-          error_log('KWIK AI Tags: Found TRB belt gallery block #' . $trb_belt_galleries);
+          error_log('Kwik AI: Found TRB belt gallery block #' . $trb_belt_galleries);
           if (isset($block['attrs']['images']) && is_array($block['attrs']['images'])) {
-            error_log('KWIK AI Tags: TRB belt gallery has ' . count($block['attrs']['images']) . ' items');
+            error_log('Kwik AI: TRB belt gallery has ' . count($block['attrs']['images']) . ' items');
             foreach ($block['attrs']['images'] as $index => $image) {
               $log_data = [];
               if (isset($image['id'])) $log_data[] = 'id=' . $image['id'];
               if (isset($image['url'])) $log_data[] = 'url=' . $image['url'];
               if (isset($image['title'])) $log_data[] = 'title=' . $image['title'];
-              error_log('KWIK AI Tags: TRB gallery item ' . $index . ': ' . implode(', ', $log_data));
+              error_log('Kwik AI: TRB gallery item ' . $index . ': ' . implode(', ', $log_data));
             }
           }
         }
@@ -557,7 +559,7 @@ function kwik_ai_tags_extract_block_images(string $content): array
   $image_urls = array_unique($image_urls);
   $image_urls = kwik_ai_tags_deduplicate_sized_images($image_urls);
 
-  error_log('KWIK AI Tags: Extracted ' . count($image_urls) . ' unique images from content');
+  error_log('Kwik AI: Extracted ' . count($image_urls) . ' unique images from content');
   return $image_urls;
 }
 
@@ -706,28 +708,28 @@ function kwik_ai_tags_extract_images_from_html(string $html): array
  */
 function kwik_ai_tags_generate_from_image_urls(int $post_id, array $image_urls)
 {
-  error_log('KWIK AI Tags: Generating tags from ' . count($image_urls) . ' image URLs');
+  error_log('Kwik AI: Generating tags from ' . count($image_urls) . ' image URLs');
 
   /* ----------------------------------------------------- */
   /* 1. Convert each image URL to a Base‑64 data URI */
   /* ----------------------------------------------------- */
   $data_uris = [];
   foreach ($image_urls as $image_url) {
-    error_log('KWIK AI Tags: Processing image URL: ' . $image_url);
+    error_log('Kwik AI: Processing image URL: ' . $image_url);
 
     $data_uri = kwik_ai_tags_image_to_data_uri($image_url);
     if ($data_uri) {
       $data_uris[] = $data_uri;
-      error_log('KWIK AI Tags: Successfully converted image to data URI');
+      error_log('Kwik AI: Successfully converted image to data URI');
     } else {
-      error_log('KWIK AI Tags: Failed to convert image to data URI: ' . $image_url);
+      error_log('Kwik AI: Failed to convert image to data URI: ' . $image_url);
     }
   }
 
-  error_log('KWIK AI Tags: Converted ' . count($data_uris) . ' images to data URIs');
+  error_log('Kwik AI: Converted ' . count($data_uris) . ' images to data URIs');
 
   if (empty($data_uris)) {
-    error_log('KWIK AI Tags: No data URIs generated from image URLs');
+    error_log('Kwik AI: No data URIs generated from image URLs');
     return false;
   }
 
@@ -735,17 +737,17 @@ function kwik_ai_tags_generate_from_image_urls(int $post_id, array $image_urls)
   /* 2. Build prompt for images */
   /* ----------------------------------------------------- */
   $prompt = 'Analyze these images and generate up to 5 concise, relevant tags that describe the main subjects, objects, activities, or themes shown. Focus on nouns and descriptive terms. Respond with a comma‑separated list only, no extra text.';
-  error_log('KWIK AI Tags: Using image prompt: ' . $prompt);
+  error_log('Kwik AI: Using image prompt: ' . $prompt);
 
   /* ----------------------------------------------------- */
   /* 3. Send request to Ollama */
   /* ----------------------------------------------------- */
-  error_log('KWIK AI Tags: Sending image request to Ollama');
+  error_log('Kwik AI: Sending image request to Ollama');
   $raw_response = kwik_ai_tags_query_ollama($prompt, $data_uris);
-  error_log('KWIK AI Tags: Ollama image response: ' . ($raw_response ?: 'NULL'));
+  error_log('Kwik AI: Ollama image response: ' . ($raw_response ?: 'NULL'));
 
   if (!$raw_response) {
-    error_log('KWIK AI Tags: No response from Ollama for images');
+    error_log('Kwik AI: No response from Ollama for images');
     return false;
   }
 
@@ -753,7 +755,7 @@ function kwik_ai_tags_generate_from_image_urls(int $post_id, array $image_urls)
   /* 4. Parse tags */
   /* ----------------------------------------------------- */
   $tags = kwik_ai_tags_parse_tags($raw_response);
-  error_log('KWIK AI Tags: Parsed image tags: ' . print_r($tags, true));
+  error_log('Kwik AI: Parsed image tags: ' . print_r($tags, true));
 
   return $tags;
 }
@@ -767,7 +769,7 @@ function kwik_ai_tags_generate_from_image_urls(int $post_id, array $image_urls)
  */
 function kwik_ai_tags_generate_from_images(int $post_id, array $attachments)
 {
-  error_log('KWIK AI Tags: Generating tags from ' . count($attachments) . ' images (legacy method)');
+  error_log('Kwik AI: Generating tags from ' . count($attachments) . ' images (legacy method)');
 
   $image_urls = [];
   foreach ($attachments as $attachment) {
@@ -789,7 +791,7 @@ function kwik_ai_tags_generate_from_images(int $post_id, array $attachments)
  */
 function kwik_ai_tags_generate_from_text(int $post_id, string $content)
 {
-  error_log('KWIK AI Tags: Generating tags from text content');
+  error_log('Kwik AI: Generating tags from text content');
 
   // Clean and prepare the text
   $clean_text = wp_strip_all_tags($content);
@@ -799,10 +801,10 @@ function kwik_ai_tags_generate_from_text(int $post_id, string $content)
   // Limit text length to avoid overwhelming the model
   if (strlen($clean_text) > 2000) {
     $clean_text = substr($clean_text, 0, 2000) . '...';
-    error_log('KWIK AI Tags: Truncated text to 2000 characters');
+    error_log('Kwik AI: Truncated text to 2000 characters');
   }
 
-  error_log('KWIK AI Tags: Analyzing ' . str_word_count($clean_text) . ' words');
+  error_log('Kwik AI: Analyzing ' . str_word_count($clean_text) . ' words');
 
   /* ----------------------------------------------------- */
   /* 1. Build prompt for text analysis */
@@ -812,17 +814,17 @@ function kwik_ai_tags_generate_from_text(int $post_id, string $content)
 Article text:
 ' . $clean_text;
 
-  error_log('KWIK AI Tags: Using text prompt (first 200 chars): ' . substr($prompt, 0, 200) . '...');
+  error_log('Kwik AI: Using text prompt (first 200 chars): ' . substr($prompt, 0, 200) . '...');
 
   /* ----------------------------------------------------- */
   /* 2. Send request to Ollama (text-only, no images) */
   /* ----------------------------------------------------- */
-  error_log('KWIK AI Tags: Sending text request to Ollama');
+  error_log('Kwik AI: Sending text request to Ollama');
   $raw_response = kwik_ai_tags_query_ollama($prompt, []); // Empty images array
-  error_log('KWIK AI Tags: Ollama text response: ' . ($raw_response ?: 'NULL'));
+  error_log('Kwik AI: Ollama text response: ' . ($raw_response ?: 'NULL'));
 
   if (!$raw_response) {
-    error_log('KWIK AI Tags: No response from Ollama for text');
+    error_log('Kwik AI: No response from Ollama for text');
     return false;
   }
 
@@ -830,7 +832,7 @@ Article text:
   /* 3. Parse tags */
   /* ----------------------------------------------------- */
   $tags = kwik_ai_tags_parse_tags($raw_response);
-  error_log('KWIK AI Tags: Parsed text tags: ' . print_r($tags, true));
+  error_log('Kwik AI: Parsed text tags: ' . print_r($tags, true));
 
   return $tags;
 }
@@ -844,7 +846,7 @@ Article text:
  */
 function kwik_ai_tags_image_to_data_uri(string $url): ?string
 {
-  error_log('KWIK AI Tags: Converting image to data URI: ' . $url);
+  error_log('Kwik AI: Converting image to data URI: ' . $url);
 
   // Method 1: Try WordPress HTTP API first (more reliable)
   $response = wp_remote_get($url, [
@@ -857,13 +859,13 @@ function kwik_ai_tags_image_to_data_uri(string $url): ?string
     $content_type = wp_remote_retrieve_header($response, 'content-type');
 
     if ($image_data && $content_type) {
-      error_log('KWIK AI Tags: Successfully got image via wp_remote_get, type: ' . $content_type);
+      error_log('Kwik AI: Successfully got image via wp_remote_get, type: ' . $content_type);
       // Return just base64 data for Ollama (not full data URI)
       return base64_encode($image_data);
     }
   }
 
-  error_log('KWIK AI Tags: wp_remote_get failed, trying file_get_contents');
+  error_log('Kwik AI: wp_remote_get failed, trying file_get_contents');
 
   // Method 2: Try file_get_contents with context (original method improved)
   $context = stream_context_create([
@@ -914,12 +916,12 @@ function kwik_ai_tags_image_to_data_uri(string $url): ?string
       $mime_type = $mime_map[$ext] ?? 'image/jpeg'; // Default to JPEG
     }
 
-    error_log('KWIK AI Tags: Successfully got image via file_get_contents, type: ' . $mime_type);
+    error_log('Kwik AI: Successfully got image via file_get_contents, type: ' . $mime_type);
     // Return just base64 data for Ollama (not full data URI)
     return base64_encode($image_data);
   }
 
-  error_log('KWIK AI Tags: file_get_contents failed, trying cURL');
+  error_log('Kwik AI: file_get_contents failed, trying cURL');
 
   // Method 3: Try cURL if available
   if (function_exists('curl_init')) {
@@ -937,26 +939,26 @@ function kwik_ai_tags_image_to_data_uri(string $url): ?string
     curl_close($ch);
 
     if ($image_data !== false && $http_code === 200 && $content_type) {
-      error_log('KWIK AI Tags: Successfully got image via cURL, type: ' . $content_type);
+      error_log('Kwik AI: Successfully got image via cURL, type: ' . $content_type);
       // Return just base64 data for Ollama (not full data URI)
       return base64_encode($image_data);
     }
   }
 
-  error_log('KWIK AI Tags: All methods failed for URL: ' . $url);
+  error_log('Kwik AI: All methods failed for URL: ' . $url);
 
   // Method 4: If it's a local file path, try direct file access
   if (strpos($url, home_url()) === 0) {
     $file_path = str_replace(home_url(), ABSPATH, $url);
     $file_path = str_replace('//', '/', $file_path);
 
-    error_log('KWIK AI Tags: Trying local file path: ' . $file_path);
+    error_log('Kwik AI: Trying local file path: ' . $file_path);
 
     if (file_exists($file_path) && is_readable($file_path)) {
       $image_data = file_get_contents($file_path);
       if ($image_data !== false) {
         $mime_type = mime_content_type($file_path) ?: 'image/jpeg';
-        error_log('KWIK AI Tags: Successfully got local file, type: ' . $mime_type);
+        error_log('Kwik AI: Successfully got local file, type: ' . $mime_type);
         // Return just base64 data for Ollama (not full data URI)
         return base64_encode($image_data);
       }
@@ -975,9 +977,9 @@ function kwik_ai_tags_image_to_data_uri(string $url): ?string
  */
 function kwik_ai_tags_query_ollama(string $prompt, array $images): ?string
 {
-  $url = KWIK_AI_TAGS_OLLAMA_HOST . '/api/generate';
-  error_log('KWIK AI Tags: Ollama URL: ' . $url);
-  error_log('KWIK AI Tags: Number of images: ' . count($images));
+  $url = KWIK_AI_OLLAMA_HOST . '/api/generate';
+  error_log('Kwik AI: Ollama URL: ' . $url);
+  error_log('Kwik AI: Number of images: ' . count($images));
 
   $payload = [
     'model' => 'gemma3:27b',
@@ -986,7 +988,7 @@ function kwik_ai_tags_query_ollama(string $prompt, array $images): ?string
     'stream' => false, // Important: disable streaming for easier parsing
   ];
 
-  error_log('KWIK AI Tags: Payload (without images): ' . json_encode(array_merge($payload, ['images' => '[' . count($images) . ' images]'])));
+  error_log('Kwik AI: Payload (without images): ' . json_encode(array_merge($payload, ['images' => '[' . count($images) . ' images]'])));
 
   $response = wp_remote_post(
     $url,
@@ -998,26 +1000,26 @@ function kwik_ai_tags_query_ollama(string $prompt, array $images): ?string
   );
 
   if (is_wp_error($response)) {
-    error_log('KWIK AI Tags: WP Error: ' . $response->get_error_message());
+    error_log('Kwik AI: WP Error: ' . $response->get_error_message());
     return null; // Network or server error.
   }
 
   $response_code = wp_remote_retrieve_response_code($response);
-  error_log('KWIK AI Tags: Response code: ' . $response_code);
+  error_log('Kwik AI: Response code: ' . $response_code);
 
   if ($response_code !== 200) {
     $body = wp_remote_retrieve_body($response);
-    error_log('KWIK AI Tags: HTTP error: ' . $response_code . ' - Response body: ' . $body);
+    error_log('Kwik AI: HTTP error: ' . $response_code . ' - Response body: ' . $body);
     return null;
   }
 
   $body = wp_remote_retrieve_body($response);
-  error_log('KWIK AI Tags: Response body: ' . substr($body, 0, 500)); // Log first 500 chars
+  error_log('Kwik AI: Response body: ' . substr($body, 0, 500)); // Log first 500 chars
 
   $data = json_decode($body, true);
 
   if (json_last_error() !== JSON_ERROR_NONE) {
-    error_log('KWIK AI Tags: JSON decode error: ' . json_last_error_msg());
+    error_log('Kwik AI: JSON decode error: ' . json_last_error_msg());
 
     // Try to handle streaming response manually
     $lines = explode("\n", trim($body));
@@ -1040,7 +1042,7 @@ function kwik_ai_tags_query_ollama(string $prompt, array $images): ?string
     }
 
     if (!empty($full_response)) {
-      error_log('KWIK AI Tags: Reconstructed response: ' . $full_response);
+      error_log('Kwik AI: Reconstructed response: ' . $full_response);
       return trim($full_response);
     }
 
@@ -1048,7 +1050,7 @@ function kwik_ai_tags_query_ollama(string $prompt, array $images): ?string
   }
 
   if (!isset($data['response'])) {
-    error_log('KWIK AI Tags: No response field in data: ' . print_r($data, true));
+    error_log('Kwik AI: No response field in data: ' . print_r($data, true));
     return null;
   }
 
@@ -1142,8 +1144,8 @@ function kwik_ai_tags_test_image_conversion($url = null)
 function kwik_ai_tags_add_admin_menu()
 {
   $settings_hook = add_options_page(
-    __('KWIK AI Tags Settings', 'kwik-ai-tags'),
-    __('KWIK AI Tags', 'kwik-ai-tags'),
+    __('KWIK AI Settings', KWIK_AI_DOMAIN),
+    __('KWIK AI', KWIK_AI_DOMAIN),
     'manage_options',
     'kwik-ai-tags-settings',
     'kwik_ai_tags_settings_page'
@@ -1183,14 +1185,14 @@ function kwik_ai_tags_settings_init()
 
   add_settings_section(
     'kwik_ai_tags_main_section',
-    __('Post Type Settings', 'kwik-ai-tags'),
+    __('Post Type Settings', KWIK_AI_DOMAIN),
     'kwik_ai_tags_settings_section_callback',
     'kwik_ai_tags_settings'
   );
 
   add_settings_field(
     'kwik_ai_tags_enabled_post_types',
-    __('Enabled Post Types', 'kwik-ai-tags'),
+    __('Enabled Post Types', KWIK_AI_DOMAIN),
     'kwik_ai_tags_enabled_post_types_callback',
     'kwik_ai_tags_settings',
     'kwik_ai_tags_main_section'
@@ -1227,7 +1229,7 @@ function kwik_ai_tags_sanitize_post_types($input)
  */
 function kwik_ai_tags_settings_section_callback()
 {
-  echo '<p>' . esc_html__('Choose which post types should have AI tag generation enabled.', 'kwik-ai-tags') . '</p>';
+  echo '<p>' . esc_html__('Choose which post types should have AI tag generation enabled.', KWIK_AI_DOMAIN) . '</p>';
 }
 
 /**
@@ -1239,7 +1241,7 @@ function kwik_ai_tags_enabled_post_types_callback()
   $post_types = get_post_types(array('public' => true), 'objects');
   
   echo '<fieldset>';
-  echo '<legend class="screen-reader-text">' . esc_html__('Enabled Post Types', 'kwik-ai-tags') . '</legend>';
+  echo '<legend class="screen-reader-text">' . esc_html__('Enabled Post Types', KWIK_AI_DOMAIN) . '</legend>';
   
   foreach ($post_types as $post_type) {
     // Skip attachment post type
@@ -1258,7 +1260,7 @@ function kwik_ai_tags_enabled_post_types_callback()
   }
   
   echo '</fieldset>';
-  echo '<p class="description">' . esc_html__('Select the post types where you want AI tag generation to be available. The AI Tags meta box will appear in the editor for these post types.', 'kwik-ai-tags') . '</p>';
+  echo '<p class="description">' . esc_html__('Select the post types where you want AI tag generation to be available. The AI Tags meta box will appear in the editor for these post types.', KWIK_AI_DOMAIN) . '</p>';
 }
 
 /**
@@ -1267,7 +1269,7 @@ function kwik_ai_tags_enabled_post_types_callback()
 function kwik_ai_tags_settings_page()
 {
   if (!current_user_can('manage_options')) {
-    wp_die(__('You do not have sufficient permissions to access this page.', 'kwik-ai-tags'));
+    wp_die(__('You do not have sufficient permissions to access this page.', KWIK_AI_DOMAIN));
   }
   
   ?>
@@ -1275,26 +1277,26 @@ function kwik_ai_tags_settings_page()
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
     
     <div class="card">
-      <h2><?php esc_html_e('Plugin Information', 'kwik-ai-tags'); ?></h2>
-      <p><?php esc_html_e('KWIK AI Tags automatically generates relevant tags for your content using AI image and text analysis.', 'kwik-ai-tags'); ?></p>
+      <h2><?php esc_html_e('Plugin Information', KWIK_AI_DOMAIN); ?></h2>
+      <p><?php esc_html_e('KWIK AI Tags automatically generates relevant tags for your content using AI image and text analysis.', KWIK_AI_DOMAIN); ?></p>
       
-      <h3><?php esc_html_e('Requirements', 'kwik-ai-tags'); ?></h3>
+      <h3><?php esc_html_e('Requirements', KWIK_AI_DOMAIN); ?></h3>
       <ul>
-        <li><?php esc_html_e('Ollama running on http://localhost:11434', 'kwik-ai-tags'); ?></li>
-        <li><?php esc_html_e('gemma3:27b model installed (run: ollama pull gemma3:27b)', 'kwik-ai-tags'); ?></li>
-        <li><?php esc_html_e('Posts with images or at least 50 words of text content', 'kwik-ai-tags'); ?></li>
+        <li><?php esc_html_e('Ollama running on http://localhost:11434', KWIK_AI_DOMAIN); ?></li>
+        <li><?php esc_html_e('gemma3:27b model installed (run: ollama pull gemma3:27b)', KWIK_AI_DOMAIN); ?></li>
+        <li><?php esc_html_e('Posts with images or at least 50 words of text content', KWIK_AI_DOMAIN); ?></li>
       </ul>
       
-      <h3><?php esc_html_e('Current Status', 'kwik-ai-tags'); ?></h3>
+      <h3><?php esc_html_e('Current Status', KWIK_AI_DOMAIN); ?></h3>
       <p>
-        <strong><?php esc_html_e('Ollama Host:', 'kwik-ai-tags'); ?></strong> 
-        <code><?php echo esc_html(KWIK_AI_TAGS_OLLAMA_HOST); ?></code>
+        <strong><?php esc_html_e('Ollama Host:', KWIK_AI_DOMAIN); ?></strong> 
+        <code><?php echo esc_html(KWIK_AI_OLLAMA_HOST); ?></code>
         
         <?php
         // Test Ollama connection
         $ollama_status = kwik_ai_tags_test_ollama_connection();
         if ($ollama_status === true) {
-          echo '<span class="kwik-ai-tags-status-connected"><span class="kwik-ai-tags-status-icon">✓</span>' . esc_html__('Connected', 'kwik-ai-tags') . '</span>';
+          echo '<span class="kwik-ai-tags-status-connected"><span class="kwik-ai-tags-status-icon">✓</span>' . esc_html__('Connected', KWIK_AI_DOMAIN) . '</span>';
         } else {
           echo '<span class="kwik-ai-tags-status-error"><span class="kwik-ai-tags-status-icon">✗</span>' . esc_html($ollama_status) . '</span>';
         }
@@ -1318,7 +1320,7 @@ function kwik_ai_tags_settings_page()
  */
 function kwik_ai_tags_test_ollama_connection()
 {
-  $url = KWIK_AI_TAGS_OLLAMA_HOST . '/api/tags';
+  $url = KWIK_AI_OLLAMA_HOST . '/api/tags';
   
   $response = wp_remote_get($url, array(
     'timeout' => 5,
@@ -1326,19 +1328,19 @@ function kwik_ai_tags_test_ollama_connection()
   ));
   
   if (is_wp_error($response)) {
-    return __('Connection failed: ', 'kwik-ai-tags') . $response->get_error_message();
+    return __('Connection failed: ', KWIK_AI_DOMAIN) . $response->get_error_message();
   }
   
   $response_code = wp_remote_retrieve_response_code($response);
   if ($response_code !== 200) {
-    return sprintf(__('HTTP Error %d', 'kwik-ai-tags'), $response_code);
+    return sprintf(__('HTTP Error %d', KWIK_AI_DOMAIN), $response_code);
   }
   
   $body = wp_remote_retrieve_body($response);
   $data = json_decode($body, true);
   
   if (!$data || !isset($data['models'])) {
-    return __('Invalid response from Ollama', 'kwik-ai-tags');
+    return __('Invalid response from Ollama', KWIK_AI_DOMAIN);
   }
   
   // Check if gemma3:27b model is available
@@ -1351,7 +1353,7 @@ function kwik_ai_tags_test_ollama_connection()
   }
   
   if (!$has_gemma) {
-    return __('Connected, but gemma3:27b model not found. Run: ollama pull gemma3:27b', 'kwik-ai-tags');
+    return __('Connected, but gemma3:27b model not found. Run: ollama pull gemma3:27b', KWIK_AI_DOMAIN);
   }
   
   return true;

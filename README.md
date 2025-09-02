@@ -1,8 +1,8 @@
-# KWIK AI Tags Plugin
+# KWIK AI Plugin
 
 ## Overview
 
-The KWIK AI Tags plugin automatically generates relevant tags for WordPress posts by analyzing both images and text content using the Gemma3:27b model via Ollama. The plugin supports modern WordPress block editor images as well as traditional attached media, with a preview feature that allows you to review and modify suggested tags before applying them to your posts.
+The KWIK AI plugin automatically generates relevant tags for WordPress posts by analyzing both images and text content using the Gemma3:27b model via Ollama. The plugin supports modern WordPress block editor images as well as traditional attached media, with a preview feature that allows you to review and modify suggested tags before applying them to your posts.
 
 ## Features
 
@@ -17,7 +17,7 @@ The KWIK AI Tags plugin automatically generates relevant tags for WordPress post
   - Media & Text blocks (`core/media-text`)
   - Cover blocks (`core/cover`)
   - Nested blocks and custom blocks
-- **Settings Page**: Easy configuration at Settings > KWIK AI Tags with:
+- **Settings Page**: Easy configuration at Settings > KWIK AI with:
   - Post type selection
   - Real-time Ollama connection status
   - System requirements overview
@@ -38,14 +38,14 @@ The KWIK AI Tags plugin automatically generates relevant tags for WordPress post
 
 1. Copy the plugin folder to `wp-content/plugins/kwik-ai-tags/`
 2. Activate the plugin in the WordPress admin
-3. Go to Settings > KWIK AI Tags to configure which post types should use AI tagging
+3. Go to Settings > KWIK AI to configure which post types should use AI tagging
 4. Ensure Ollama is running with the Gemma3:27b model
 
 ## Configuration
 
 ### Settings Page
 
-Access the settings at **Settings > KWIK AI Tags** in your WordPress admin:
+Access the settings at **Settings > KWIK AI** in your WordPress admin:
 
 1. **Post Type Selection**: Check which post types should have AI tag generation
 2. **System Status**: View Ollama connection status and model availability
