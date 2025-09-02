@@ -2,22 +2,32 @@
 
 ## Overview
 
-The KWIK AI Tags plugin automatically generates relevant tags for WordPress posts by analyzing attached images using the Gemma3:27b model via Ollama. The plugin now includes a preview feature that allows you to review and modify suggested tags before applying them to your posts.
+The KWIK AI Tags plugin automatically generates relevant tags for WordPress posts by analyzing both images and text content using the Gemma3:27b model via Ollama. The plugin supports modern WordPress block editor images as well as traditional attached media, with a preview feature that allows you to review and modify suggested tags before applying them to your posts.
 
 ## Features
 
-- **AI-Powered Tag Generation**: Uses the Gemma3:27b model to analyze images and suggest relevant tags
+- **AI-Powered Tag Generation**: Uses the Gemma3:27b model to analyze content and suggest relevant tags
+- **Block Image Support**: Extracts and analyzes images from WordPress blocks (Gutenberg editor)
+- **Multi-Source Analysis**: Combines tags from both image analysis and text content (50+ words)
+- **Comprehensive Image Detection**: Supports:
+  - Traditional attached media
+  - Image blocks (`core/image`)
+  - Gallery blocks (`core/gallery`)
+  - Media & Text blocks (`core/media-text`)
+  - Cover blocks (`core/cover`)
+  - Nested blocks and custom blocks
 - **Preview Interface**: Review generated tags before applying them to your post
 - **Individual Tag Management**: Remove unwanted tags from the preview
 - **Seamless Integration**: Works directly in the WordPress post editor sidebar
 - **AJAX-Powered**: Smooth, real-time interactions without page reloads
+- **Debug Mode**: Comprehensive logging and debugging information
 
 ## Requirements
 
 - WordPress 5.6+ (any recent LTS version)
 - Ollama running on http://localhost:11434
 - Gemma3:27b model installed (`ollama pull gemma3:27b`)
-- Posts with attached images
+- Posts with images (attached or in blocks) and/or text content (50+ words minimum)
 
 ## Installation
 

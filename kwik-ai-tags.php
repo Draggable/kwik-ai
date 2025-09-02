@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: KWIK‑AI‑TAGS
- * Description: Auto‑tag posts with the Gemma3:27b model via Ollama. Analyzes both images and text content (50+ words) with preview functionality.
- * Version: 2.2
+ * Description: Auto‑tag posts with the Gemma3:27b model via Ollama. Analyzes both images (including block images) and text content (50+ words) with preview functionality.
+ * Version: 2.3
  * Author: Your Name
  * Text Domain: kwik-ai-tags
  *
@@ -118,11 +118,27 @@ function kwik_ai_tags_meta_box_callback($post)
         $attachments = get_attached_media('image', $post->ID);
         echo esc_html(count($attachments));
       ?><br>
-      Word Count: <?php 
+      Block Images: <?php 
         $content = get_post_field('post_content', $post->ID);
+        $block_images = kwik_ai_tags_extract_block_images($content);
+        echo esc_html(count($block_images));
+      ?><br>
+      Total Images: <?php 
+        $image_urls = [];
+        foreach ($attachments as $attachment) {
+          $url = wp_get_attachment_url($attachment->ID);
+          if ($url) $image_urls[] = $url;
+        }
+        $image_urls = array_merge($image_urls, $block_images);
+        $image_urls = array_unique($image_urls);
+        $image_urls = kwik_ai_tags_deduplicate_sized_images($image_urls);
+        echo esc_html(count($image_urls));
+      ?><br>
+      Word Count: <?php 
         $word_count = str_word_count(wp_strip_all_tags($content));
         echo esc_html($word_count);
         echo $word_count >= KWIK_AI_TAGS_MIN_WORDS ? ' (✓ text analysis enabled)' : ' (text analysis disabled)';
+      ?>
       ?>
     </div>
     <?php endif; ?>
@@ -163,7 +179,7 @@ function kwik_ai_tags_enqueue_scripts($hook)
     'kwik-ai-tags-admin',
     $js_url,
     ['jquery'],
-    '2.2.0',
+    '2.3.0',
     true
   );
   
@@ -171,7 +187,7 @@ function kwik_ai_tags_enqueue_scripts($hook)
     'kwik-ai-tags-admin',
     $css_url,
     [],
-    '2.2.0'
+    '2.3.0'
   );
   
   $post_id = get_the_ID();
@@ -300,11 +316,34 @@ function kwik_ai_tags_generate_for_post(int $post_id)
   /* ----------------------------------------------------- */
   /* 1. Try to get tags from images */
   /* ----------------------------------------------------- */
-  $attachments = get_attached_media('image', $post_id);
-  error_log('KWIK AI Tags: Found ' . count($attachments) . ' attachments');
   
-  if (!empty($attachments)) {
-    $image_tags = kwik_ai_tags_generate_from_images($post_id, $attachments);
+  // Get both attached images and images from block content
+  $image_urls = [];
+  
+  // Traditional attached images
+  $attachments = get_attached_media('image', $post_id);
+  error_log('KWIK AI Tags: Found ' . count($attachments) . ' attached images');
+  
+  foreach ($attachments as $attachment) {
+    $url = wp_get_attachment_url($attachment->ID);
+    if ($url) {
+      $image_urls[] = $url;
+    }
+  }
+  
+  // Images from block content (modern WordPress)
+  $post_content = get_post_field('post_content', $post_id);
+  $block_images = kwik_ai_tags_extract_block_images($post_content);
+  error_log('KWIK AI Tags: Found ' . count($block_images) . ' block images');
+  
+  $image_urls = array_merge($image_urls, $block_images);
+  $image_urls = array_unique($image_urls); // Remove duplicates
+  $image_urls = kwik_ai_tags_deduplicate_sized_images($image_urls); // Remove sized duplicates
+  
+  error_log('KWIK AI Tags: Total unique images: ' . count($image_urls));
+  
+  if (!empty($image_urls)) {
+    $image_tags = kwik_ai_tags_generate_from_image_urls($post_id, $image_urls);
     if ($image_tags) {
       $all_tags = array_merge($all_tags, $image_tags);
       error_log('KWIK AI Tags: Generated ' . count($image_tags) . ' tags from images: ' . implode(', ', $image_tags));
@@ -345,29 +384,203 @@ function kwik_ai_tags_generate_for_post(int $post_id)
 }
 
 /**
- * Generate tags from post images
+ * Remove duplicate images that are the same image at different sizes
+ * For example: image.jpg and image-700x500.jpg are the same image
+ *
+ * @param array $image_urls Array of image URLs
+ * @return array Deduplicated array with only original images
+ */
+function kwik_ai_tags_deduplicate_sized_images(array $image_urls): array
+{
+  $unique_images = [];
+  $base_names = [];
+  
+  foreach ($image_urls as $url) {
+    // Extract the base name without size suffix
+    $base_name = preg_replace('/-\d+x\d+(\.[a-zA-Z]+)$/', '$1', $url);
+    
+    // If we haven't seen this base image before, add it
+    if (!in_array($base_name, $base_names)) {
+      $base_names[] = $base_name;
+      // Prefer the original (non-sized) version if available
+      if ($base_name === $url) {
+        // This is the original image
+        $unique_images[] = $url;
+      } else {
+        // This is a sized version, but it's the first we've seen of this image
+        $unique_images[] = $url;
+      }
+    } else {
+      // We've seen this base image before
+      $existing_index = array_search($base_name, $base_names);
+      
+      // If the current URL is the original (no size suffix) and the existing one is sized,
+      // replace the sized version with the original
+      if ($base_name === $url && $unique_images[$existing_index] !== $url) {
+        $unique_images[$existing_index] = $url;
+      }
+    }
+  }
+  
+  return array_values($unique_images);
+}
+
+/**
+ * Extract image URLs from WordPress block content
+ *
+ * @param string $content Post content with blocks
+ * @return array Array of image URLs found in blocks
+ */
+function kwik_ai_tags_extract_block_images(string $content): array
+{
+  $image_urls = [];
+  
+  // Parse blocks if the content contains block markup
+  if (has_blocks($content)) {
+    $blocks = parse_blocks($content);
+    $image_urls = kwik_ai_tags_extract_images_from_blocks($blocks);
+  } else {
+    // Fallback: Extract images from HTML content using regex
+    $image_urls = kwik_ai_tags_extract_images_from_html($content);
+  }
+
+  // Remove duplicates and deduplicate sized images
+  $image_urls = array_unique($image_urls);
+  $image_urls = kwik_ai_tags_deduplicate_sized_images($image_urls);
+  
+  error_log('KWIK AI Tags: Extracted ' . count($image_urls) . ' unique images from content');
+  return $image_urls;
+}
+
+/**
+ * Recursively extract image URLs from parsed blocks
+ *
+ * @param array $blocks Parsed WordPress blocks
+ * @return array Array of image URLs
+ */
+function kwik_ai_tags_extract_images_from_blocks(array $blocks): array
+{
+  $image_urls = [];
+  
+  foreach ($blocks as $block) {
+    // Handle Image blocks
+    if ($block['blockName'] === 'core/image') {
+      if (isset($block['attrs']['id'])) {
+        // Image block with attachment ID
+        $url = wp_get_attachment_url($block['attrs']['id']);
+        if ($url) {
+          $image_urls[] = $url;
+        }
+      } elseif (isset($block['attrs']['url'])) {
+        // Image block with direct URL
+        $image_urls[] = $block['attrs']['url'];
+      }
+    }
+    
+    // Handle Gallery blocks
+    elseif ($block['blockName'] === 'core/gallery') {
+      if (isset($block['attrs']['ids']) && is_array($block['attrs']['ids'])) {
+        foreach ($block['attrs']['ids'] as $id) {
+          $url = wp_get_attachment_url($id);
+          if ($url) {
+            $image_urls[] = $url;
+          }
+        }
+      }
+    }
+    
+    // Handle Media & Text blocks
+    elseif ($block['blockName'] === 'core/media-text') {
+      if (isset($block['attrs']['mediaId'])) {
+        $url = wp_get_attachment_url($block['attrs']['mediaId']);
+        if ($url) {
+          $image_urls[] = $url;
+        }
+      } elseif (isset($block['attrs']['mediaUrl'])) {
+        $image_urls[] = $block['attrs']['mediaUrl'];
+      }
+    }
+    
+    // Handle Cover blocks
+    elseif ($block['blockName'] === 'core/cover') {
+      if (isset($block['attrs']['id'])) {
+        $url = wp_get_attachment_url($block['attrs']['id']);
+        if ($url) {
+          $image_urls[] = $url;
+        }
+      } elseif (isset($block['attrs']['url'])) {
+        $image_urls[] = $block['attrs']['url'];
+      }
+    }
+    
+    // Recursively check inner blocks
+    if (isset($block['innerBlocks']) && is_array($block['innerBlocks'])) {
+      $inner_images = kwik_ai_tags_extract_images_from_blocks($block['innerBlocks']);
+      $image_urls = array_merge($image_urls, $inner_images);
+    }
+    
+    // Fallback: extract images from rendered block content
+    if (!empty($block['innerHTML'])) {
+      $html_images = kwik_ai_tags_extract_images_from_html($block['innerHTML']);
+      $image_urls = array_merge($image_urls, $html_images);
+    }
+  }
+  
+  return $image_urls;
+}
+
+/**
+ * Extract image URLs from HTML content using regex
+ *
+ * @param string $html HTML content
+ * @return array Array of image URLs
+ */
+function kwik_ai_tags_extract_images_from_html(string $html): array
+{
+  $image_urls = [];
+  
+  // Match img tags and extract src attributes
+  preg_match_all('/<img[^>]+src=["\']([^"\']+)["\'][^>]*>/i', $html, $matches);
+  
+  if (!empty($matches[1])) {
+    foreach ($matches[1] as $src) {
+      // Convert relative URLs to absolute URLs
+      if (strpos($src, 'http') !== 0) {
+        if (strpos($src, '/') === 0) {
+          $src = home_url($src);
+        } else {
+          $src = home_url('/' . $src);
+        }
+      }
+      
+      // Only include images from the same domain or uploads directory
+      if (strpos($src, home_url()) === 0 || strpos($src, wp_upload_dir()['baseurl']) === 0) {
+        $image_urls[] = $src;
+      }
+    }
+  }
+  
+  return $image_urls;
+}
+
+/**
+ * Generate tags from image URLs
  *
  * @param int $post_id
- * @param array $attachments
+ * @param array $image_urls Array of image URLs
  * @return array|false
  */
-function kwik_ai_tags_generate_from_images(int $post_id, array $attachments)
+function kwik_ai_tags_generate_from_image_urls(int $post_id, array $image_urls)
 {
-  error_log('KWIK AI Tags: Generating tags from ' . count($attachments) . ' images');
+  error_log('KWIK AI Tags: Generating tags from ' . count($image_urls) . ' image URLs');
   
   /* ----------------------------------------------------- */
   /* 1. Convert each image URL to a Base‑64 data URI */
   /* ----------------------------------------------------- */
   $data_uris = [];
-  foreach ($attachments as $attachment) {
-    $image_url = wp_get_attachment_url($attachment->ID);
-    error_log('KWIK AI Tags: Processing image: ' . $image_url);
+  foreach ($image_urls as $image_url) {
+    error_log('KWIK AI Tags: Processing image URL: ' . $image_url);
     
-    if (!$image_url) {
-      error_log('KWIK AI Tags: Could not get URL for attachment ' . $attachment->ID);
-      continue;
-    }
-
     $data_uri = kwik_ai_tags_image_to_data_uri($image_url);
     if ($data_uri) {
       $data_uris[] = $data_uri;
@@ -380,7 +593,7 @@ function kwik_ai_tags_generate_from_images(int $post_id, array $attachments)
   error_log('KWIK AI Tags: Converted ' . count($data_uris) . ' images to data URIs');
 
   if (empty($data_uris)) {
-    error_log('KWIK AI Tags: No data URIs generated from images');
+    error_log('KWIK AI Tags: No data URIs generated from image URLs');
     return false;
   }
 
@@ -409,6 +622,28 @@ function kwik_ai_tags_generate_from_images(int $post_id, array $attachments)
   error_log('KWIK AI Tags: Parsed image tags: ' . print_r($tags, true));
   
   return $tags;
+}
+
+/**
+ * Generate tags from post images (legacy function for backward compatibility)
+ *
+ * @param int $post_id
+ * @param array $attachments
+ * @return array|false
+ */
+function kwik_ai_tags_generate_from_images(int $post_id, array $attachments)
+{
+  error_log('KWIK AI Tags: Generating tags from ' . count($attachments) . ' images (legacy method)');
+  
+  $image_urls = [];
+  foreach ($attachments as $attachment) {
+    $image_url = wp_get_attachment_url($attachment->ID);
+    if ($image_url) {
+      $image_urls[] = $image_url;
+    }
+  }
+  
+  return kwik_ai_tags_generate_from_image_urls($post_id, $image_urls);
 }
 
 /**
