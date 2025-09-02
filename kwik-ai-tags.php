@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: KWIK‑AI‑TAGS
- * Description: Auto‑tag posts with the Gemma3:27b model via Ollama with preview functionality.
- * Version: 2.1
+ * Description: Auto‑tag posts with the Gemma3:27b model via Ollama. Analyzes both images and text content (50+ words) with preview functionality.
+ * Version: 2.2
  * Author: Your Name
  * Text Domain: kwik-ai-tags
  *
@@ -27,7 +27,8 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
  * Constants
  */
 define('KWIK_AI_TAGS_OLLAMA_HOST', 'http://localhost:11434'); // Change if Ollama runs elsewhere.
-define('KWIK_AI_TAGS_MAX_TAGS', 5); // Max tags to apply per post.
+define('KWIK_AI_TAGS_MAX_TAGS', 8); // Max tags to apply per post (increased for text+image)
+define('KWIK_AI_TAGS_MIN_WORDS', 50); // Minimum words required for text analysis
 
 /**
  * Initialize the plugin
@@ -63,7 +64,7 @@ function kwik_ai_tags_add_meta_box()
     'kwik_ai_tags_meta_box_callback',
     'post',
     'side',
-    'default'
+    'high'
   );
   
   error_log('KWIK AI Tags: Meta box added');
@@ -86,7 +87,7 @@ function kwik_ai_tags_meta_box_callback($post)
     </p>
     
     <div id="kwik-ai-tags-loading" style="display: none;">
-      <p><?php esc_html_e('Analyzing images...', 'kwik-ai-tags'); ?></p>
+      <p><?php esc_html_e('Analyzing content...', 'kwik-ai-tags'); ?></p>
       <div class="kwik-ai-tags-spinner"></div>
     </div>
     
@@ -116,6 +117,12 @@ function kwik_ai_tags_meta_box_callback($post)
       Attached Images: <?php 
         $attachments = get_attached_media('image', $post->ID);
         echo esc_html(count($attachments));
+      ?><br>
+      Word Count: <?php 
+        $content = get_post_field('post_content', $post->ID);
+        $word_count = str_word_count(wp_strip_all_tags($content));
+        echo esc_html($word_count);
+        echo $word_count >= KWIK_AI_TAGS_MIN_WORDS ? ' (✓ text analysis enabled)' : ' (text analysis disabled)';
       ?>
     </div>
     <?php endif; ?>
@@ -156,7 +163,7 @@ function kwik_ai_tags_enqueue_scripts($hook)
     'kwik-ai-tags-admin',
     $js_url,
     ['jquery'],
-    '2.0.0',
+    '2.2.0',
     true
   );
   
@@ -164,7 +171,7 @@ function kwik_ai_tags_enqueue_scripts($hook)
     'kwik-ai-tags-admin',
     $css_url,
     [],
-    '2.0.0'
+    '2.2.0'
   );
   
   $post_id = get_the_ID();
@@ -177,7 +184,7 @@ function kwik_ai_tags_enqueue_scripts($hook)
     'debug' => WP_DEBUG,
     'strings' => [
       'error' => __('An error occurred. Please try again.', 'kwik-ai-tags'),
-      'noImages' => __('No images found. Please add images to your post first.', 'kwik-ai-tags'),
+      'noContent' => __('No images or insufficient text found. Please add images or write at least 50 words.', 'kwik-ai-tags'),
       'success' => __('Tags applied successfully!', 'kwik-ai-tags'),
     ]
   ]);
@@ -208,13 +215,16 @@ function kwik_ai_tags_ajax_generate()
     wp_send_json_error(__('Invalid post ID.', 'kwik-ai-tags'));
   }
   
-  // Check if post has images
+  // Check if post has images or sufficient text content
   $attachments = get_attached_media('image', $post_id);
-  error_log('KWIK AI Tags: Found ' . count($attachments) . ' images');
+  $post_content = get_post_field('post_content', $post_id);
+  $word_count = str_word_count(wp_strip_all_tags($post_content));
   
-  if (empty($attachments)) {
-    error_log('KWIK AI Tags: No images found');
-    wp_send_json_error(__('No images found. Please add images to your post first.', 'kwik-ai-tags'));
+  error_log('KWIK AI Tags: Found ' . count($attachments) . ' images and ' . $word_count . ' words');
+  
+  if (empty($attachments) && $word_count < KWIK_AI_TAGS_MIN_WORDS) {
+    error_log('KWIK AI Tags: Insufficient content for analysis');
+    wp_send_json_error(__('Please add images or write at least 50 words to generate AI tags.', 'kwik-ai-tags'));
   }
   
   error_log('KWIK AI Tags: Calling kwik_ai_tags_generate_for_post');
@@ -276,7 +286,7 @@ function kwik_ai_tags_ajax_apply()
 }
 
 /**
- * Generate tags for a specific post
+ * Generate tags for a specific post from both images and text content
  *
  * @param int $post_id
  * @return array|false
@@ -285,19 +295,68 @@ function kwik_ai_tags_generate_for_post(int $post_id)
 {
   error_log('KWIK AI Tags: Starting tag generation for post ' . $post_id);
   
+  $all_tags = [];
+  
   /* ----------------------------------------------------- */
-  /* 1. Grab all attached images */
+  /* 1. Try to get tags from images */
   /* ----------------------------------------------------- */
   $attachments = get_attached_media('image', $post_id);
   error_log('KWIK AI Tags: Found ' . count($attachments) . ' attachments');
   
-  if (empty($attachments)) {
-    error_log('KWIK AI Tags: No attachments found');
+  if (!empty($attachments)) {
+    $image_tags = kwik_ai_tags_generate_from_images($post_id, $attachments);
+    if ($image_tags) {
+      $all_tags = array_merge($all_tags, $image_tags);
+      error_log('KWIK AI Tags: Generated ' . count($image_tags) . ' tags from images: ' . implode(', ', $image_tags));
+    }
+  }
+  
+  /* ----------------------------------------------------- */
+  /* 2. Try to get tags from text content */
+  /* ----------------------------------------------------- */
+  $post_content = get_post_field('post_content', $post_id);
+  $word_count = str_word_count(wp_strip_all_tags($post_content));
+  
+  error_log('KWIK AI Tags: Post has ' . $word_count . ' words');
+  
+  if ($word_count >= KWIK_AI_TAGS_MIN_WORDS) {
+    $text_tags = kwik_ai_tags_generate_from_text($post_id, $post_content);
+    if ($text_tags) {
+      $all_tags = array_merge($all_tags, $text_tags);
+      error_log('KWIK AI Tags: Generated ' . count($text_tags) . ' tags from text: ' . implode(', ', $text_tags));
+    }
+  }
+  
+  /* ----------------------------------------------------- */
+  /* 3. Combine, deduplicate, and limit tags */
+  /* ----------------------------------------------------- */
+  if (empty($all_tags)) {
+    error_log('KWIK AI Tags: No tags generated from any source');
     return false;
   }
+  
+  // Remove duplicates and limit to max tags
+  $unique_tags = array_unique($all_tags);
+  $final_tags = array_slice($unique_tags, 0, KWIK_AI_TAGS_MAX_TAGS);
+  
+  error_log('KWIK AI Tags: Final tags (' . count($final_tags) . '): ' . implode(', ', $final_tags));
+  
+  return $final_tags;
+}
 
+/**
+ * Generate tags from post images
+ *
+ * @param int $post_id
+ * @param array $attachments
+ * @return array|false
+ */
+function kwik_ai_tags_generate_from_images(int $post_id, array $attachments)
+{
+  error_log('KWIK AI Tags: Generating tags from ' . count($attachments) . ' images');
+  
   /* ----------------------------------------------------- */
-  /* 2. Convert each image URL to a Base‑64 data URI */
+  /* 1. Convert each image URL to a Base‑64 data URI */
   /* ----------------------------------------------------- */
   $data_uris = [];
   foreach ($attachments as $attachment) {
@@ -321,39 +380,89 @@ function kwik_ai_tags_generate_for_post(int $post_id)
   error_log('KWIK AI Tags: Converted ' . count($data_uris) . ' images to data URIs');
 
   if (empty($data_uris)) {
-    error_log('KWIK AI Tags: No data URIs generated');
-    return false; // Nothing to send.
+    error_log('KWIK AI Tags: No data URIs generated from images');
+    return false;
   }
 
   /* ----------------------------------------------------- */
-  /* 3. Build prompt */
+  /* 2. Build prompt for images */
   /* ----------------------------------------------------- */
-  $prompt = 'Generate up to ' . KWIK_AI_TAGS_MAX_TAGS . ' concise tags for the following images. Respond with a comma‑separated list. Do not add any extra text.';
-  error_log('KWIK AI Tags: Using prompt: ' . $prompt);
+  $prompt = 'Analyze these images and generate up to 5 concise, relevant tags that describe the main subjects, objects, activities, or themes shown. Focus on nouns and descriptive terms. Respond with a comma‑separated list only, no extra text.';
+  error_log('KWIK AI Tags: Using image prompt: ' . $prompt);
 
   /* ----------------------------------------------------- */
-  /* 4. Send request to Ollama */
+  /* 3. Send request to Ollama */
   /* ----------------------------------------------------- */
-  error_log('KWIK AI Tags: Sending request to Ollama');
+  error_log('KWIK AI Tags: Sending image request to Ollama');
   $raw_response = kwik_ai_tags_query_ollama($prompt, $data_uris);
-  error_log('KWIK AI Tags: Ollama response: ' . ($raw_response ?: 'NULL'));
+  error_log('KWIK AI Tags: Ollama image response: ' . ($raw_response ?: 'NULL'));
   
   if (!$raw_response) {
-    error_log('KWIK AI Tags: No response from Ollama');
-    return false; // Ollama down or returned nothing.
+    error_log('KWIK AI Tags: No response from Ollama for images');
+    return false;
   }
 
   /* ----------------------------------------------------- */
-  /* 5. Parse tags */
+  /* 4. Parse tags */
   /* ----------------------------------------------------- */
   $tags = kwik_ai_tags_parse_tags($raw_response);
-  error_log('KWIK AI Tags: Parsed tags: ' . print_r($tags, true));
+  error_log('KWIK AI Tags: Parsed image tags: ' . print_r($tags, true));
   
-  if (empty($tags)) {
-    error_log('KWIK AI Tags: No tags parsed from response');
-    return false; // No tags produced.
+  return $tags;
+}
+
+/**
+ * Generate tags from post text content
+ *
+ * @param int $post_id
+ * @param string $content
+ * @return array|false
+ */
+function kwik_ai_tags_generate_from_text(int $post_id, string $content)
+{
+  error_log('KWIK AI Tags: Generating tags from text content');
+  
+  // Clean and prepare the text
+  $clean_text = wp_strip_all_tags($content);
+  $clean_text = preg_replace('/\s+/', ' ', $clean_text); // Normalize whitespace
+  $clean_text = trim($clean_text);
+  
+  // Limit text length to avoid overwhelming the model
+  if (strlen($clean_text) > 2000) {
+    $clean_text = substr($clean_text, 0, 2000) . '...';
+    error_log('KWIK AI Tags: Truncated text to 2000 characters');
+  }
+  
+  error_log('KWIK AI Tags: Analyzing ' . str_word_count($clean_text) . ' words');
+  
+  /* ----------------------------------------------------- */
+  /* 1. Build prompt for text analysis */
+  /* ----------------------------------------------------- */
+  $prompt = 'Analyze this article text and generate up to 5 relevant tags that capture the main topics, themes, subjects, or keywords. Focus on the most important concepts discussed. Respond with a comma‑separated list only, no extra text.
+
+Article text:
+' . $clean_text;
+  
+  error_log('KWIK AI Tags: Using text prompt (first 200 chars): ' . substr($prompt, 0, 200) . '...');
+
+  /* ----------------------------------------------------- */
+  /* 2. Send request to Ollama (text-only, no images) */
+  /* ----------------------------------------------------- */
+  error_log('KWIK AI Tags: Sending text request to Ollama');
+  $raw_response = kwik_ai_tags_query_ollama($prompt, []); // Empty images array
+  error_log('KWIK AI Tags: Ollama text response: ' . ($raw_response ?: 'NULL'));
+  
+  if (!$raw_response) {
+    error_log('KWIK AI Tags: No response from Ollama for text');
+    return false;
   }
 
+  /* ----------------------------------------------------- */
+  /* 3. Parse tags */
+  /* ----------------------------------------------------- */
+  $tags = kwik_ai_tags_parse_tags($raw_response);
+  error_log('KWIK AI Tags: Parsed text tags: ' . print_r($tags, true));
+  
   return $tags;
 }
 
@@ -584,13 +693,38 @@ function kwik_ai_tags_query_ollama(string $prompt, array $images): ?string
  */
 function kwik_ai_tags_parse_tags(string $raw_response): array
 {
-  $parts = array_filter(array_map('trim', explode(',', $raw_response)));
+  // Clean up the response - remove quotes, extra whitespace, etc.
+  $clean_response = trim($raw_response, '"\'');
+  $clean_response = preg_replace('/\s*,\s*/', ',', $clean_response);
+  
+  $parts = array_filter(array_map('trim', explode(',', $clean_response)));
+  
+  // Clean each tag - remove quotes, excessive whitespace, and invalid characters
+  $cleaned_parts = [];
+  foreach ($parts as $part) {
+    $tag = trim($part, '"\'');
+    $tag = preg_replace('/[^\w\s-]/', '', $tag); // Keep only letters, numbers, spaces, hyphens
+    $tag = preg_replace('/\s+/', ' ', $tag); // Normalize whitespace
+    $tag = trim($tag);
+    
+    // Skip empty tags or tags that are too short/long
+    if (!empty($tag) && strlen($tag) >= 2 && strlen($tag) <= 50) {
+      $cleaned_parts[] = $tag;
+    }
+  }
 
-  // Keep only the first N tags.
-  $parts = array_slice($parts, 0, KWIK_AI_TAGS_MAX_TAGS);
-
-  // Deduplicate.
-  return array_unique($parts);
+  // Deduplicate (case-insensitive)
+  $unique_tags = [];
+  $lower_tags = [];
+  foreach ($cleaned_parts as $tag) {
+    $lower = strtolower($tag);
+    if (!in_array($lower, $lower_tags)) {
+      $unique_tags[] = $tag;
+      $lower_tags[] = $lower;
+    }
+  }
+  
+  return $unique_tags;
 }
 
 /**
