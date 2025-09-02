@@ -22,6 +22,16 @@ jQuery(document).ready(function($) {
     const $tagsList = $('#kwik-ai-tags-list');
     const $error = $('#kwik-ai-tags-error');
     
+    // Description elements
+    const $descContainer = $('#kwik-ai-description-container');
+    const $descGenerateBtn = $('#kwik-ai-description-generate');
+    const $descRegenerateBtn = $('#kwik-ai-description-regenerate');
+    const $descApplyBtn = $('#kwik-ai-description-apply');
+    const $descLoading = $('#kwik-ai-description-loading');
+    const $descPreview = $('#kwik-ai-description-preview');
+    const $descText = $('#kwik-ai-description-text');
+    const $descError = $('#kwik-ai-description-error');
+    
     debugLog('Elements found', {
         container: $container.length,
         generateBtn: $generateBtn.length,
@@ -241,4 +251,185 @@ jQuery(document).ready(function($) {
     });
     
     debugLog('Event handlers attached');
+    
+    // Description-specific functions
+    let currentDescription = '';
+    
+    /**
+     * Show description loading state
+     */
+    function showDescLoading() {
+        debugLog('Showing description loading state');
+        $descGenerateBtn.prop('disabled', true).text('Analyzing...');
+        $descRegenerateBtn.prop('disabled', true);
+        $descLoading.show();
+        $descPreview.hide();
+        $descError.hide();
+    }
+    
+    /**
+     * Hide description loading state
+     */
+    function hideDescLoading() {
+        debugLog('Hiding description loading state');
+        $descGenerateBtn.prop('disabled', false).text('Generate AI Description');
+        $descRegenerateBtn.prop('disabled', false);
+        $descLoading.hide();
+    }
+    
+    /**
+     * Show description error message
+     */
+    function showDescError(message) {
+        debugLog('Showing description error', message);
+        hideDescLoading();
+        $descError.find('.error-message').text(message);
+        $descError.show();
+        $descPreview.hide();
+    }
+    
+    /**
+     * Display description in the preview
+     */
+    function displayDescription(description) {
+        debugLog('Displaying description', description.substring(0, 100) + '...');
+        currentDescription = description;
+        $descText.text(description);
+        hideDescLoading();
+        $descPreview.show();
+        $descError.hide();
+    }
+    
+    /**
+     * Generate description via AJAX
+     */
+    function generateDescription(e) {
+        debugLog('Starting description generation');
+        
+        // Prevent default if this is triggered by a button
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        if (!kwikAiDescription.postId) {
+            showDescError('No post ID found. Please save the post first.');
+            return;
+        }
+        
+        showDescLoading();
+        
+        const ajaxData = {
+            action: 'kwik_ai_description_generate',
+            nonce: kwikAiDescription.nonce,
+            post_id: kwikAiDescription.postId
+        };
+        
+        debugLog('Description AJAX data', ajaxData);
+        
+        $.ajax({
+            url: kwikAiDescription.ajaxUrl,
+            type: 'POST',
+            data: ajaxData,
+            timeout: 120000, // 2 minutes
+            success: function(response) {
+                debugLog('Description AJAX success', response);
+                if (response.success) {
+                    displayDescription(response.data.description);
+                } else {
+                    showDescError(response.data || kwikAiDescription.strings.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                debugLog('Description AJAX error', {xhr: xhr, status: status, error: error});
+                let errorMessage = kwikAiDescription.strings.error;
+                
+                if (status === 'timeout') {
+                    errorMessage = 'Request timed out. Ollama might be processing - try again.';
+                } else if (xhr.responseText) {
+                    try {
+                        const errorData = JSON.parse(xhr.responseText);
+                        errorMessage = errorData.data || errorMessage;
+                    } catch (e) {
+                        errorMessage = 'Server error: ' + xhr.status;
+                    }
+                }
+                
+                showDescError(errorMessage);
+            }
+        });
+    }
+    
+    /**
+     * Apply description to the post
+     */
+    function applyDescription(e) {
+        debugLog('Applying description', currentDescription.substring(0, 100) + '...');
+        
+        // Prevent default if this is triggered by a button
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        if (currentDescription.length === 0) {
+            showDescError('No description to apply.');
+            return;
+        }
+        
+        $descApplyBtn.prop('disabled', true).text('Applying...');
+        
+        $.ajax({
+            url: kwikAiDescription.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'kwik_ai_description_apply',
+                nonce: kwikAiDescription.nonce,
+                post_id: kwikAiDescription.postId,
+                description: currentDescription
+            },
+            success: function(response) {
+                debugLog('Description apply success', response);
+                if (response.success) {
+                    // Show success message briefly
+                    const $success = $('<div class="kwik-ai-tags-success"></div>').text(response.data);
+                    $descContainer.prepend($success);
+                    
+                    setTimeout(function() {
+                        $success.fadeOut(function() {
+                            $success.remove();
+                        });
+                    }, 3000);
+                } else {
+                    showDescError(response.data || kwikAiDescription.strings.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                debugLog('Description apply error', {xhr: xhr, status: status, error: error});
+                showDescError(kwikAiDescription.strings.error);
+            },
+            complete: function() {
+                $descApplyBtn.prop('disabled', false).text('Apply Description');
+            }
+        });
+    }
+    
+    // Description event handlers
+    $descContainer.on('click', '#kwik-ai-description-generate', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        generateDescription();
+    });
+    
+    $descContainer.on('click', '#kwik-ai-description-regenerate', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        generateDescription();
+    });
+    
+    $descContainer.on('click', '#kwik-ai-description-apply', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        applyDescription();
+    });
 });

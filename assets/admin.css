@@ -179,12 +179,91 @@
   white-space: pre-line;
 }
 
-/* Prevent form submission on button clicks */
-#kwik-ai-tags-container button {
+#kwik-ai-description-container {
+  padding: 5px 0;
+}
+
+#kwik-ai-description-container .button {
+  width: 100%;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+#kwik-ai-description-loading {
+  text-align: center;
+  padding: 20px 0;
+}
+
+#kwik-ai-description-preview h4 {
+  margin: 10px 0 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d2327;
+}
+
+#kwik-ai-description-text {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #f6f7f7;
+  border: 1px solid #dcdcde;
+  border-radius: 3px;
+  font-size: 13px;
+  line-height: 1.4;
+  max-height: 200px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+#kwik-ai-description-preview .button {
+  width: 48%;
+  display: inline-block;
+  margin-right: 2%;
+  margin-bottom: 5px;
+}
+
+#kwik-ai-description-preview .button:last-child {
+  margin-right: 0;
+}
+
+#kwik-ai-description-error {
+  padding: 8px;
+  background: #fcf2f2;
+  border: 1px solid #dba617;
+  border-left-color: #d63638;
+  border-left-width: 4px;
+  border-radius: 2px;
+  margin-bottom: 10px;
+}
+
+#kwik-ai-description-error .error-message {
+  margin: 0;
+  color: #1d2327;
+  font-size: 13px;
+}
+
+/* Meta box title icon for description */
+#kwik-ai-description-preview-box .handle-order-higher,
+#kwik-ai-description-preview-box .handle-order-lower {
+  display: none;
+}
+
+/* Debug info styling for description */
+#kwik-ai-description-debug {
+  background: #f9f9f9;
+  border: 1px solid #e1e1e1;
+  padding: 8px;
+  border-radius: 3px;
+  font-family: monospace;
+  white-space: pre-line;
+}
+
+/* Prevent form submission on description button clicks */
+#kwik-ai-description-container button {
   cursor: pointer;
 }
 
-#kwik-ai-tags-container button:focus {
+#kwik-ai-description-container button:focus {
   outline: 1px dotted #0073aa;
   outline-offset: 2px;
 }
