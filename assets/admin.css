@@ -1,0 +1,185 @@
+/**
+ * KWIK AI Tags - Admin Styles
+ */
+
+#kwik-ai-tags-container {
+    padding: 5px 0;
+}
+
+#kwik-ai-tags-container .button {
+    width: 100%;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+#kwik-ai-tags-loading {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.kwik-ai-tags-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #0073aa;
+    border-radius: 50%;
+    animation: kwik-ai-tags-spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes kwik-ai-tags-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+#kwik-ai-tags-preview h4 {
+    margin: 10px 0 8px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+#kwik-ai-tags-list {
+    margin-bottom: 15px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.kwik-ai-tag-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    padding: 6px 8px;
+    background: #f6f7f7;
+    border: 1px solid #dcdcde;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+.kwik-ai-tag {
+    flex: 1;
+    color: #1d2327;
+    font-weight: 500;
+}
+
+.kwik-ai-tag-remove {
+    background: none;
+    border: none;
+    color: #d63638;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    line-height: 1;
+    padding: 0;
+    margin-left: 8px;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2px;
+    transition: background-color 0.2s ease;
+}
+
+.kwik-ai-tag-remove:hover {
+    background-color: #d63638;
+    color: #fff;
+}
+
+#kwik-ai-tags-preview .button {
+    width: 48%;
+    display: inline-block;
+    margin-right: 2%;
+    margin-bottom: 5px;
+}
+
+#kwik-ai-tags-preview .button:last-child {
+    margin-right: 0;
+}
+
+#kwik-ai-tags-error {
+    padding: 8px;
+    background: #fcf2f2;
+    border: 1px solid #dba617;
+    border-left-color: #d63638;
+    border-left-width: 4px;
+    border-radius: 2px;
+    margin-bottom: 10px;
+}
+
+#kwik-ai-tags-error .error-message {
+    margin: 0;
+    color: #1d2327;
+    font-size: 13px;
+}
+
+.kwik-ai-tags-success {
+    padding: 8px;
+    background: #f0f6fc;
+    border: 1px solid #4f94d4;
+    border-left-color: #00a32a;
+    border-left-width: 4px;
+    border-radius: 2px;
+    margin-bottom: 10px;
+    color: #1d2327;
+    font-size: 13px;
+}
+
+/* Meta box title icon */
+#kwik-ai-tags-preview .hndle::before {
+    content: "\f473";
+    font-family: dashicons;
+    color: #0073aa;
+    margin-right: 5px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 782px) {
+    #kwik-ai-tags-preview .button {
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 8px;
+    }
+    
+    .kwik-ai-tag-item {
+        padding: 8px;
+    }
+}
+
+/* Animation for tag items */
+.kwik-ai-tag-item {
+    transition: all 0.2s ease;
+}
+
+.kwik-ai-tag-item:hover {
+    background: #e8f4fd;
+    border-color: #4f94d4;
+}
+
+/* Loading state for buttons */
+.button:disabled {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Debug info styling */
+#kwik-ai-tags-debug {
+    background: #f9f9f9;
+    border: 1px solid #e1e1e1;
+    padding: 8px;
+    border-radius: 3px;
+    font-family: monospace;
+    white-space: pre-line;
+}
+
+/* Prevent form submission on button clicks */
+#kwik-ai-tags-container button {
+    cursor: pointer;
+}
+
+#kwik-ai-tags-container button:focus {
+    outline: 1px dotted #0073aa;
+    outline-offset: 2px;
+}
