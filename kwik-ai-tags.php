@@ -284,7 +284,7 @@ function kwik_ai_tags_enqueue_scripts($hook)
     'debug' => WP_DEBUG,
     'strings' => [
       'error' => __('An error occurred. Please try again.', 'kwik-ai-tags'),
-      'noContent' => __('No images or insufficient text found. Please addddd images or write at least 50 words.', 'kwik-ai-tags'),
+      'noContent' => __('No images or insufficient text found. Please add images or write at least 50 words.', 'kwik-ai-tags'),
       'success' => __('Tags applied successfully!', 'kwik-ai-tags'),
     ]
   ]);
@@ -319,12 +319,16 @@ function kwik_ai_tags_ajax_generate()
   $attachments = get_attached_media('image', $post_id);
   $post_content = get_post_field('post_content', $post_id);
   $word_count = str_word_count(wp_strip_all_tags($post_content));
+  
+  // Also check for block images (including TRB belt gallery)
+  $block_images = kwik_ai_tags_extract_block_images($post_content);
+  $total_images = count($attachments) + count($block_images);
 
-  error_log('KWIK AI Tags: Found ' . count($attachments) . ' images and ' . $word_count . ' words');
+  error_log('KWIK AI Tags: Found ' . count($attachments) . ' attached images, ' . count($block_images) . ' block images, and ' . $word_count . ' words');
 
-  if (empty($attachments) && $word_count < KWIK_AI_TAGS_MIN_WORDS) {
+  if ($total_images === 0 && $word_count < KWIK_AI_TAGS_MIN_WORDS) {
     error_log('KWIK AI Tags: Insufficient content for analysis');
-    wp_send_json_error(__('Pleaseeee add images or write at least 50 words to generate AI tags.', 'kwik-ai-tags'));
+    wp_send_json_error(__('Please add images or write at least 50 words to generate AI tags.', 'kwik-ai-tags'));
   }
 
   error_log('KWIK AI Tags: Calling kwik_ai_tags_generate_for_post');
