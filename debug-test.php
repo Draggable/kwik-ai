@@ -41,6 +41,7 @@ function kwik_ai_debug_test() {
 // Add admin notice with test button on post edit pages
 add_action('admin_notices', function() {
     $screen = get_current_screen();
+    // Only show on post edit pages
     if ($screen && ($screen->id === 'post' || $screen->base === 'post')) {
         ?>
         <div class="notice notice-info">

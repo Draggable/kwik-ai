@@ -112,6 +112,46 @@ Additional post types can be enabled in the settings.
 - Supports multiple image formats
 - Optimized for WordPress block editor
 
+## Project Structure
+
+The plugin has been restructured for better maintainability:
+
+```
+/kwik-ai/
+├── kwik-ai.php (main plugin file)
+├── /core/ (core plugin functionality)
+│   ├── init.php
+│   ├── constants.php
+│   └── functions.php
+├── /includes/ (helper functions)
+│   ├── image-processing.php
+│   ├── ollama-api.php
+│   ├── tag-generation.php
+│   └── description-generation.php
+├── /admin/ (admin-specific functionality)
+│   ├── admin-init.php
+│   ├── meta-boxes.php
+│   ├── settings.php
+│   └── ajax-handlers.php
+├── /blocks/ (Gutenberg block functionality)
+│   ├── blocks-init.php
+│   └── description-block.php
+├── /assets/ (frontend assets)
+│   ├── /js/
+│   │   ├── admin.js
+│   │   └── description-block.js
+│   └── /css/
+│       ├── admin.css
+│       ├── settings.css
+│       ├── description-block-editor.css
+│       └── description-block-frontend.css
+├── debug-test.php
+├── README.md
+├── CHANGELOG.md
+├── TROUBLESHOOTING.md
+└── BLOCK-IMPLEMENTATION.md
+```
+
 ## Troubleshooting
 
 ### Common Issues
@@ -122,12 +162,3 @@ Additional post types can be enabled in the settings.
 
 ### Debug Mode
 Enable `WP_DEBUG` to see detailed logging and status information in the meta boxes.
-
-## Changelog
-
-### Version 2.6
-- Added AI Description Gutenberg block
-- Improved block editor integration
-- Better error handling and user feedback
-- Enhanced image source detection
-- Modern WordPress compatibility

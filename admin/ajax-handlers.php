@@ -1,0 +1,189 @@
+<?php
+/**
+ * AJAX handlers
+ *
+ * @package KwikAI
+ */
+
+if (!defined('ABSPATH')) {
+  exit; // Exit if accessed directly.
+}
+
+/**
+ * AJAX handler for generating tags
+ */
+function kwik_ai_tags_ajax_generate()
+{
+  error_log('Kwik AI: Generate AJAX called');
+  error_log('Kwik AI: POST data: ' . print_r($_POST, true));
+
+  check_ajax_referer('kwik_ai_tags_ajax', 'nonce');
+
+  if (!current_user_can('edit_posts')) {
+    error_log('Kwik AI: User does not have edit_posts capability');
+    wp_die(__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+  }
+
+  $post_id = intval($_POST['post_id']);
+  error_log('Kwik AI: Post ID: ' . $post_id);
+
+  if (!$post_id || get_post_status($post_id) === false) {
+    error_log('Kwik AI: Invalid post ID');
+    wp_send_json_error(__('Invalid post ID.', KWIK_AI_DOMAIN));
+  }
+
+  // Check if post has images or sufficient text content
+  $attachments = get_attached_media('image', $post_id);
+  $post_content = get_post_field('post_content', $post_id);
+  $word_count = str_word_count(wp_strip_all_tags($post_content));
+  
+  // Also check for block images (including TRB belt gallery)
+  $block_images = kwik_ai_tags_extract_block_images($post_content, $post_id);
+  $total_images = count($attachments) + count($block_images);
+
+  error_log('Kwik AI: Found ' . count($attachments) . ' attached images, ' . count($block_images) . ' block images, and ' . $word_count . ' words');
+
+  if ($total_images === 0 && $word_count < KWIK_AI_MIN_WORDS) {
+    error_log('Kwik AI: Insufficient content for analysis');
+    wp_send_json_error(__('Please add images or write at least 50 words to generate AI tags.', KWIK_AI_DOMAIN));
+  }
+
+  error_log('Kwik AI: Calling kwik_ai_tags_generate_for_post');
+  $tags = kwik_ai_tags_generate_for_post($post_id);
+  error_log('Kwik AI: Generated tags: ' . print_r($tags, true));
+
+  if ($tags === false) {
+    error_log('Kwik AI: Tag generation failed');
+    wp_send_json_error(__('Failed to generate tags. Please check if Ollama is running and try again.', KWIK_AI_DOMAIN));
+  }
+
+  if (empty($tags)) {
+    error_log('Kwik AI: No tags generated');
+    wp_send_json_error(__('No tags were generated. Try adding more descriptive images.', KWIK_AI_DOMAIN));
+  }
+
+  error_log('Kwik AI: Sending success response');
+  wp_send_json_success(['tags' => $tags]);
+}
+
+/**
+ * AJAX handler for applying tags
+ */
+function kwik_ai_tags_ajax_apply()
+{
+  check_ajax_referer('kwik_ai_tags_ajax', 'nonce');
+
+  if (!current_user_can('edit_posts')) {
+    wp_die(__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+  }
+
+  $post_id = intval($_POST['post_id']);
+  $tags = sanitize_text_field($_POST['tags']);
+
+  if (!$post_id || get_post_status($post_id) === false) {
+    wp_send_json_error(__('Invalid post ID.', KWIK_AI_DOMAIN));
+  }
+
+  if (!$tags) {
+    wp_send_json_error(__('No tags provided.', KWIK_AI_DOMAIN));
+  }
+
+  $tag_array = array_filter(array_map('trim', explode(',', $tags)));
+
+  if (empty($tag_array)) {
+    wp_send_json_error(__('No valid tags to apply.', KWIK_AI_DOMAIN));
+  }
+
+  // Sanitize each tag
+  $tag_array = array_map('sanitize_text_field', $tag_array);
+
+  $result = wp_set_post_terms($post_id, $tag_array, 'post_tag', true);
+
+  if (is_wp_error($result)) {
+    wp_send_json_error($result->get_error_message());
+  }
+
+  wp_send_json_success(sprintf(__('Successfully applied %d tags to the post!', KWIK_AI_DOMAIN), count($tag_array)));
+}
+
+/**
+ * AJAX handler for generating description
+ */
+function kwik_ai_description_ajax_generate()
+{
+  error_log('Kwik AI: Description generate AJAX called');
+  error_log('Kwik AI: POST data: ' . print_r($_POST, true));
+
+  check_ajax_referer('kwik_ai_description_ajax', 'nonce');
+
+  if (!current_user_can('edit_posts')) {
+    error_log('Kwik AI: User does not have edit_posts capability');
+    wp_die(__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+  }
+
+  $post_id = intval($_POST['post_id']);
+  error_log('Kwik AI: Post ID: ' . $post_id);
+
+  if (!$post_id || get_post_status($post_id) === false) {
+    error_log('Kwik AI: Invalid post ID');
+    wp_send_json_error(__('Invalid post ID.', KWIK_AI_DOMAIN));
+  }
+
+  // Check if post has images
+  $attachments = get_attached_media('image', $post_id);
+  $post_content = get_post_field('post_content', $post_id);
+  $block_images = kwik_ai_tags_extract_block_images($post_content, $post_id);
+  $total_images = count($attachments) + count($block_images);
+
+  error_log('Kwik AI: Found ' . count($attachments) . ' attached images, ' . count($block_images) . ' block images');
+
+  if ($total_images === 0) {
+    error_log('Kwik AI: No images found for description generation');
+    wp_send_json_error(__('Please add images to generate a description.', KWIK_AI_DOMAIN));
+  }
+
+  error_log('Kwik AI: Calling kwik_ai_description_generate_for_post');
+  $description = kwik_ai_description_generate_for_post($post_id);
+  error_log('Kwik AI: Generated description: ' . substr($description, 0, 100) . '...');
+
+  if ($description === false) {
+    error_log('Kwik AI: Description generation failed');
+    wp_send_json_error(__('Failed to generate description. Please check if Ollama is running and try again.', KWIK_AI_DOMAIN));
+  }
+
+  if (empty($description)) {
+    error_log('Kwik AI: No description generated');
+    wp_send_json_error(__('No description was generated. Try adding more descriptive images.', KWIK_AI_DOMAIN));
+  }
+
+  error_log('Kwik AI: Sending success response');
+  wp_send_json_success(['description' => $description]);
+}
+
+/**
+ * AJAX handler for applying description
+ */
+function kwik_ai_description_ajax_apply()
+{
+  check_ajax_referer('kwik_ai_description_ajax', 'nonce');
+
+  if (!current_user_can('edit_posts')) {
+    wp_die(__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+  }
+
+  $post_id = intval($_POST['post_id']);
+  $description = sanitize_textarea_field($_POST['description']);
+
+  if (!$post_id || get_post_status($post_id) === false) {
+    wp_send_json_error(__('Invalid post ID.', KWIK_AI_DOMAIN));
+  }
+
+  if (!$description) {
+    wp_send_json_error(__('No description provided.', KWIK_AI_DOMAIN));
+  }
+
+  // Description will be inserted into the editor by JavaScript
+  // No need to modify post_content here to avoid duplication
+
+  wp_send_json_success(__('Description ready to be inserted into the editor!', KWIK_AI_DOMAIN));
+}

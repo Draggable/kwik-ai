@@ -1,5 +1,58 @@
 # KWIK AI Tags Plugin - Changelog
 
+## Version 2.7 - Code Restructuring (September 9, 2025)
+
+### New Features
+- **Code Restructuring**: Plugin code has been reorganized into a more maintainable structure with separate directories for core, includes, admin, and blocks functionality
+- **Improved Maintainability**: Code is now organized into logical modules making it easier to understand and modify
+- **Better Performance**: More efficient file loading and organization
+
+### Technical Improvements
+- **New Directory Structure**:
+  - `/core/` - Core plugin functionality (init, constants, functions)
+  - `/includes/` - Helper functions (image processing, Ollama API, tag/description generation)
+  - `/admin/` - Admin-specific functionality (meta boxes, settings, AJAX handlers)
+  - `/blocks/` - Gutenberg block functionality
+  - `/assets/` - Frontend assets (CSS, JS) organized into subdirectories
+- **Modular Loading**: Plugin now uses a modular approach with clear separation of concerns
+- **Backward Compatibility**: All existing functionality remains intact with no breaking changes
+
+### Migration
+- No changes required for existing installations
+- Plugin works immediately after update
+- All settings and data are preserved
+
+---
+
+## Version 2.6 - AI Description Block (September 5, 2025)
+
+### New Features
+- **AI Description Block**: Added a new Gutenberg block for generating AI descriptions
+- **Block Editor Integration**: Full integration with WordPress block editor
+- **Editable Descriptions**: Generated descriptions can be edited directly in the block
+- **Multiple Blocks**: Multiple AI description blocks can be added to a single post
+
+### Technical Improvements
+- **New Functions**:
+  - `kwik_ai_register_blocks()` - Registers Gutenberg blocks
+  - `kwik_ai_description_block_editor_assets()` - Enqueues block assets
+  - `kwik_ai_description_block_render()` - Renders block on frontend
+- **Enhanced JavaScript**: Modern React-based block implementation
+- **Improved User Experience**: Better controls and feedback in the block editor
+
+### User Interface
+- **Block Controls**: Regeneration and editing controls built into the block
+- **Inspector Panel**: Additional settings in the block inspector
+- **Loading States**: Visual feedback during AI generation
+- **Error Handling**: Clear error messages for troubleshooting
+
+### Migration
+- Existing meta box functionality remains unchanged
+- No data loss or configuration required
+- Plugin works immediately after update
+
+---
+
 ## Version 2.4 - Post Type Settings (September 2, 2025)
 
 ### New Features

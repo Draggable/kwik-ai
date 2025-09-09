@@ -102,9 +102,20 @@ jQuery.post(ajaxurl, {
 ## Plugin Files Check
 
 Ensure these files exist:
-- `/wp-content/plugins/kwik-ai-tags/kwik-ai-tags.php`
-- `/wp-content/plugins/kwik-ai-tags/assets/admin.js`
-- `/wp-content/plugins/kwik-ai-tags/assets/admin.css`
+- `/wp-content/plugins/kwik-ai/kwik-ai.php`
+- `/wp-content/plugins/kwik-ai/assets/js/admin.js`
+- `/wp-content/plugins/kwik-ai/assets/css/admin.css`
+
+## Project Structure
+
+The plugin is now organized into the following directories:
+- `/core/` - Core plugin functionality
+- `/includes/` - Helper functions
+- `/admin/` - Admin-specific functionality
+- `/blocks/` - Gutenberg block functionality
+- `/assets/` - Frontend assets (CSS, JS)
+
+Each directory contains related functionality grouped by purpose, making it easier to maintain and extend.
 
 ## Support Information
 
