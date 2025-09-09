@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Kwik AI
- * Description: Auto‑tag posts with the Gemma3:27b model via Ollama. Analyzes both images (including block images and custom TRB belt gallery blocks) and text content (50+ words) with preview functionality. Also generates AI descriptions for belt posts based on attached images. Configure which post types to enable via Settings > KWIK AI.
+ * Description: Auto‑tag posts with the Gemma3:27b model via Ollama. Analyzes both images (including block images and custom TRB belt gallery blocks) and text content (50+ words) with preview functionality. Also generates AI descriptions for belt posts based on attached images and appends them to post_content. Configure which post types to enable via Settings > KWIK AI.
  * Version: 2.6
  * Author: Your Name
  * Text Domain: kwik-ai-tags
@@ -29,7 +29,7 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
 define('KWIK_AI_OLLAMA_HOST', 'http://localhost:11434'); // Change if Ollama runs elsewhere.
 define('KWIK_AI_MAX_TAGS', 8); // Max tags to apply per post (increased for text+image)
 define('KWIK_AI_MIN_WORDS', 50); // Minimum words required for text analysis
-define('KWIK_AI_MAX_DESCRIPTION_LENGTH', 500); // Maximum length for generated descriptions
+define('KWIK_AI_MAX_DESCRIPTION_LENGTH', 2000); // Maximum length for generated descriptions
 define('KWIK_AI_DOMAIN', 'kwik-ai');
 
 
@@ -208,7 +208,7 @@ function kwik_ai_tags_meta_box_callback($post)
         ?><br>
         Block Images: <?php
         $content = get_post_field('post_content', $post->ID);
-        $block_images = kwik_ai_tags_extract_block_images($content);
+        $block_images = kwik_ai_tags_extract_block_images($content, $post->ID);
         echo esc_html(count($block_images));
         
         // Check for TRB belt gallery blocks specifically
@@ -269,7 +269,7 @@ function kwik_ai_description_meta_box_callback($post)
   wp_nonce_field('kwik_ai_description_meta_box', 'kwik_ai_description_nonce');
   
   // Get existing description
-  $existing_description = get_post_meta($post->ID, '_ai_generated_description', true);
+  $existing_description = kwik_ai_get_description($post->ID);
   ?>
   <div id="kwik-ai-description-container">
     <?php if (!empty($existing_description)): ?>
@@ -313,7 +313,7 @@ function kwik_ai_description_meta_box_callback($post)
         Post ID: <?php echo esc_html($post->ID); ?><br>
         Ajax URL: <?php echo esc_html(admin_url('admin-ajax.php')); ?><br>
         Current Description: <?php 
-        $current_desc = get_post_meta($post->ID, '_ai_generated_description', true);
+        $current_desc = kwik_ai_get_description($post->ID);
         echo $current_desc ? esc_html('Yes (' . strlen($current_desc) . ' chars)') : 'No'; 
         ?><br>
         Attached Images: <?php
@@ -322,7 +322,7 @@ function kwik_ai_description_meta_box_callback($post)
         ?><br>
         Block Images: <?php
         $content = get_post_field('post_content', $post->ID);
-        $block_images = kwik_ai_tags_extract_block_images($content);
+        $block_images = kwik_ai_tags_extract_block_images($content, $post->ID);
         echo esc_html(count($block_images));
         ?><br>
         Total Images: <?php
@@ -448,7 +448,7 @@ function kwik_ai_tags_ajax_generate()
   $word_count = str_word_count(wp_strip_all_tags($post_content));
   
   // Also check for block images (including TRB belt gallery)
-  $block_images = kwik_ai_tags_extract_block_images($post_content);
+  $block_images = kwik_ai_tags_extract_block_images($post_content, $post_id);
   $total_images = count($attachments) + count($block_images);
 
   error_log('Kwik AI: Found ' . count($attachments) . ' attached images, ' . count($block_images) . ' block images, and ' . $word_count . ' words');
@@ -542,7 +542,7 @@ function kwik_ai_description_ajax_generate()
   // Check if post has images
   $attachments = get_attached_media('image', $post_id);
   $post_content = get_post_field('post_content', $post_id);
-  $block_images = kwik_ai_tags_extract_block_images($post_content);
+  $block_images = kwik_ai_tags_extract_block_images($post_content, $post_id);
   $total_images = count($attachments) + count($block_images);
 
   error_log('Kwik AI: Found ' . count($attachments) . ' attached images, ' . count($block_images) . ' block images');
@@ -592,14 +592,10 @@ function kwik_ai_description_ajax_apply()
     wp_send_json_error(__('No description provided.', KWIK_AI_DOMAIN));
   }
 
-  // Save the description as post meta
-  $result = update_post_meta($post_id, '_ai_generated_description', $description);
+  // Description will be inserted into the editor by JavaScript
+  // No need to modify post_content here to avoid duplication
 
-  if ($result === false) {
-    wp_send_json_error(__('Failed to save description.', KWIK_AI_DOMAIN));
-  }
-
-  wp_send_json_success(__('Description saved successfully!', KWIK_AI_DOMAIN));
+  wp_send_json_success(__('Description ready to be inserted into the editor!', KWIK_AI_DOMAIN));
 }
 
 /**
@@ -610,7 +606,30 @@ function kwik_ai_description_ajax_apply()
  */
 function kwik_ai_get_description($post_id)
 {
-  return get_post_meta($post_id, '_ai_generated_description', true);
+  $content = get_post_field('post_content', $post_id);
+
+  if (empty($content)) {
+    return '';
+  }
+
+  // Look for AI generated description between markers
+  $description_marker = '<!-- AI Generated Description -->';
+  $description_end_marker = '<!-- End AI Generated Description -->';
+
+  $start_pos = strpos($content, $description_marker);
+  if ($start_pos === false) {
+    return '';
+  }
+
+  $start_pos += strlen($description_marker);
+  $end_pos = strpos($content, $description_end_marker, $start_pos);
+
+  if ($end_pos === false) {
+    return '';
+  }
+
+  $description = substr($content, $start_pos, $end_pos - $start_pos);
+  return trim($description);
 }
 
 /**
@@ -645,7 +664,7 @@ function kwik_ai_tags_generate_for_post(int $post_id)
 
   // Images from block content (modern WordPress)
   $post_content = get_post_field('post_content', $post_id);
-  $block_images = kwik_ai_tags_extract_block_images($post_content);
+  $block_images = kwik_ai_tags_extract_block_images($post_content, $post_id);
   error_log('Kwik AI: Found ' . count($block_images) . ' block images');
 
   $image_urls = array_merge($image_urls, $block_images);
@@ -725,7 +744,7 @@ function kwik_ai_description_generate_for_post(int $post_id)
 
   // Images from block content (modern WordPress)
   $post_content = get_post_field('post_content', $post_id);
-  $block_images = kwik_ai_tags_extract_block_images($post_content);
+  $block_images = kwik_ai_tags_extract_block_images($post_content, $post_id);
   error_log('Kwik AI: Found ' . count($block_images) . ' block images');
 
   $image_urls = array_merge($image_urls, $block_images);
@@ -803,19 +822,25 @@ function kwik_ai_tags_deduplicate_sized_images(array $image_urls): array
 }
 
 /**
- * Extract image URLs from WordPress block content
+ * Extract image URLs from WordPress content (blocks and shortcodes)
  *
- * @param string $content Post content with blocks
- * @return array Array of image URLs found in blocks
+ * @param string $content Post content
+ * @param int $post_id Post ID for fallback gallery handling
+ * @return array Array of image URLs found in content
  */
-function kwik_ai_tags_extract_block_images(string $content): array
+function kwik_ai_tags_extract_block_images(string $content, int $post_id = 0): array
 {
   $image_urls = [];
+
+  // First, extract images from gallery shortcodes
+  $shortcode_images = kwik_ai_tags_extract_gallery_shortcode_images($content, $post_id);
+  $image_urls = array_merge($image_urls, $shortcode_images);
 
   // Parse blocks if the content contains block markup
   if (has_blocks($content)) {
     $blocks = parse_blocks($content);
-    $image_urls = kwik_ai_tags_extract_images_from_blocks($blocks);
+    $block_images = kwik_ai_tags_extract_images_from_blocks($blocks);
+    $image_urls = array_merge($image_urls, $block_images);
     
     // Enhanced debug logging for TRB belt gallery blocks
     if (WP_DEBUG) {
@@ -839,14 +864,98 @@ function kwik_ai_tags_extract_block_images(string $content): array
     }
   } else {
     // Fallback: Extract images from HTML content using regex
-    $image_urls = kwik_ai_tags_extract_images_from_html($content);
+    $html_images = kwik_ai_tags_extract_images_from_html($content);
+    $image_urls = array_merge($image_urls, $html_images);
   }
 
   // Remove duplicates and deduplicate sized images
   $image_urls = array_unique($image_urls);
   $image_urls = kwik_ai_tags_deduplicate_sized_images($image_urls);
 
-  error_log('Kwik AI: Extracted ' . count($image_urls) . ' unique images from content');
+  error_log('Kwik AI: Extracted ' . count($image_urls) . ' unique images from content (including ' . count($shortcode_images) . ' from gallery shortcodes)');
+  return $image_urls;
+}
+
+/**
+ * Extract image URLs from gallery shortcodes in content
+ *
+ * @param string $content Post content
+ * @param int $post_id Post ID for fallback when no IDs specified
+ * @return array Array of image URLs from gallery shortcodes
+ */
+function kwik_ai_tags_extract_gallery_shortcode_images(string $content, int $post_id = 0): array
+{
+  $image_urls = [];
+
+  // Use WordPress shortcode regex to find gallery shortcodes
+  $shortcode_regex = get_shortcode_regex(['gallery']);
+  error_log('Kwik AI: Extracted ' . strlen($shortcode_regex) . ' character shortcode regex');
+  preg_match_all('/' . $shortcode_regex . '/s', $content, $matches);
+
+  if (!empty($matches[0])) {
+    foreach ($matches[0] as $shortcode_match) {
+      // Extract shortcode attributes manually since shortcode_parse_atts expects just attributes
+      $atts = [];
+
+      // Extract attributes from the shortcode using regex
+      if (preg_match('/\[gallery\s+([^]]+)\]/i', $shortcode_match, $attr_match)) {
+        $attr_string = $attr_match[1];
+
+        // Parse individual attributes
+        if (preg_match_all('/(\w+)="([^"]*)"/', $attr_string, $attr_matches)) {
+          foreach ($attr_matches[1] as $index => $key) {
+            $atts[$key] = $attr_matches[2][$index];
+          }
+        }
+
+        // Also handle attributes without quotes (like numbers)
+        if (preg_match_all('/(\w+)=([^"\s]+)/', $attr_string, $attr_matches)) {
+          foreach ($attr_matches[1] as $index => $key) {
+            if (!isset($atts[$key])) { // Don't overwrite quoted attributes
+              $atts[$key] = $attr_matches[2][$index];
+            }
+          }
+        }
+      }
+
+      error_log('Kwik AI: Found gallery shortcode with attributes: ' . print_r($atts, true));
+
+      if ($atts) {
+        // Check if specific image IDs are provided
+        if (isset($atts['ids']) && !empty($atts['ids'])) {
+          // Parse comma-separated IDs
+          $ids = array_map('intval', array_filter(explode(',', $atts['ids'])));
+          error_log('Kwik AI: Gallery shortcode has ' . count($ids) . ' specified IDs');
+
+          foreach ($ids as $attachment_id) {
+            $url = wp_get_attachment_url($attachment_id);
+            if ($url) {
+              // Skip video files (galleries can contain both images and videos)
+              if (!preg_match('/\.(mp4|webm|ogg|mov|avi)$/i', $url)) {
+                $image_urls[] = $url;
+              }
+            }
+          }
+
+          error_log('Kwik AI: Extracted ' . count($ids) . ' images from gallery shortcode with IDs');
+        }
+        // If no IDs specified, get all image attachments for the post
+        elseif ($post_id > 0) {
+          $attachments = get_attached_media('image', $post_id);
+
+          foreach ($attachments as $attachment) {
+            $url = wp_get_attachment_url($attachment->ID);
+            if ($url) {
+              $image_urls[] = $url;
+            }
+          }
+
+          error_log('Kwik AI: Extracted ' . count($attachments) . ' images from gallery shortcode (all post attachments)');
+        }
+      }
+    }
+  }
+
   return $image_urls;
 }
 
@@ -1427,7 +1536,7 @@ function kwik_ai_description_generate_from_image_urls(int $post_id, array $image
   $post_type_obj = get_post_type_object($post_type);
   $post_type_name = $post_type_obj ? $post_type_obj->labels->singular_name : 'post';
 
-  $prompt = 'Analyze these images and generate a detailed, engaging description for a ' . $post_type_name . '. Focus on the main subjects, key features, visual elements, and overall appeal. Write in a natural, descriptive style that would be suitable for a product description or content summary. Keep the description between 100-300 words. Respond with only the description text, no extra formatting or labels.';
+  $prompt = 'Analyze these images and generate an engaging description for a ' . $post_type_name . '. Describe this work of art. Write in a natural, descriptive style without overusing adjectives. Avoid uncommon punctuation such as Em dash. Keep the description between 50-200 words. Respond with only the description text, no extra formatting or labels.';
   error_log('Kwik AI: Using description prompt: ' . $prompt);
 
   /* ----------------------------------------------------- */
@@ -1480,19 +1589,39 @@ function kwik_ai_tags_test_image_conversion($url = null)
 
   if ($result) {
     $data_size = strlen($result);
-    $mime_start = strpos($result, 'data:') + 5;
-    $mime_end = strpos($result, ';', $mime_start);
-    $mime_type = substr($result, $mime_start, $mime_end - $mime_start);
-
     return sprintf(
-      'Success! Converted %s to %s data URI (%s bytes)',
+      'Success! Converted %s to base64 data (%s bytes)',
       basename($url),
-      $mime_type,
       number_format($data_size)
     );
   } else {
     return 'Failed to convert: ' . $url;
   }
+}
+
+/**
+ * Test function to debug gallery shortcode parsing
+ * Only available when WP_DEBUG is enabled
+ */
+function kwik_ai_tags_test_gallery_parsing($content = null)
+{
+  if (!WP_DEBUG) {
+    return 'Debug mode not enabled';
+  }
+
+  if (!$content) {
+    // Use test content with gallery shortcodes
+    $content = '[gallery columns="5" ids="8587,8586,8588,8589,8590,8591"] and [gallery columns="3"]';
+  }
+
+  $image_urls = kwik_ai_tags_extract_gallery_shortcode_images($content, 1); // Use post_id=1 for testing
+
+  return sprintf(
+    'Test content: %s<br>Extracted %d image URLs: %s',
+    esc_html($content),
+    count($image_urls),
+    esc_html(implode(', ', $image_urls))
+  );
 }
 
 /**
@@ -1635,7 +1764,7 @@ function kwik_ai_tags_settings_page()
     
     <div class="card">
       <h2><?php esc_html_e('Plugin Information', KWIK_AI_DOMAIN); ?></h2>
-      <p><?php esc_html_e('KWIK AI automatically generates relevant tags and descriptions for your content using AI image analysis.', KWIK_AI_DOMAIN); ?></p>
+      <p><?php esc_html_e('KWIK AI automatically generates relevant tags and descriptions for your content using AI image analysis. Descriptions are appended to the post content.', KWIK_AI_DOMAIN); ?></p>
       
       <h3><?php esc_html_e('Requirements', KWIK_AI_DOMAIN); ?></h3>
       <ul>

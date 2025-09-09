@@ -361,6 +361,61 @@ jQuery(document).ready(function($) {
     }
     
     /**
+     * Insert description into the WordPress editor
+     */
+    function insertDescriptionIntoEditor(description) {
+        debugLog('Inserting description into editor');
+        
+        // Check if Block Editor is available (modern WordPress)
+        if (typeof wp !== 'undefined' && wp.data && wp.blocks && wp.data.select('core/block-editor')) {
+            const { select, dispatch } = wp.data;
+            const { createBlock } = wp.blocks;
+            
+            // Create a paragraph block with the description
+            const paragraphBlock = createBlock('core/paragraph', {
+                content: description
+            });
+            
+            // Insert the block at the beginning
+            dispatch('core/block-editor').insertBlocks([paragraphBlock], 0);
+            debugLog('Inserted paragraph block into Block Editor');
+        } else if (typeof wp !== 'undefined' && wp.data && wp.data.select('core/editor')) {
+            // Fallback for older Gutenberg versions
+            const descriptionMarker = '<!-- AI Generated Description -->';
+            const descriptionEndMarker = '<!-- End AI Generated Description -->';
+            const formattedDescription = descriptionMarker + '\n' + description + '\n' + descriptionEndMarker + '\n\n';
+            
+            const currentContent = wp.data.select('core/editor').getEditedPostContent();
+            const newContent = formattedDescription + currentContent;
+            wp.data.dispatch('core/editor').editPost({content: newContent});
+            debugLog('Inserted into Gutenberg editor (fallback)');
+        } else if (typeof tinyMCE !== 'undefined' && tinyMCE.activeEditor) {
+            // Classic Editor with TinyMCE
+            const descriptionMarker = '<!-- AI Generated Description -->';
+            const descriptionEndMarker = '<!-- End AI Generated Description -->';
+            const formattedDescription = descriptionMarker + '\n' + description + '\n' + descriptionEndMarker + '\n\n';
+            
+            const editor = tinyMCE.activeEditor;
+            const currentContent = editor.getContent();
+            const newContent = formattedDescription + currentContent;
+            editor.setContent(newContent);
+            debugLog('Inserted into TinyMCE editor');
+        } else if (typeof wp !== 'undefined' && wp.editor) {
+            // Fallback for Classic Editor
+            const descriptionMarker = '<!-- AI Generated Description -->';
+            const descriptionEndMarker = '<!-- End AI Generated Description -->';
+            const formattedDescription = descriptionMarker + '\n' + description + '\n' + descriptionEndMarker + '\n\n';
+            
+            const textarea = $('#content').val();
+            const newContent = formattedDescription + textarea;
+            $('#content').val(newContent);
+            debugLog('Inserted into textarea editor');
+        } else {
+            debugLog('No compatible editor found');
+        }
+    }
+    
+    /**
      * Apply description to the post
      */
     function applyDescription(e) {
@@ -391,6 +446,9 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 debugLog('Description apply success', response);
                 if (response.success) {
+                    // Insert description into the WordPress editor
+                    insertDescriptionIntoEditor(currentDescription);
+                    
                     // Show success message briefly
                     const $success = $('<div class="kwik-ai-tags-success"></div>').text(response.data);
                     $descContainer.prepend($success);
