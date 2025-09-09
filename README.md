@@ -1,148 +1,133 @@
-# KWIK AI Plugin
+# KWIK AI
 
-## Overview
-
-The KWIK AI plugin automatically generates relevant tags for WordPress posts by analyzing both images and text content using the Gemma3:27b model via Ollama. The plugin supports modern WordPress block editor images as well as traditional attached media, with a preview feature that allows you to review and modify suggested tags before applying them to your posts.
+Auto-tag posts with the Gemma3:27b model via Ollama. Analyzes both images (including block images and custom TRB belt gallery blocks) and text content (50+ words) with preview functionality. Also generates AI descriptions for belt posts based on attached images and appends them to post_content. Configure which post types to enable via Settings > KWIK AI.
 
 ## Features
 
-- **AI-Powered Tag Generation**: Uses the Gemma3:27b model to analyze content and suggest relevant tags
-- **Configurable Post Types**: Choose which post types should have AI tag generation enabled via Settings
-- **Block Image Support**: Extracts and analyzes images from WordPress blocks (Gutenberg editor)
-- **Multi-Source Analysis**: Combines tags from both image analysis and text content (50+ words)
-- **Comprehensive Image Detection**: Supports:
-  - Traditional attached media
-  - Image blocks (`core/image`)
-  - Gallery blocks (`core/gallery`)
-  - Media & Text blocks (`core/media-text`)
-  - Cover blocks (`core/cover`)
-  - Nested blocks and custom blocks
-- **Settings Page**: Easy configuration at Settings > KWIK AI with:
-  - Post type selection
-  - Real-time Ollama connection status
-  - System requirements overview
-- **Preview Interface**: Review generated tags before applying them to your post
-- **Individual Tag Management**: Remove unwanted tags from the preview
-- **Seamless Integration**: Works directly in the WordPress post editor sidebar
-- **AJAX-Powered**: Smooth, real-time interactions without page reloads
-- **Debug Mode**: Comprehensive logging and debugging information
+### 1. AI Tags Generation
+- Generates relevant tags from images and text content
+- Available as a meta box in the post editor
+- Supports multiple image sources (attachments, blocks, galleries)
+- Preview and edit tags before applying
+
+### 2. AI Description Generation (Meta Box)
+- Generates descriptions from post images using AI
+- Available as a meta box in the post editor sidebar
+- Inserts description into post content as HTML comments
+
+### 3. AI Description Block (NEW!)
+- **Gutenberg block** for generating AI descriptions
+- Self-contained with generation controls built into the block
+- Editable content directly in the block editor
+- No insertion into post content - the block contains the description
 
 ## Requirements
 
-- WordPress 5.6+ (any recent LTS version)
+- WordPress 5.6+ (any recent LTS)
 - Ollama running on http://localhost:11434
-- Gemma3:27b model installed (`ollama pull gemma3:27b`)
-- Posts with images (attached or in blocks) and/or text content (50+ words minimum)
+- gemma3:27b model pulled (`ollama pull gemma3:27b`)
+- Posts with images or at least 50 words of text content
 
 ## Installation
 
-1. Copy the plugin folder to `wp-content/plugins/kwik-ai-tags/`
-2. Activate the plugin in the WordPress admin
-3. Go to Settings > KWIK AI to configure which post types should use AI tagging
-4. Ensure Ollama is running with the Gemma3:27b model
-
-## Configuration
-
-### Settings Page
-
-Access the settings at **Settings > KWIK AI** in your WordPress admin:
-
-1. **Post Type Selection**: Check which post types should have AI tag generation
-2. **System Status**: View Ollama connection status and model availability
-3. **Requirements**: Review system requirements and setup instructions
-
-### Supported Post Types
-
-By default, the plugin is enabled for 'Posts', but you can enable it for any public post type:
-- Posts
-- Pages  
-- Custom Post Types (products, portfolios, etc.)
+1. Upload the plugin to your WordPress site
+2. Activate the plugin
+3. Configure post types in Settings > KWIK AI
+4. Ensure Ollama is running with the gemma3:27b model
 
 ## Usage
 
-### Generating Tags
+### AI Tags Meta Box
+1. Create or edit a post with images and/or sufficient text
+2. Find the "AI Tags" meta box in the sidebar
+3. Click "Generate AI Tags" to analyze content
+4. Review and remove unwanted tags
+5. Click "Apply Tags" to add them to the post
 
-1. Edit or create a new post (of an enabled post type)
-2. Add images to your post (via the media library or blocks)
-3. Look for the "AI Tags" meta box in the sidebar
-4. Click "Generate AI Tags" to analyze your images and text
-5. Review the suggested tags in the preview area
-6. Remove any unwanted tags by clicking the "×" button
-7. Click "Apply Tags" to add the tags to your post
+### AI Description Meta Box
+1. Create or edit a post with images
+2. Find the "AI Description" meta box in the sidebar
+3. Click "Generate AI Description" to analyze images
+4. Review the generated description
+5. Click "Apply" to insert into post content
 
-### Regenerating Tags
+### AI Description Block (Recommended)
+1. Add a new block and search for "AI Description"
+2. Insert the block where you want the description
+3. Click "Generate Description" to create content
+4. Edit the description directly in the block if needed
+5. Use the "Regenerate" button to create new content
 
-If you're not satisfied with the generated tags, click "Regenerate" to get a new set of suggestions.
+## Block vs Meta Box
+
+### AI Description Block (Recommended)
+- ✅ Content stays within the block (no HTML comments)
+- ✅ Editable directly in block editor
+- ✅ Better content management
+- ✅ Can place anywhere in content
+- ✅ Multiple blocks per post possible
+- ✅ Better user experience
+
+### AI Description Meta Box (Legacy)
+- ⚠️ Inserts content with HTML comment markers
+- ⚠️ Appends to beginning of post content
+- ⚠️ Less flexible positioning
+- ✅ Still functional for existing workflows
 
 ## Configuration
 
-The plugin includes several configurable constants at the top of the main file:
+Navigate to **Settings > KWIK AI** to:
+- Enable/disable specific post types
+- View Ollama connection status
+- Check requirements
 
-- `KWIK_AI_TAGS_OLLAMA_HOST`: Ollama server URL (default: http://localhost:11434)
-- `KWIK_AI_TAGS_MAX_TAGS`: Maximum number of tags to generate (default: 5)
+## Supported Post Types
 
-## File Structure
+By default, the plugin works with:
+- Posts (`post`)
+- Belts (`belt`)
 
-```
-kwik-ai-tags/
-├── kwik-ai-tags.php          # Main plugin file
-├── assets/
-│   ├── admin.js              # Admin JavaScript functionality
-│   └── admin.css             # Admin styling
-└── README.md                 # This file
-```
+Additional post types can be enabled in the settings.
 
 ## Technical Details
 
-### Security Features
+### Image Sources Supported
+- Featured images
+- Media library attachments
+- Gutenberg image blocks
+- Gallery blocks
+- TRB belt gallery blocks (custom)
+- Media & text blocks
+- Cover blocks
 
-- Nonce verification for all AJAX requests
-- Capability checks for user permissions
-- Input sanitization and validation
-- XSS protection for all outputs
+### AI Model
+- Uses Gemma3:27b via Ollama
+- Vision model for image analysis
+- Text analysis for content with 50+ words
+- Generates concise, relevant tags and descriptions
 
-### Performance Optimizations
-
-- Efficient image processing with data URIs
-- Timeout handling for Ollama requests
-- Error handling for network issues
-- Minimal JavaScript footprint
-
-### WordPress Standards
-
-- Follows WordPress coding standards
-- Uses WordPress APIs for all operations
-- Proper enqueuing of scripts and styles
-- Translation-ready with text domain
+### Performance
+- 2-minute timeout for AI generation
+- Automatic image deduplication
+- Supports multiple image formats
+- Optimized for WordPress block editor
 
 ## Troubleshooting
 
 ### Common Issues
+1. **No tags/descriptions generated**: Ensure Ollama is running and gemma3:27b is installed
+2. **Timeout errors**: Ollama might be processing, try again
+3. **No images found**: Add images to the post or check image permissions
+4. **Block not appearing**: Check if post type is enabled in settings
 
-1. **No tags generated**: Ensure Ollama is running and the Gemma3:27b model is available
-2. **No images found**: Make sure images are properly attached to the post
-3. **Network errors**: Check that Ollama is accessible at the configured host URL
-
-### Debug Steps
-
-1. Verify Ollama is running: `curl http://localhost:11434/api/tags`
-2. Check WordPress error logs for any PHP errors
-3. Use browser developer tools to check for JavaScript errors
-4. Ensure the post has attached images in the media library
+### Debug Mode
+Enable `WP_DEBUG` to see detailed logging and status information in the meta boxes.
 
 ## Changelog
 
-### Version 2.0
-- Added preview functionality
-- Removed automatic tagging on save
-- Added meta box in editor sidebar
-- Added individual tag removal
-- Improved error handling
-- Enhanced security measures
-
-### Version 1.0
-- Initial release with automatic tagging
-
-## Support
-
-For issues or feature requests, please check the plugin code and configuration. Ensure all requirements are met before reporting problems.
+### Version 2.6
+- Added AI Description Gutenberg block
+- Improved block editor integration
+- Better error handling and user feedback
+- Enhanced image source detection
+- Modern WordPress compatibility

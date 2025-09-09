@@ -118,7 +118,7 @@ function kwik_ai_description_block_editor_assets()
   // Enqueue block editor script
   wp_enqueue_script(
     'kwik-ai-description-block',
-    plugin_dir_url(__FILE__) . 'assets/description-block.js',
+    plugin_dir_url(__FILE__) . 'assets/description-block-test.js',
     array('wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-i18n', 'wp-data'),
     '2.6.3', // Increment version to force cache refresh
     true
@@ -157,22 +157,23 @@ function kwik_ai_description_block_editor_assets()
     ),
   ));
 
-  error_log('KWIK AI: Script enqueued: ' . plugin_dir_url(__FILE__) . 'assets/description-block.js');
+  error_log('KWIK AI: Script enqueued: ' . plugin_dir_url(__FILE__) . 'assets/description-block-test.js');
+}
 
   // Enqueue block editor styles
   wp_enqueue_style(
     'kwik-ai-description-block-editor',
     plugin_dir_url(__FILE__) . 'assets/description-block-editor.css',
     array('wp-edit-blocks'),
-    '2.6.3'
+    '2.6.1'
   );
 
-  // Enqueue frontend styles  
+  // Enqueue frontend styles
   wp_enqueue_style(
     'kwik-ai-description-block-frontend',
     plugin_dir_url(__FILE__) . 'assets/description-block-frontend.css',
     array(),
-    '2.6.3'
+    '2.6.1'
   );
 
   // Localize script with AJAX data
@@ -191,6 +192,8 @@ function kwik_ai_description_block_editor_assets()
       'noImages' => __('No images found. Please add images to the post to generate a description.', KWIK_AI_DOMAIN),
     ),
   ));
+
+  error_log('KWIK AI: Script enqueued: ' . plugin_dir_url(__FILE__) . 'assets/description-block-test.js');
 }
 
 /**
