@@ -143,3 +143,92 @@ function kwik_ai_description_generate_from_image_urls(int $post_id, array $image
 
   return $description;
 }
+
+/**
+ * Generate description from URLs by first summarizing content and then creating a description
+ *
+ * @param int $post_id
+ * * @param array $urls Array of URLs to scrape content from
+ * @return string|false
+ */
+function kwik_ai_description_generate_from_urls(int $post_id, array $urls)
+{
+  error_log('Kwik AI: Generating description from ' . count($urls) . ' URLs');
+
+  /* ----------------------------------------------------- */
+  /* 1. Scrape and summarize content from each URL */
+  /* ----------------------------------------------------- */
+  $summaries = [];
+  foreach ($urls as $url) {
+    error_log('Kwik AI: Processing URL: ' . $url);
+
+    $summary = kwik_ai_scrape_and_summarize_url($url);
+    if ($summary) {
+      $summaries[] = $summary;
+      error_log('Kwik AI: Successfully summarized content from URL');
+    } else {
+      error_log('Kwik AI: Failed to summarize content from URL: ' . $url);
+    }
+  }
+
+  error_log('Kwik AI: Summarized content from ' . count($summaries) . ' URLs');
+
+  if (empty($summaries)) {
+    error_log('Kwik AI: No summaries generated from URLs');
+    return false;
+  }
+
+  /* ----------------------------------------------------- */
+  /* 2. Build prompt for description generation */
+  /* ----------------------------------------------------- */
+  $post_type = get_post_type($post_id);
+  $post_type_obj = get_post_type_object($post_type);
+  $post_type_name = $post_type_obj ? $post_type_obj->labels->singular_name : 'post';
+
+  // Combine all summaries into one text
+  $combined_summaries = implode("\n\n", $summaries);
+
+  // Create a two-step prompt: first summarize all content, then generate description
+  $summary_prompt = 'Summarize the following content in a clear and concise way. Focus on the main points and key information. Respond with only the summary text, no extra formatting or labels.' . "\n\n" . $combined_summaries;
+  
+  error_log('Kwik AI: Using summary prompt: ' . $summary_prompt);
+
+  // Get a summary of all the content
+  $summary_response = kwik_ai_tags_query_ollama_text_only($summary_prompt);
+  if (!$summary_response) {
+    error_log('Kwik AI: Failed to get summary of combined content');
+    return false;
+  }
+
+  $final_summary = trim($summary_response);
+  error_log('Kwik AI: Generated combined summary: ' . substr($final_summary, 0, 100) . '...');
+
+  // Now generate the final description based on the summary
+  $description_prompt = 'Based on the following summary, generate an engaging description for a ' . $post_type_name . '. Write in a natural, descriptive style without overusing adjectives. Avoid uncommon punctuation such as Em dash. Keep the description between 50-200 words. Respond with only the description text, no extra formatting or labels.' . "\n\n" . $final_summary;
+  error_log('Kwik AI: Using description prompt: ' . $description_prompt);
+
+  /* ----------------------------------------------------- */
+  /* 3. Send request to Ollama */
+  /* ----------------------------------------------------- */
+  error_log('Kwik AI: Sending description request to Ollama');
+  $raw_response = kwik_ai_tags_query_ollama_text_only($description_prompt);
+  error_log('Kwik AI: Ollama description response: ' . substr($raw_response ?: 'NULL', 0, 200));
+
+  if (!$raw_response) {
+    error_log('Kwik AI: No response from Ollama for description');
+    return false;
+  }
+
+  /* ----------------------------------------------------- */
+  /* 4. Clean and return description */
+  /* ----------------------------------------------------- */
+  $description = trim($raw_response);
+
+  // Remove any unwanted formatting or prefixes
+  $description = preg_replace('/^(Description:|Summary:|About this|This content shows?)/i', '', $description);
+  $description = trim($description);
+
+  error_log('Kwik AI: Cleaned description: ' . substr($description, 0, 100) . '...');
+
+  return $description;
+}

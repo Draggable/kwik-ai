@@ -129,6 +129,12 @@ function kwik_ai_description_ajax_generate()
     wp_send_json_error(__('Invalid post ID.', KWIK_AI_DOMAIN));
   }
 
+  // Get URLs if provided
+  $urls = [];
+  if (isset($_POST['urls']) && is_array($_POST['urls'])) {
+    $urls = array_filter(array_map('sanitize_text_field', $_POST['urls']));
+  }
+
   // Check if post has images
   $attachments = get_attached_media('image', $post_id);
   $post_content = get_post_field('post_content', $post_id);
@@ -137,13 +143,22 @@ function kwik_ai_description_ajax_generate()
 
   error_log('Kwik AI: Found ' . count($attachments) . ' attached images, ' . count($block_images) . ' block images');
 
-  if ($total_images === 0) {
-    error_log('Kwik AI: No images found for description generation');
-    wp_send_json_error(__('Please add images to generate a description.', KWIK_AI_DOMAIN));
+  // Check if we have either images or URLs
+  if ($total_images === 0 && empty($urls)) {
+    error_log('Kwik AI: No images or URLs found for description generation');
+    wp_send_json_error(__('Please add images or provide URLs to generate a description.', KWIK_AI_DOMAIN));
   }
 
-  error_log('Kwik AI: Calling kwik_ai_description_generate_for_post');
-  $description = kwik_ai_description_generate_for_post($post_id);
+  // If URLs are provided, use the new URL-based generation
+  if (!empty($urls)) {
+    error_log('Kwik AI: Generating description from URLs: ' . print_r($urls, true));
+    $description = kwik_ai_description_generate_from_urls($post_id, $urls);
+  } else {
+    // Fall back to image-based generation
+    error_log('Kwik AI: Calling kwik_ai_description_generate_for_post');
+    $description = kwik_ai_description_generate_for_post($post_id);
+  }
+
   error_log('Kwik AI: Generated description: ' . substr($description, 0, 100) . '...');
 
   if ($description === false) {
@@ -153,7 +168,7 @@ function kwik_ai_description_ajax_generate()
 
   if (empty($description)) {
     error_log('Kwik AI: No description generated');
-    wp_send_json_error(__('No description was generated. Try adding more descriptive images.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('No description was generated. Try adding more descriptive images or URLs.', KWIK_AI_DOMAIN));
   }
 
   error_log('Kwik AI: Sending success response');

@@ -9,7 +9,8 @@
         Button,
         Placeholder,
         Spinner,
-        Notice
+        Notice,
+        TextControl
     } = wp.components;
     const { 
         InspectorControls,
@@ -21,7 +22,7 @@
     /**
      * Generate description via AJAX
      */
-    function generateDescription(postId, onSuccess, onError) {
+    function generateDescription(postId, urls, onSuccess, onError) {
         if (!postId) {
             onError(kwikAiDescriptionBlock.strings.error);
             return;
@@ -33,7 +34,8 @@
             data: {
                 action: 'kwik_ai_description_generate',
                 nonce: kwikAiDescriptionBlock.nonce,
-                post_id: postId
+                post_id: postId,
+                urls: urls
             },
             timeout: 120000, // 2 minutes
             success: function(response) {
@@ -66,9 +68,10 @@
      * AI Description Block Component
      */
     function AIDescriptionEdit({ attributes, setAttributes }) {
-        const { description } = attributes;
+        const { description, urls = [] } = attributes;
         const [isGenerating, setIsGenerating] = useState(false);
         const [error, setError] = useState('');
+        const [urlInputs, setUrlInputs] = useState(urls.length > 0 ? [...urls, ''] : ['']);
         
         const blockProps = useBlockProps({
             className: 'kwik-ai-description-block'
@@ -90,10 +93,14 @@
             setIsGenerating(true);
             setError('');
 
+            // Filter out empty URLs
+            const validUrls = urlInputs.filter(url => url.trim() !== '');
+
             generateDescription(
                 postId,
+                validUrls,
                 (generatedDescription) => {
-                    setAttributes({ description: generatedDescription });
+                    setAttributes({ description: generatedDescription, urls: validUrls });
                     setIsGenerating(false);
                 },
                 (errorMessage) => {
@@ -105,6 +112,24 @@
 
         const handleDescriptionChange = (newDescription) => {
             setAttributes({ description: newDescription });
+        };
+
+        const handleUrlChange = (index, value) => {
+            const newUrls = [...urlInputs];
+            newUrls[index] = value;
+            setUrlInputs(newUrls);
+        };
+
+        const addUrlField = () => {
+            setUrlInputs([...urlInputs, '']);
+        };
+
+        const removeUrlField = (index) => {
+            if (urlInputs.length > 1) {
+                const newUrls = [...urlInputs];
+                newUrls.splice(index, 1);
+                setUrlInputs(newUrls);
+            }
         };
 
         // If no description yet, show placeholder with generate button
@@ -121,6 +146,34 @@
                                 {error}
                             </Notice>
                         )}
+                        {urlInputs.map((url, index) => (
+                            <div key={index} style={{ marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
+                                <TextControl
+                                    placeholder="https://example.com/article"
+                                    value={url}
+                                    onChange={(value) => handleUrlChange(index, value)}
+                                    style={{ flex: 1 }}
+                                />
+                                {urlInputs.length > 1 && (
+                                    <Button 
+                                        isSecondary 
+                                        isSmall 
+                                        onClick={() => removeUrlField(index)}
+                                        style={{ marginLeft: '10px' }}
+                                    >
+                                        Remove
+                                    </Button>
+                                )}
+                            </div>
+                        ))}
+                        <Button 
+                            isSecondary 
+                            isSmall 
+                            onClick={addUrlField}
+                            style={{ marginBottom: '10px' }}
+                        >
+                            Add URL
+                        </Button>
                         <Button
                             isPrimary
                             onClick={handleGenerate}
@@ -159,6 +212,34 @@
                                 {error}
                             </Notice>
                         )}
+                        {urlInputs.map((url, index) => (
+                            <div key={index} style={{ marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
+                                <TextControl
+                                    placeholder="https://example.com/article"
+                                    value={url}
+                                    onChange={(value) => handleUrlChange(index, value)}
+                                    style={{ flex: 1 }}
+                                />
+                                {urlInputs.length > 1 && (
+                                    <Button 
+                                        isSecondary 
+                                        isSmall 
+                                        onClick={() => removeUrlField(index)}
+                                        style={{ marginLeft: '10px' }}
+                                    >
+                                        Remove
+                                    </Button>
+                                )}
+                            </div>
+                        ))}
+                        <Button 
+                            isSecondary 
+                            isSmall 
+                            onClick={addUrlField}
+                            style={{ marginBottom: '10px' }}
+                        >
+                            Add URL
+                        </Button>
                         <Button
                             isSecondary
                             onClick={handleGenerate}
@@ -235,6 +316,10 @@
                 source: 'html',
                 selector: 'p',
                 default: '',
+            },
+            urls: {
+                type: 'array',
+                default: [],
             },
             postId: {
                 type: 'number',

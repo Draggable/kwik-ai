@@ -99,6 +99,92 @@ function kwik_ai_tags_query_ollama(string $prompt, array $images): ?string
 }
 
 /**
+ * Send a request to Ollama's /api/generate endpoint with text only (no images).
+ *
+ * @param string $prompt
+ * @return string|null     Raw response string
+ */
+function kwik_ai_tags_query_ollama_text_only(string $prompt): ?string
+{
+  $url = KWIK_AI_OLLAMA_HOST . '/api/generate';
+  error_log('Kwik AI: Ollama URL: ' . $url);
+
+  $payload = [
+    'model' => 'gemma3:27b',
+    'prompt' => $prompt,
+    'stream' => false, // Important: disable streaming for easier parsing
+  ];
+
+  error_log('Kwik AI: Payload: ' . json_encode($payload));
+
+  $response = wp_remote_post(
+    $url,
+    [
+      'body' => wp_json_encode($payload),
+      'headers' => ['Content-Type' => 'application/json'],
+      'timeout' => 120, // Increased timeout for text processing
+    ]
+  );
+
+  if (is_wp_error($response)) {
+    error_log('Kwik AI: WP Error: ' . $response->get_error_message());
+    return null; // Network or server error.
+  }
+
+  $response_code = wp_remote_retrieve_response_code($response);
+  error_log('Kwik AI: Response code: ' . $response_code);
+
+  if ($response_code !== 200) {
+    $body = wp_remote_retrieve_body($response);
+    error_log('Kwik AI: HTTP error: ' . $response_code . ' - Response body: ' . $body);
+    return null;
+  }
+
+  $body = wp_remote_retrieve_body($response);
+  error_log('Kwik AI: Response body: ' . substr($body, 0, 500)); // Log first 500 chars
+
+  $data = json_decode($body, true);
+
+  if (json_last_error() !== JSON_ERROR_NONE) {
+    error_log('Kwik AI: JSON decode error: ' . json_last_error_msg());
+
+    // Try to handle streaming response manually
+    $lines = explode("\n", trim($body));
+    $full_response = '';
+
+    foreach ($lines as $line) {
+      $line = trim($line);
+      if (empty($line))
+        continue;
+
+      $json = json_decode($line, true);
+      if ($json && isset($json['response'])) {
+        $full_response .= $json['response'];
+
+        // If this is the final chunk
+        if (isset($json['done']) && $json['done'] === true) {
+          break;
+        }
+      }
+    }
+
+    if (!empty($full_response)) {
+      error_log('Kwik AI: Reconstructed response: ' . $full_response);
+      return trim($full_response);
+    }
+
+    return null;
+  }
+
+  if (!isset($data['response'])) {
+    error_log('Kwik AI: No response field in data: ' . print_r($data, true));
+    return null;
+  }
+
+  return trim($data['response']);
+}
+
+/**
  * Parse the comma‑separated tag list from the model response.
  *
  * @param string $raw_response

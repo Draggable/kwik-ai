@@ -1,5 +1,40 @@
 # KWIK AI Tags Plugin - Changelog
 
+## Version 2.8 - URL Content Generation (September 10, 2025)
+
+### New Features
+- **URL Content Generation**: AI Description Block now supports generating descriptions from external URLs
+- **Web Scraping**: Automatically extracts and summarizes content from provided URLs
+- **Two-Step Process**: First summarizes content from URLs, then generates a description based on the summary
+- **Flexible Input**: Works with both images and URLs, or either independently
+- **Multiple URLs**: Support for adding multiple URLs to generate comprehensive descriptions
+
+### Technical Improvements
+- **New Functions**:
+  - `kwik_ai_scrape_and_summarize_url()` - Main URL scraping and summarization function
+  - `kwik_ai_fetch_url_content()` - Fetches content from URLs
+  - `kwik_ai_extract_main_content()` - Extracts main content from HTML
+  - `kwik_ai_summarize_content()` - Summarizes content using Ollama
+  - `kwik_ai_tags_query_ollama_text_only()` - Text-only Ollama queries
+  - `kwik_ai_description_generate_from_urls()` - Generates descriptions from URLs
+- **Enhanced Block Editor**: URL input fields with add/remove functionality
+- **Improved AJAX Handling**: Supports both image and URL-based generation
+- **Better Error Handling**: Clear error messages for URL-related issues
+
+### User Interface
+- **URL Input Fields**: Easy-to-use input fields for adding external URLs
+- **Add/Remove Buttons**: Dynamic management of multiple URLs
+- **Updated Prompts**: Clear instructions for using URL functionality
+- **Enhanced Validation**: Better URL validation and error feedback
+
+### Migration
+- Existing installations automatically gain URL functionality
+- No data loss or configuration required
+- Plugin works immediately after update
+- Backward compatibility maintained for image-only generation
+
+---
+
 ## Version 2.7 - Code Restructuring (September 9, 2025)
 
 ### New Features

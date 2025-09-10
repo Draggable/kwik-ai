@@ -9,11 +9,6 @@ if (!defined('ABSPATH')) {
   exit; // Exit if accessed directly.
 }
 
-// Include debug test if enabled and on admin pages
-if (defined('WP_DEBUG') && WP_DEBUG && is_admin()) {
-  include_once __DIR__ . '/../debug-test.php';
-}
-
 /**
  * Initialize the plugin
  */
