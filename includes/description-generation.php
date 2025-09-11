@@ -13,11 +13,13 @@ if (!defined('ABSPATH')) {
  * Generate description for a specific post from images
  *
  * @param int $post_id
+ * @param int $min_words Minimum number of words for the description
+ * @param int $max_words Maximum number of words for the description
  * @return string|false
  */
-function kwik_ai_description_generate_for_post(int $post_id)
+function kwik_ai_description_generate_for_post(int $post_id, int $min_words = 50, int $max_words = 200)
 {
-  error_log('Kwik AI: Starting description generation for post ' . $post_id);
+  error_log('Kwik AI: Starting description generation for post ' . $post_id . ' with word count ' . $min_words . '-' . $max_words);
 
   /* ----------------------------------------------------- */
   /* 1. Get images from post */
@@ -56,7 +58,7 @@ function kwik_ai_description_generate_for_post(int $post_id)
   /* ----------------------------------------------------- */
   /* 2. Generate description from images */
   /* ----------------------------------------------------- */
-  $description = kwik_ai_description_generate_from_image_urls($post_id, $image_urls);
+  $description = kwik_ai_description_generate_from_image_urls($post_id, $image_urls, $min_words, $max_words);
 
   if (!$description) {
     error_log('Kwik AI: Failed to generate description from images');
@@ -79,11 +81,13 @@ function kwik_ai_description_generate_for_post(int $post_id)
  *
  * @param int $post_id
  * @param array $image_urls Array of image URLs
+ * @param int $min_words Minimum number of words for the description
+ * @param int $max_words Maximum number of words for the description
  * @return string|false
  */
-function kwik_ai_description_generate_from_image_urls(int $post_id, array $image_urls)
+function kwik_ai_description_generate_from_image_urls(int $post_id, array $image_urls, int $min_words = 50, int $max_words = 200)
 {
-  error_log('Kwik AI: Generating description from ' . count($image_urls) . ' image URLs');
+  error_log('Kwik AI: Generating description from ' . count($image_urls) . ' image URLs with word count ' . $min_words . '-' . $max_words);
 
   /* ----------------------------------------------------- */
   /* 1. Convert each image URL to a Base‑64 data URI */
@@ -115,7 +119,7 @@ function kwik_ai_description_generate_from_image_urls(int $post_id, array $image
   $post_type_obj = get_post_type_object($post_type);
   $post_type_name = $post_type_obj ? $post_type_obj->labels->singular_name : 'post';
 
-  $prompt = 'Analyze these images and generate an engaging description for a ' . $post_type_name . '. Describe this work of art. Write in a natural, descriptive style without overusing adjectives. Avoid uncommon punctuation such as Em dash. Keep the description between 50-200 words. Respond with only the description text, no extra formatting or labels.';
+  $prompt = 'Analyze these images and generate an engaging description for a ' . $post_type_name . '. Describe this work of art. Write in a natural, descriptive style without overusing adjectives. Avoid uncommon punctuation such as Em dash. Keep the description between ' . $min_words . '-' . $max_words . ' words. Respond with only the description text, no extra formatting or labels.';
   error_log('Kwik AI: Using description prompt: ' . $prompt);
 
   /* ----------------------------------------------------- */
@@ -151,9 +155,9 @@ function kwik_ai_description_generate_from_image_urls(int $post_id, array $image
  * * @param array $urls Array of URLs to scrape content from
  * @return string|false
  */
-function kwik_ai_description_generate_from_urls(int $post_id, array $urls)
+function kwik_ai_description_generate_from_urls(int $post_id, array $urls, int $min_words = 50, int $max_words = 200)
 {
-  error_log('Kwik AI: Generating description from ' . count($urls) . ' URLs');
+  error_log('Kwik AI: Generating description from ' . count($urls) . ' URLs with word count ' . $min_words . '-' . $max_words);
 
   /* ----------------------------------------------------- */
   /* 1. Scrape and summarize content from each URL */
@@ -204,7 +208,7 @@ function kwik_ai_description_generate_from_urls(int $post_id, array $urls)
   error_log('Kwik AI: Generated combined summary: ' . substr($final_summary, 0, 100) . '...');
 
   // Now generate the final description based on the summary
-  $description_prompt = 'Based on the following summary, generate an engaging description for a ' . $post_type_name . '. Write in a natural, descriptive style without overusing adjectives. Avoid uncommon punctuation such as Em dash. Keep the description between 50-200 words. Respond with only the description text, no extra formatting or labels.' . "\n\n" . $final_summary;
+  $description_prompt = 'Based on the following summary, generate an engaging description for a ' . $post_type_name . '. Write in a natural, descriptive style without overusing adjectives. Avoid uncommon punctuation such as Em dash. Keep the description between ' . $min_words . '-' . $max_words . ' words. Respond with only the description text, no extra formatting or labels.' . "\n\n" . $final_summary;
   error_log('Kwik AI: Using description prompt: ' . $description_prompt);
 
   /* ----------------------------------------------------- */

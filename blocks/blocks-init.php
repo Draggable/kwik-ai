@@ -54,12 +54,14 @@ function kwik_ai_description_block_editor_assets()
   // The enqueue_block_editor_assets hook only fires in admin, so no need to check is_admin()
   error_log('KWIK AI: Enqueueing block assets');
 
+  $version = WP_DEBUG ? rand(1, 1000000) : '2.9.0'; // Random version to prevent caching during development
+
   // Enqueue block editor script
   wp_enqueue_script(
     'kwik-ai-description-block',
     plugin_dir_url(KWIK_AI_PLUGIN_FILE) . 'assets/js/description-block.build.js',
-    array('wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-i18n', 'wp-data'),
-    '2.8.0', // Increment version to force cache refresh
+    array('react', 'react-dom', 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-i18n', 'wp-data'),
+    $version,
     true
   );
 
@@ -68,7 +70,7 @@ function kwik_ai_description_block_editor_assets()
     'kwik-ai-description-block-editor',
     plugin_dir_url(KWIK_AI_PLUGIN_FILE) . 'assets/css/description-block-editor.css',
     array('wp-edit-blocks'),
-    '2.8.0'
+    $version
   );
 
   // Enqueue frontend styles
@@ -76,7 +78,7 @@ function kwik_ai_description_block_editor_assets()
     'kwik-ai-description-block-frontend',
     plugin_dir_url(KWIK_AI_PLUGIN_FILE) . 'assets/css/description-block-frontend.css',
     array(),
-    '2.8.0'
+    $version
   );
 
   // Localize script with AJAX data

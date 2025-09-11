@@ -135,6 +135,16 @@ function kwik_ai_description_ajax_generate()
     $urls = array_filter(array_map('sanitize_text_field', $_POST['urls']));
   }
 
+  // Get word count parameters if provided
+  $min_words = 50;
+  $max_words = 200;
+  if (isset($_POST['min_words']) && is_numeric($_POST['min_words'])) {
+    $min_words = max(50, intval($_POST['min_words'])); // Ensure minimum of 50
+  }
+  if (isset($_POST['max_words']) && is_numeric($_POST['max_words'])) {
+    $max_words = max($min_words, intval($_POST['max_words'])); // Ensure max is not less than min
+  }
+
   // Check if post has images
   $attachments = get_attached_media('image', $post_id);
   $post_content = get_post_field('post_content', $post_id);
@@ -152,11 +162,11 @@ function kwik_ai_description_ajax_generate()
   // If URLs are provided, use the new URL-based generation
   if (!empty($urls)) {
     error_log('Kwik AI: Generating description from URLs: ' . print_r($urls, true));
-    $description = kwik_ai_description_generate_from_urls($post_id, $urls);
+    $description = kwik_ai_description_generate_from_urls($post_id, $urls, $min_words, $max_words);
   } else {
     // Fall back to image-based generation
     error_log('Kwik AI: Calling kwik_ai_description_generate_for_post');
-    $description = kwik_ai_description_generate_for_post($post_id);
+    $description = kwik_ai_description_generate_for_post($post_id, $min_words, $max_words);
   }
 
   error_log('Kwik AI: Generated description: ' . substr($description, 0, 100) . '...');

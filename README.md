@@ -1,6 +1,6 @@
 # KWIK AI
 
-Auto-tag posts with the Gemma3:27b model via Ollama. Analyzes both images (including block images and custom TRB belt gallery blocks) and text content (50+ words) with preview functionality. Also generates AI descriptions for belt posts based on attached images or content scraped from URLs. Configure which post types to enable via Settings > KWIK AI.
+Auto-tag posts with the Gemma3:27b model via Ollama. Analyzes both images (including block images and custom TRB belt gallery blocks) and text content (50+ words) with preview functionality. Also generates AI descriptions for belt posts based on attached images or content scraped from URLs, with customizable description length. Configure which post types to enable via Settings > KWIK AI.
 
 ## Features
 
@@ -20,6 +20,7 @@ Auto-tag posts with the Gemma3:27b model via Ollama. Analyzes both images (inclu
 - Self-contained with generation controls built into the block
 - Editable content directly in the block editor
 - Can generate descriptions from images or content scraped from URLs
+- **Customizable description length** with slider controls (50-500 words)
 - No insertion into post content - the block contains the description
 
 ## Requirements
@@ -56,9 +57,10 @@ Auto-tag posts with the Gemma3:27b model via Ollama. Analyzes both images (inclu
 1. Add a new block and search for "AI Description"
 2. Insert the block where you want the description
 3. Add URLs to external content in the input fields (optional)
-4. Click "Generate Description" to create content from images or URLs
-5. Edit the description directly in the block if needed
-6. Use the "Regenerate" button to create new content
+4. Set your desired description length using the sliders (50-500 words)
+5. Click "Generate Description" to create content from images or URLs
+6. Edit the description directly in the block if needed
+7. Use the "Regenerate" button to create new content
 
 ## Block vs Meta Box
 

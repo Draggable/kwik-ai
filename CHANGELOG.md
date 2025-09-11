@@ -1,5 +1,35 @@
 # KWIK AI Tags Plugin - Changelog
 
+## Version 2.9 - Customizable Description Length (September 10, 2025)
+
+### New Features
+- **Customizable Description Length**: Added slider controls to set minimum and maximum word count for generated descriptions
+- **Word Count Control**: Users can now specify exact length requirements for AI-generated descriptions
+- **Minimum Length Enforcement**: Ensures all descriptions are at least 50 words long
+- **Flexible Range Selection**: Supports word count ranges from 50-500 words
+
+### Technical Improvements
+- **New Parameters**:
+  - `min_words` - Minimum word count for descriptions
+  - `max_words` - Maximum word count for descriptions
+- **Enhanced Block Editor**: Slider controls with input fields for precise word count selection
+- **Updated Prompts**: Dynamic Ollama prompts that include word count constraints
+- **Better Validation**: Ensures min/max values are properly constrained
+
+### User Interface
+- **Range Sliders**: Intuitive slider controls for setting description length
+- **Input Fields**: Direct numeric input for precise word count settings
+- **Visual Feedback**: Clear display of current min/max word count settings
+- **Real-time Updates**: Sliders automatically adjust to maintain valid ranges
+
+### Migration
+- Existing installations automatically gain description length customization
+- No data loss or configuration required
+- Plugin works immediately after update
+- Backward compatibility maintained with default 50-200 word range
+
+---
+
 ## Version 2.8 - URL Content Generation (September 10, 2025)
 
 ### New Features

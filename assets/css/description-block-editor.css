@@ -3,151 +3,160 @@
  */
 
 .kwik-ai-description-block {
-    border: 1px dashed #ccc;
-    padding: 20px;
-    margin: 16px 0;
-    background: #f9f9f9;
-    border-radius: 4px;
-    position: relative;
+  border: 1px dashed #ccc;
+  padding: 20px;
+  margin: 16px 0;
+  background: #f9f9f9;
+  border-radius: 4px;
+  position: relative;
 }
 
 .kwik-ai-description-block:hover {
-    border-color: #0073aa;
-    background: #f0f6fc;
+  border-color: #0073aa;
+  background: #f0f6fc;
 }
 
 .kwik-ai-description-block.is-selected {
-    border-color: #0073aa;
-    border-style: solid;
-    background: #fff;
-    box-shadow: 0 0 0 1px #0073aa;
+  border-color: #0073aa;
+  border-style: solid;
+  background: #fff;
+  box-shadow: 0 0 0 1px #0073aa;
 }
 
 .kwik-ai-description-content {
-    margin-bottom: 12px;
+  margin-bottom: 12px;
 }
 
 .kwik-ai-description-content p {
-    margin: 0;
-    line-height: 1.6;
-    font-size: 14px;
-    color: #1e1e1e;
+  margin: 0;
+  line-height: 1.6;
+  font-size: 14px;
+  color: #1e1e1e;
 }
 
 .kwik-ai-description-content .rich-text {
-    min-height: 20px;
+  min-height: 20px;
 }
 
 .kwik-ai-description-content .rich-text:empty::before {
-    content: attr(placeholder);
-    color: #757575;
-    font-style: italic;
+  content: attr(placeholder);
+  color: #757575;
+  font-style: italic;
 }
 
 .kwik-ai-description-controls {
-    display: flex;
-    justify-content: flex-end;
-    padding-top: 8px;
-    border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 8px;
+  border-top: 1px solid #e0e0e0;
+
+
+}
+
+
+.kwik-ai-description-block .components-placeholder__fieldset {
+  display: flex;
+  flex-direction: column;
 }
 
 .kwik-ai-description-controls .components-button {
-    font-size: 12px;
+  font-size: 12px;
 }
 
 /* Placeholder styling */
 .kwik-ai-description-block .components-placeholder {
-    min-height: 120px;
-    border: 1px dashed #ccc;
-    background: #f9f9f9;
+  min-height: 120px;
+  border: 1px dashed #ccc;
+  background: #f9f9f9;
 }
 
+
 .kwik-ai-description-block .components-placeholder.has-illustration .components-placeholder__illustration {
-    margin-bottom: 16px;
+  margin-bottom: 16px;
 }
 
 .kwik-ai-description-block .components-placeholder__instructions {
-    margin-bottom: 16px;
-    color: #757575;
-    font-size: 13px;
-    line-height: 1.4;
+  margin-bottom: 16px;
+  color: #757575;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .kwik-ai-description-block .components-notice {
-    margin-bottom: 12px;
+  margin-bottom: 12px;
 }
 
 /* Spinner styling */
 .kwik-ai-description-block .components-spinner {
-    margin: 16px auto;
-    display: block;
+  margin: 16px auto;
+  display: block;
 }
 
 /* Inspector controls styling */
 .block-editor-block-inspector .components-panel__body .kwik-ai-description-inspector {
-    padding: 16px;
+  padding: 16px;
 }
 
 /* Block icon */
 .kwik-ai-description-block .block-editor-block-icon {
-    color: #0073aa;
+  color: #0073aa;
 }
 
 /* Loading state */
 .kwik-ai-description-block.is-generating {
-    opacity: 0.7;
-    pointer-events: none;
+  opacity: 0.7;
+  pointer-events: none;
 }
 
 .kwik-ai-description-block.is-generating .kwik-ai-description-controls {
-    opacity: 0.5;
+  opacity: 0.5;
 }
 
 /* Error state */
 .kwik-ai-description-block .components-notice.is-error {
-    margin: 0 0 12px 0;
+  margin: 0 0 12px 0;
 }
 
 /* Focus styles */
 .kwik-ai-description-content .rich-text:focus {
-    outline: 1px solid #0073aa;
-    outline-offset: 2px;
+  outline: 1px solid #0073aa;
+  outline-offset: 2px;
 }
 
 /* Responsive */
 @media (max-width: 782px) {
-    .kwik-ai-description-block {
-        padding: 16px;
-    }
-    
-    .kwik-ai-description-controls .components-button {
-        font-size: 11px;
-        padding: 4px 8px;
-    }
+  .kwik-ai-description-block {
+    padding: 16px;
+  }
+
+  .kwik-ai-description-controls .components-button {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
 }
 
 /* Block validation */
 .kwik-ai-description-block.has-warning {
-    border-color: #f0b849;
-    background: #fcf9e8;
+  border-color: #f0b849;
+  background: #fcf9e8;
 }
 
 .kwik-ai-description-block.has-error {
-    border-color: #d94f4f;
-    background: #fcf2f2;
+  border-color: #d94f4f;
+  background: #fcf2f2;
 }
 
 /* Empty state */
 .kwik-ai-description-block.is-empty {
-    min-height: 80px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f9f9f9;
-    border: 2px dashed #ccc;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f9f9f9;
+  border: 2px dashed #ccc;
 }
 
 .kwik-ai-description-block.is-empty:hover {
-    border-color: #0073aa;
-    background: #f0f6fc;
+  border-color: #0073aa;
+  background: #f0f6fc;
 }

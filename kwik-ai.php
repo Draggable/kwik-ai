@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Kwik AI
  * Description: Auto‑tag posts with the Gemma3:27b model via Ollama. Analyzes both images (including block images and custom TRB belt gallery blocks) and text content (50+ words) with preview functionality. Also generates AI descriptions for belt posts based on attached images or content scraped from URLs. Configure which post types to enable via Settings > KWIK AI.
- * Version: 2.8
+ * Version: 2.9
  * Author: Your Name
  * Text Domain: kwik-ai-tags
  *
