@@ -18,9 +18,13 @@ if (!defined('ABSPATH')) {
  */
 function kwik_ai_tags_query_ollama(string $prompt, array $images): ?string
 {
-  $url = KWIK_AI_OLLAMA_HOST . '/api/generate';
+  $config = kwik_ai_tags_get_ollama_config();
+  $url = $config['url'] . '/api/generate';
+  $auth_headers = kwik_ai_tags_get_ollama_auth_header();
+  
   error_log('Kwik AI: Ollama URL: ' . $url);
   error_log('Kwik AI: Number of images: ' . count($images));
+  error_log('Kwik AI: Auth configured: ' . ($config['has_auth'] ? 'Yes' : 'No'));
 
   $payload = [
     'model' => 'gemma3:27b',
@@ -31,11 +35,16 @@ function kwik_ai_tags_query_ollama(string $prompt, array $images): ?string
 
   error_log('Kwik AI: Payload (without images): ' . json_encode(array_merge($payload, ['images' => '[' . count($images) . ' images]'])));
 
+  $headers = array_merge(
+    ['Content-Type' => 'application/json'],
+    $auth_headers
+  );
+
   $response = wp_remote_post(
     $url,
     [
       'body' => wp_json_encode($payload),
-      'headers' => ['Content-Type' => 'application/json'],
+      'headers' => $headers,
       'timeout' => 120, // Increased timeout for vision processing
     ]
   );
@@ -106,8 +115,12 @@ function kwik_ai_tags_query_ollama(string $prompt, array $images): ?string
  */
 function kwik_ai_tags_query_ollama_text_only(string $prompt): ?string
 {
-  $url = KWIK_AI_OLLAMA_HOST . '/api/generate';
+  $config = kwik_ai_tags_get_ollama_config();
+  $url = $config['url'] . '/api/generate';
+  $auth_headers = kwik_ai_tags_get_ollama_auth_header();
+  
   error_log('Kwik AI: Ollama URL: ' . $url);
+  error_log('Kwik AI: Auth configured: ' . ($config['has_auth'] ? 'Yes' : 'No'));
 
   $payload = [
     'model' => 'gemma3:27b',
@@ -117,11 +130,16 @@ function kwik_ai_tags_query_ollama_text_only(string $prompt): ?string
 
   error_log('Kwik AI: Payload: ' . json_encode($payload));
 
+  $headers = array_merge(
+    ['Content-Type' => 'application/json'],
+    $auth_headers
+  );
+
   $response = wp_remote_post(
     $url,
     [
       'body' => wp_json_encode($payload),
-      'headers' => ['Content-Type' => 'application/json'],
+      'headers' => $headers,
       'timeout' => 120, // Increased timeout for text processing
     ]
   );
@@ -231,11 +249,21 @@ function kwik_ai_tags_parse_tags(string $raw_response): array
  */
 function kwik_ai_tags_test_ollama_connection()
 {
-  $url = KWIK_AI_OLLAMA_HOST . '/api/tags';
+  $config = kwik_ai_tags_get_ollama_config();
+  $url = $config['url'] . '/api/tags';
+  $auth_headers = kwik_ai_tags_get_ollama_auth_header();
+  
+  error_log('Kwik AI: Testing connection to: ' . $url);
+  error_log('Kwik AI: Auth configured: ' . ($config['has_auth'] ? 'Yes' : 'No'));
+  
+  $headers = array_merge(
+    ['Content-Type' => 'application/json'],
+    $auth_headers
+  );
   
   $response = wp_remote_get($url, array(
     'timeout' => 5,
-    'headers' => array('Content-Type' => 'application/json')
+    'headers' => $headers
   ));
   
   if (is_wp_error($response)) {

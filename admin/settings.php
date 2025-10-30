@@ -54,10 +54,47 @@ function kwik_ai_tags_settings_init()
     )
   );
 
+  register_setting(
+    'kwik_ai_tags_settings',
+    'kwik_ai_tags_ollama_url',
+    array(
+      'type' => 'string',
+      'sanitize_callback' => 'esc_url_raw',
+      'default' => 'http://localhost:11434'
+    )
+  );
+
+  register_setting(
+    'kwik_ai_tags_settings',
+    'kwik_ai_tags_ollama_username',
+    array(
+      'type' => 'string',
+      'sanitize_callback' => 'sanitize_text_field',
+      'default' => ''
+    )
+  );
+
+  register_setting(
+    'kwik_ai_tags_settings',
+    'kwik_ai_tags_ollama_password',
+    array(
+      'type' => 'string',
+      'sanitize_callback' => 'kwik_ai_tags_sanitize_password',
+      'default' => ''
+    )
+  );
+
   add_settings_section(
     'kwik_ai_tags_main_section',
     __('Post Type Settings', KWIK_AI_DOMAIN),
     'kwik_ai_tags_settings_section_callback',
+    'kwik_ai_tags_settings'
+  );
+
+  add_settings_section(
+    'kwik_ai_tags_ollama_section',
+    __('Ollama Settings', KWIK_AI_DOMAIN),
+    'kwik_ai_tags_ollama_section_callback',
     'kwik_ai_tags_settings'
   );
 
@@ -67,6 +104,30 @@ function kwik_ai_tags_settings_init()
     'kwik_ai_tags_enabled_post_types_callback',
     'kwik_ai_tags_settings',
     'kwik_ai_tags_main_section'
+  );
+
+  add_settings_field(
+    'kwik_ai_tags_ollama_url',
+    __('Ollama URL', KWIK_AI_DOMAIN),
+    'kwik_ai_tags_ollama_url_callback',
+    'kwik_ai_tags_settings',
+    'kwik_ai_tags_ollama_section'
+  );
+
+  add_settings_field(
+    'kwik_ai_tags_ollama_username',
+    __('Username', KWIK_AI_DOMAIN),
+    'kwik_ai_tags_ollama_username_callback',
+    'kwik_ai_tags_settings',
+    'kwik_ai_tags_ollama_section'
+  );
+
+  add_settings_field(
+    'kwik_ai_tags_ollama_password',
+    __('Password', KWIK_AI_DOMAIN),
+    'kwik_ai_tags_ollama_password_callback',
+    'kwik_ai_tags_settings',
+    'kwik_ai_tags_ollama_section'
   );
 }
 
@@ -96,11 +157,28 @@ function kwik_ai_tags_sanitize_post_types($input)
 }
 
 /**
+ * Sanitize password setting
+ */
+function kwik_ai_tags_sanitize_password($input)
+{
+  // Store password as-is but trim whitespace
+  return trim($input);
+}
+
+/**
  * Settings section callback
  */
 function kwik_ai_tags_settings_section_callback()
 {
   echo '<p>' . esc_html__('Choose which post types should have AI tag and description generation enabled.', KWIK_AI_DOMAIN) . '</p>';
+}
+
+/**
+ * Ollama settings section callback
+ */
+function kwik_ai_tags_ollama_section_callback()
+{
+  echo '<p>' . esc_html__('Configure your Ollama instance connection details.', KWIK_AI_DOMAIN) . '</p>';
 }
 
 /**
@@ -135,6 +213,48 @@ function kwik_ai_tags_enabled_post_types_callback()
 }
 
 /**
+ * Ollama URL field callback
+ */
+function kwik_ai_tags_ollama_url_callback()
+{
+  $url = get_option('kwik_ai_tags_ollama_url', 'http://localhost:11434');
+  
+  printf(
+    '<input type="url" name="kwik_ai_tags_ollama_url" value="%s" class="regular-text" placeholder="http://localhost:11434" />',
+    esc_attr($url)
+  );
+  echo '<p class="description">' . esc_html__('Enter the full URL of your Ollama instance (e.g., http://localhost:11434 or https://ollama.kevv.in)', KWIK_AI_DOMAIN) . '</p>';
+}
+
+/**
+ * Ollama username field callback
+ */
+function kwik_ai_tags_ollama_username_callback()
+{
+  $username = get_option('kwik_ai_tags_ollama_username', '');
+  
+  printf(
+    '<input type="text" name="kwik_ai_tags_ollama_username" value="%s" class="regular-text" />',
+    esc_attr($username)
+  );
+  echo '<p class="description">' . esc_html__('Enter the username for basic authentication (leave blank if no authentication is required)', KWIK_AI_DOMAIN) . '</p>';
+}
+
+/**
+ * Ollama password field callback
+ */
+function kwik_ai_tags_ollama_password_callback()
+{
+  $password = get_option('kwik_ai_tags_ollama_password', '');
+  
+  printf(
+    '<input type="password" name="kwik_ai_tags_ollama_password" value="%s" class="regular-text" />',
+    esc_attr($password)
+  );
+  echo '<p class="description">' . esc_html__('Enter the password for basic authentication (leave blank if no authentication is required)', KWIK_AI_DOMAIN) . '</p>';
+}
+
+/**
  * Settings page
  */
 function kwik_ai_tags_settings_page()
@@ -153,15 +273,24 @@ function kwik_ai_tags_settings_page()
       
       <h3><?php esc_html_e('Requirements', KWIK_AI_DOMAIN); ?></h3>
       <ul>
-        <li><?php esc_html_e('Ollama running on http://localhost:11434', KWIK_AI_DOMAIN); ?></li>
+        <li><?php esc_html_e('Ollama running with configurable URL (default: http://localhost:11434)', KWIK_AI_DOMAIN); ?></li>
         <li><?php esc_html_e('gemma3:27b model installed (run: ollama pull gemma3:27b)', KWIK_AI_DOMAIN); ?></li>
         <li><?php esc_html_e('Posts with images or at least 50 words of text content', KWIK_AI_DOMAIN); ?></li>
+        <li><?php esc_html_e('Basic authentication credentials if your Ollama instance requires it', KWIK_AI_DOMAIN); ?></li>
       </ul>
       
       <h3><?php esc_html_e('Current Status', KWIK_AI_DOMAIN); ?></h3>
       <p>
         <strong><?php esc_html_e('Ollama Host:', KWIK_AI_DOMAIN); ?></strong> 
-        <code><?php echo esc_html(KWIK_AI_OLLAMA_HOST); ?></code>
+        <code><?php 
+          $url = get_option('kwik_ai_tags_ollama_url', 'http://localhost:11434');
+          $username = get_option('kwik_ai_tags_ollama_username', '');
+          if (!empty($username)) {
+            echo esc_html($username . '@' . $url);
+          } else {
+            echo esc_html($url);
+          }
+        ?></code>
         
         <?php
         // Test Ollama connection
@@ -199,4 +328,50 @@ function kwik_ai_tags_add_settings_link($links)
   
   array_unshift($links, $settings_link);
   return $links;
+}
+
+/**
+ * Get current Ollama configuration
+ */
+function kwik_ai_tags_get_ollama_config()
+{
+  $url = get_option('kwik_ai_tags_ollama_url', 'http://localhost:11434');
+  $username = get_option('kwik_ai_tags_ollama_username', '');
+  $password = get_option('kwik_ai_tags_ollama_password', '');
+
+  // Ensure URL doesn't have trailing slash
+  $url = rtrim($url, '/');
+
+  return array(
+    'url' => $url,
+    'username' => $username,
+    'password' => $password,
+    'has_auth' => !empty($username) && !empty($password)
+  );
+}
+
+/**
+ * Get configured Ollama URL
+ */
+function kwik_ai_tags_get_ollama_url()
+{
+  $config = kwik_ai_tags_get_ollama_config();
+  return $config['url'];
+}
+
+/**
+ * Get basic auth header for Ollama requests
+ */
+function kwik_ai_tags_get_ollama_auth_header()
+{
+  $config = kwik_ai_tags_get_ollama_config();
+  
+  if (!$config['has_auth']) {
+    return array();
+  }
+  
+  $credentials = $config['username'] . ':' . $config['password'];
+  $encoded_credentials = base64_encode($credentials);
+  
+  return array('Authorization' => 'Basic ' . $encoded_credentials);
 }
