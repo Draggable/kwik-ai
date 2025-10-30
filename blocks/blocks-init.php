@@ -25,7 +25,7 @@ function kwik_ai_register_blocks()
     'editor_script' => 'kwik-ai-description-block',
     'editor_style' => 'kwik-ai-description-block-editor',
     'style' => 'kwik-ai-description-block-frontend',
-    'render_callback' => 'kwik_ai_description_block_render',
+    // 'render_callback' => 'kwik_ai_description_block_render',
     'attributes' => array(
       'description' => array(
         'type' => 'string',
