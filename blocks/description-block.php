@@ -14,9 +14,13 @@ if (!defined('ABSPATH')) {
  */
 function kwik_ai_description_block_render($attributes)
 {
-  error_log('KWIK AI: kwik_ai_description_block_render() called'. print_r($attributes, true));
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('KWIK AI: kwik_ai_description_block_render() called'. print_r($attributes, true));
+  }
   $description = isset($attributes['description']) ? $attributes['description'] : '';
-  error_log('KWIK AI: Description content: ' . $description);
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('KWIK AI: Description content: ' . $description);
+  }
   
   if (empty($description)) {
     return '';

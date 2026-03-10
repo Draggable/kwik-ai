@@ -17,26 +17,36 @@ function kwik_ai_tags_enqueue_scripts($hook)
   $enabled_post_types = kwik_ai_tags_get_enabled_post_types();
   
   // Debug logging
-  error_log('Kwik AI: Hook = ' . $hook);
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: Hook = ' . $hook);
+  }
 
   if ($hook !== 'post.php' && $hook !== 'post-new.php') {
-    error_log('Kwik AI: Wrong hook, returning');
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+      error_log('Kwik AI: Wrong hook, returning');
+    }
     return;
   }
 
   $screen = get_current_screen();
-  error_log('Kwik AI: Screen post_type = ' . $screen->post_type);
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: Screen post_type = ' . $screen->post_type);
+  }
 
   if (!in_array($screen->post_type, $enabled_post_types)) {
-    error_log('Kwik AI: Post type not enabled, returning');
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+      error_log('Kwik AI: Post type not enabled, returning');
+    }
     return;
   }
 
   $js_url = plugin_dir_url(KWIK_AI_PLUGIN_FILE) . 'assets/js/admin.js';
   $css_url = plugin_dir_url(KWIK_AI_PLUGIN_FILE) . 'assets/css/admin.css';
 
-  error_log('Kwik AI: Enqueueing JS from: ' . $js_url);
-  error_log('Kwik AI: Enqueueing CSS from: ' . $css_url);
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: Enqueueing JS from: ' . $js_url);
+    error_log('Kwik AI: Enqueueing CSS from: ' . $css_url);
+  }
 
   wp_enqueue_script(
     'kwik-ai-tags-admin',
@@ -54,7 +64,9 @@ function kwik_ai_tags_enqueue_scripts($hook)
   );
 
   $post_id = get_the_ID();
-  error_log('Kwik AI: Post ID = ' . $post_id);
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: Post ID = ' . $post_id);
+  }
 
   wp_localize_script('kwik-ai-tags-admin', 'kwikAiTags', [
     'ajaxUrl' => admin_url('admin-ajax.php'),
@@ -80,5 +92,7 @@ function kwik_ai_tags_enqueue_scripts($hook)
     ]
   ]);
 
-  error_log('Kwik AI: Scripts and styles enqueued successfully');
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: Scripts and styles enqueued successfully');
+  }
 }

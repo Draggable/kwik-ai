@@ -17,36 +17,48 @@ if (!defined('ABSPATH')) {
  */
 function kwik_ai_scrape_and_summarize_url(string $url)
 {
-  error_log('Kwik AI: Scraping content from URL: ' . $url);
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: Scraping content from URL: ' . $url);
+  }
 
   // Validate URL
   if (!filter_var($url, FILTER_VALIDATE_URL)) {
-    error_log('Kwik AI: Invalid URL provided: ' . $url);
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+      error_log('Kwik AI: Invalid URL provided: ' . $url);
+    }
     return false;
   }
 
   // Get content from URL
   $content = kwik_ai_fetch_url_content($url);
   if (!$content) {
-    error_log('Kwik AI: Failed to fetch content from URL: ' . $url);
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+      error_log('Kwik AI: Failed to fetch content from URL: ' . $url);
+    }
     return false;
   }
 
   // Extract main content from HTML
   $main_content = kwik_ai_extract_main_content($content);
   if (!$main_content) {
-    error_log('Kwik AI: Failed to extract main content from URL: ' . $url);
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+      error_log('Kwik AI: Failed to extract main content from URL: ' . $url);
+    }
     return false;
   }
 
   // Summarize the content using Ollama
   $summary = kwik_ai_summarize_content($main_content);
   if (!$summary) {
-    error_log('Kwik AI: Failed to summarize content from URL: ' . $url);
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+      error_log('Kwik AI: Failed to summarize content from URL: ' . $url);
+    }
     return false;
   }
 
-  error_log('Kwik AI: Successfully scraped and summarized content from URL: ' . $url);
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: Successfully scraped and summarized content from URL: ' . $url);
+  }
   return $summary;
 }
 
@@ -58,7 +70,9 @@ function kwik_ai_scrape_and_summarize_url(string $url)
  */
 function kwik_ai_fetch_url_content(string $url): ?string
 {
-  error_log('Kwik AI: Fetching content from URL: ' . $url);
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: Fetching content from URL: ' . $url);
+  }
 
   // Try WordPress HTTP API first
   $response = wp_remote_get($url, [
@@ -71,11 +85,15 @@ function kwik_ai_fetch_url_content(string $url): ?string
 
   if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 200) {
     $content = wp_remote_retrieve_body($response);
-    error_log('Kwik AI: Successfully fetched content via wp_remote_get (' . strlen($content) . ' chars)');
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+      error_log('Kwik AI: Successfully fetched content via wp_remote_get (' . strlen($content) . ' chars)');
+    }
     return $content;
   }
 
-  error_log('Kwik AI: wp_remote_get failed, trying file_get_contents');
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: wp_remote_get failed, trying file_get_contents');
+  }
 
   // Try file_get_contents with context
   $context = stream_context_create([
@@ -91,11 +109,15 @@ function kwik_ai_fetch_url_content(string $url): ?string
 
   $content = @file_get_contents($url, false, $context);
   if ($content !== false) {
-    error_log('Kwik AI: Successfully fetched content via file_get_contents (' . strlen($content) . ' chars)');
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+      error_log('Kwik AI: Successfully fetched content via file_get_contents (' . strlen($content) . ' chars)');
+    }
     return $content;
   }
 
-  error_log('Kwik AI: file_get_contents failed');
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: file_get_contents failed');
+  }
   return false;
 }
 
@@ -107,7 +129,9 @@ function kwik_ai_fetch_url_content(string $url): ?string
  */
 function kwik_ai_extract_main_content(string $html): ?string
 {
-  error_log('Kwik AI: Extracting main content from HTML (' . strlen($html) . ' chars)');
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: Extracting main content from HTML (' . strlen($html) . ' chars)');
+  }
 
   // Load HTML into DOMDocument
   $dom = new DOMDocument();
@@ -197,11 +221,15 @@ function kwik_ai_extract_main_content(string $html): ?string
       $main_content = substr($main_content, 0, 5000) . '...';
     }
     
-    error_log('Kwik AI: Extracted main content (' . strlen($main_content) . ' chars)');
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+      error_log('Kwik AI: Extracted main content (' . strlen($main_content) . ' chars)');
+    }
     return $main_content;
   }
 
-  error_log('Kwik AI: Failed to extract main content');
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: Failed to extract main content');
+  }
   return false;
 }
 
@@ -213,7 +241,9 @@ function kwik_ai_extract_main_content(string $html): ?string
  */
 function kwik_ai_summarize_content(string $content): ?string
 {
-  error_log('Kwik AI: Summarizing content (' . strlen($content) . ' chars)');
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: Summarizing content (' . strlen($content) . ' chars)');
+  }
 
   // Create a prompt for summarization
   $prompt = 'Summarize the following content in a clear and concise way. Focus on the main points and key information. Keep the summary to 2-3 sentences. Respond with only the summary text, no extra formatting or labels.' . "\n\n" . $content;
@@ -223,10 +253,14 @@ function kwik_ai_summarize_content(string $content): ?string
 
   if ($summary) {
     $summary = trim($summary);
-    error_log('Kwik AI: Generated summary (' . strlen($summary) . ' chars): ' . substr($summary, 0, 100) . '...');
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+      error_log('Kwik AI: Generated summary (' . strlen($summary) . ' chars): ' . substr($summary, 0, 100) . '...');
+    }
     return $summary;
   }
 
-  error_log('Kwik AI: Failed to generate summary');
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: Failed to generate summary');
+  }
   return false;
 }

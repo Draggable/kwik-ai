@@ -18,7 +18,9 @@ function kwik_ai_register_blocks()
   if (!function_exists('register_block_type')) {
     return;
   }
-  error_log('KWIK AI: kwik_ai_register_blocks() called');
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('KWIK AI: kwik_ai_register_blocks() called');
+  }
 
   // Register the AI Description block
   register_block_type('kwik-ai/description', array(
@@ -49,10 +51,14 @@ function kwik_ai_register_blocks()
 function kwik_ai_description_block_editor_assets()
 {
   // Debug logging
-  error_log('KWIK AI: kwik_ai_description_block_editor_assets() called');
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('KWIK AI: kwik_ai_description_block_editor_assets() called');
+  }
   
   // The enqueue_block_editor_assets hook only fires in admin, so no need to check is_admin()
-  error_log('KWIK AI: Enqueueing block assets');
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('KWIK AI: Enqueueing block assets');
+  }
 
   $version = WP_DEBUG ? rand(1, 1000000) : '2.9.0'; // Random version to prevent caching during development
 
@@ -98,5 +104,7 @@ function kwik_ai_description_block_editor_assets()
     ),
   ));
 
-  error_log('KWIK AI: Script enqueued: ' . plugin_dir_url(KWIK_AI_PLUGIN_FILE) . 'assets/js/description-block.js');
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('KWIK AI: Script enqueued: ' . plugin_dir_url(KWIK_AI_PLUGIN_FILE) . 'assets/js/description-block.js');
+  }
 }

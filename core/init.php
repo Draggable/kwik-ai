@@ -17,7 +17,9 @@ add_action('enqueue_block_editor_assets', 'kwik_ai_description_block_editor_asse
 
 function kwik_ai_tags_init()
 {
-  error_log('Kwik AI: Plugin initializing');
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: Plugin initializing');
+  }
 
   // Add meta box for AI tags preview
   add_action('add_meta_boxes', 'kwik_ai_tags_add_meta_box');
@@ -44,5 +46,7 @@ function kwik_ai_tags_init()
   // Add settings link to plugin page
   add_filter('plugin_action_links_' . plugin_basename(KWIK_AI_PLUGIN_FILE), 'kwik_ai_tags_add_settings_link');
 
-  error_log('Kwik AI: Plugin initialized with hooks');
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: Plugin initialized with hooks');
+  }
 }
