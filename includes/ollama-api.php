@@ -10,6 +10,16 @@ if (!defined('ABSPATH')) {
 }
 
 /**
+ * Get the configured Ollama model
+ *
+ * @return string
+ */
+function kwik_ai_tags_get_ollama_model(): string
+{
+  return get_option('kwik_ai_tags_ollama_model', 'gemma3:27b');
+}
+
+/**
  * Send a request to Ollama's /api/generate endpoint.
  *
  * @param string $prompt
@@ -21,13 +31,15 @@ function kwik_ai_tags_query_ollama(string $prompt, array $images): ?string
   $config = kwik_ai_tags_get_ollama_config();
   $url = $config['url'] . '/api/generate';
   $auth_headers = kwik_ai_tags_get_ollama_auth_header();
-  
+  $model = kwik_ai_tags_get_ollama_model();
+
   error_log('Kwik AI: Ollama URL: ' . $url);
+  error_log('Kwik AI: Model: ' . $model);
   error_log('Kwik AI: Number of images: ' . count($images));
   error_log('Kwik AI: Auth configured: ' . ($config['has_auth'] ? 'Yes' : 'No'));
 
   $payload = [
-    'model' => 'gemma3:27b',
+    'model' => $model,
     'prompt' => $prompt,
     'images' => $images,
     'stream' => false, // Important: disable streaming for easier parsing
@@ -118,12 +130,14 @@ function kwik_ai_tags_query_ollama_text_only(string $prompt): ?string
   $config = kwik_ai_tags_get_ollama_config();
   $url = $config['url'] . '/api/generate';
   $auth_headers = kwik_ai_tags_get_ollama_auth_header();
-  
+  $model = kwik_ai_tags_get_ollama_model();
+
   error_log('Kwik AI: Ollama URL: ' . $url);
+  error_log('Kwik AI: Model: ' . $model);
   error_log('Kwik AI: Auth configured: ' . ($config['has_auth'] ? 'Yes' : 'No'));
 
   $payload = [
-    'model' => 'gemma3:27b',
+    'model' => $model,
     'prompt' => $prompt,
     'stream' => false, // Important: disable streaming for easier parsing
   ];
@@ -252,48 +266,50 @@ function kwik_ai_tags_test_ollama_connection()
   $config = kwik_ai_tags_get_ollama_config();
   $url = $config['url'] . '/api/tags';
   $auth_headers = kwik_ai_tags_get_ollama_auth_header();
-  
+  $selected_model = kwik_ai_tags_get_ollama_model();
+
   error_log('Kwik AI: Testing connection to: ' . $url);
   error_log('Kwik AI: Auth configured: ' . ($config['has_auth'] ? 'Yes' : 'No'));
-  
+  error_log('Kwik AI: Selected model: ' . $selected_model);
+
   $headers = array_merge(
     ['Content-Type' => 'application/json'],
     $auth_headers
   );
-  
+
   $response = wp_remote_get($url, array(
     'timeout' => 5,
     'headers' => $headers
   ));
-  
+
   if (is_wp_error($response)) {
     return __('Connection failed: ', KWIK_AI_DOMAIN) . $response->get_error_message();
   }
-  
+
   $response_code = wp_remote_retrieve_response_code($response);
   if ($response_code !== 200) {
     return sprintf(__('HTTP Error %d', KWIK_AI_DOMAIN), $response_code);
   }
-  
+
   $body = wp_remote_retrieve_body($response);
   $data = json_decode($body, true);
-  
+
   if (!$data || !isset($data['models'])) {
     return __('Invalid response from Ollama', KWIK_AI_DOMAIN);
   }
-  
-  // Check if gemma3:27b model is available
-  $has_gemma = false;
+
+  // Check if selected model is available
+  $has_model = false;
   foreach ($data['models'] as $model) {
-    if (isset($model['name']) && strpos($model['name'], 'gemma3:27b') !== false) {
-      $has_gemma = true;
+    if (isset($model['name']) && $model['name'] === $selected_model) {
+      $has_model = true;
       break;
     }
   }
-  
-  if (!$has_gemma) {
-    return __('Connected, but gemma3:27b model not found. Run: ollama pull gemma3:27b', KWIK_AI_DOMAIN);
+
+  if (!$has_model) {
+    return sprintf(__('Connected, but "%s" model not found. Please pull the model or select a different one.', KWIK_AI_DOMAIN), $selected_model);
   }
-  
+
   return true;
 }

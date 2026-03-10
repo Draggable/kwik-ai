@@ -52,3 +52,26 @@
 .kwik-ai-tags-status-icon {
   margin-right: 4px;
 }
+
+/* Model selector styles */
+.kwik-ai-model-selector-wrapper {
+  position: relative;
+}
+
+#kwik-ai-model-select {
+  min-width: 300px;
+}
+
+#kwik-ai-model-select option.vision-model {
+  font-weight: bold;
+  color: #007cba;
+}
+
+#kwik-ai-refresh-models {
+  vertical-align: top;
+}
+
+#kwik-ai-refresh-models:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}

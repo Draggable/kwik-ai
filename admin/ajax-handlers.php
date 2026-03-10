@@ -258,3 +258,26 @@ function kwik_ai_description_ajax_apply()
 
   wp_send_json_success(__('Description ready to be inserted into the editor!', KWIK_AI_DOMAIN));
 }
+
+/**
+ * AJAX handler for fetching available Ollama models
+ */
+function kwik_ai_tags_ajax_fetch_models()
+{
+  check_ajax_referer('kwik_ai_tags_ajax', 'nonce');
+
+  if (!current_user_can('manage_options')) {
+    wp_send_json_error(__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+  }
+
+  $models = kwik_ai_tags_fetch_ollama_models();
+
+  if ($models === false) {
+    wp_send_json_error(__('Failed to fetch models from Ollama server. Please check your connection settings.', KWIK_AI_DOMAIN));
+  }
+
+  wp_send_json_success(array(
+    'models' => $models,
+    'selected' => get_option('kwik_ai_tags_ollama_model', 'gemma3:27b')
+  ));
+}

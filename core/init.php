@@ -33,6 +33,7 @@ function kwik_ai_tags_init()
   add_action('wp_ajax_kwik_ai_tags_apply', 'kwik_ai_tags_ajax_apply');
   add_action('wp_ajax_kwik_ai_description_generate', 'kwik_ai_description_ajax_generate');
   add_action('wp_ajax_kwik_ai_description_apply', 'kwik_ai_description_ajax_apply');
+  add_action('wp_ajax_kwik_ai_tags_fetch_models', 'kwik_ai_tags_ajax_fetch_models');
 
   // Register blocks
   kwik_ai_register_blocks();
