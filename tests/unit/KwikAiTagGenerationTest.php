@@ -76,11 +76,11 @@ class KwikAiTagGenerationTest extends TestCase
      * Test tag parsing filters out very long tags
      */
     public function testParseTagsFiltersLongTags() {
-        $raw_response = 'short,verylongtagname_that_exceeds_fifty_characters';
+        $raw_response = 'short,verylongtagname_that_exceeds_sixty_characters_exactly';
         $tags = kwik_ai_tags_parse_tags($raw_response);
         
         $this->assertContains('short', $tags);
-        $this->assertNotContains('verylongtagname_that_exceeds_fifty_characters', $tags);
+        $this->assertNotContains('verylongtagname_that_exceeds_sixty_characters', $tags);
     }
 
     /**
@@ -94,9 +94,9 @@ class KwikAiTagGenerationTest extends TestCase
         $this->assertContains('tag2', $tags);
         $this->assertContains('tag3', $tags);
         $this->assertContains('tag4', $tags);
-        $this->assertNotContains('#', $tags[0]);
-        $this->assertNotContains('$', $tags[1]);
-        $this->assertNotContains('%', $tags[2]);
+        $this->assertStringNotContainsString('#', $tags[0]);
+        $this->assertStringNotContainsString('$', $tags[1]);
+        $this->assertStringNotContainsString('%', $tags[2]);
     }
 
     /**

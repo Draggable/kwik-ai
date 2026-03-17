@@ -70,6 +70,12 @@ if (!function_exists('sanitize_text_field')) {
     }
 }
 
+if (!function_exists('sanitize_key')) {
+    function sanitize_key($key) {
+        return preg_replace('/[^a-z0-9_\-]/', '', strtolower($key));
+    }
+}
+
 if (!function_exists('esc_attr')) {
     function esc_attr($text) {
         return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');

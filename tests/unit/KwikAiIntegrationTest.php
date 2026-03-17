@@ -69,9 +69,9 @@ class KwikAiIntegrationTest extends TestCase
      */
     public function testSettingsPageAccessible() {
         // Verify settings functions exist and work
-        $this->assertTrue(method_exists('kwik_ai_tags_add_admin_menu', '__invoke'));
-        $this->assertTrue(method_exists('kwik_ai_tags_settings_init', '__invoke'));
-        $this->assertTrue(method_exists('kwik_ai_tags_settings_page', '__invoke'));
+        $this->assertTrue(function_exists('kwik_ai_tags_add_admin_menu'));
+        $this->assertTrue(function_exists('kwik_ai_tags_settings_init'));
+        $this->assertTrue(function_exists('kwik_ai_tags_settings_page'));
     }
 
     /**
