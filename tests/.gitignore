@@ -1,0 +1,27 @@
+### Tests ###
+# PHPUnit cache
+.phpunit.cache/
+
+# Coverage reports
+tests/coverage/
+
+# PHP CodeSniffer cache
+.phpcs.cache
+
+### Dependencies ###
+vendor/
+node_modules/
+
+### WordPress Test Environment ###
+# If using WordPress test library
+wordpress/
+
+### IDE ###
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+### System ###
+.DS_Store
+Thumbs.db

@@ -223,11 +223,59 @@ The plugin has been restructured for better maintainability:
 │       ├── settings.css
 │       ├── description-block-editor.css
 │       └── description-block-frontend.css
+├── tests/ (test suite)
+│   ├── bootstrap.php
+│   ├── unit/ (unit tests)
+│   │   ├── TestSettings.php
+│   │   ├── TestApiFunctions.php
+│   │   └── TestTagGeneration.php
+│   └── integration/ (integration tests)
+│       └── TestPluginIntegration.php
 ├── debug-test.php
 ├── README.md
 ├── CHANGELOG.md
+├── BRANCH-GUIDE.md
 └── TROUBLESHOOTING.md
 ```
+
+## Testing
+
+The plugin includes a comprehensive test suite using PHPUnit.
+
+### Running Tests
+
+```bash
+# Install dependencies
+composer install
+
+# Run all tests
+composer test
+
+# Run with coverage report
+composer test:coverage
+
+# Run only unit tests
+composer test:unit
+
+# Run only integration tests
+composer test:integration
+
+# Run code quality checks
+composer lint
+
+# Fix code style issues
+composer lint:fix
+```
+
+### Test Coverage
+
+- **Unit Tests**: Tests individual functions and methods
+- **Integration Tests**: Tests plugin functionality end-to-end
+- **Code Quality**: PHP_CodeSniffer with WordPress coding standards
+
+### Adding Tests
+
+See `tests/README.md` for detailed instructions on writing tests.
 
 ## Troubleshooting
 

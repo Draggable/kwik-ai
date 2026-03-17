@@ -1,2 +1,6 @@
 error_log
 node_modules/
+vendor/
+.phpunit.cache/
+tests/coverage/
+.phpcs.cache
