@@ -27,6 +27,7 @@ require_once plugin_dir_path(__FILE__) . 'core/functions.php';
 require_once plugin_dir_path(__FILE__) . 'core/init.php';
 
 // Include helper functions
+require_once plugin_dir_path(__FILE__) . 'includes/security-utilities.php';
 require_once plugin_dir_path(__FILE__) . 'includes/image-processing.php';
 require_once plugin_dir_path(__FILE__) . 'includes/ollama-api.php';
 require_once plugin_dir_path(__FILE__) . 'includes/tag-generation.php';

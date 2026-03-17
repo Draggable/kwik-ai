@@ -9,6 +9,11 @@ if (!defined('ABSPATH')) {
   exit; // Exit if accessed directly.
 }
 
+// Load security utilities if available
+if (file_exists(dirname(__DIR__) . '/includes/security-utilities.php')) {
+  require_once dirname(__DIR__) . '/includes/security-utilities.php';
+}
+
 /**
  * Get the configured AI model
  *
@@ -53,6 +58,7 @@ function kwik_ai_tags_get_api_endpoint(): string
 
 /**
  * Get API key based on provider
+ * Uses secure credential storage if available
  *
  * @return string
  */
@@ -61,8 +67,16 @@ function kwik_ai_tags_get_api_key(): string
   $provider = kwik_ai_tags_get_ai_provider();
   
   if ($provider === 'openrouter') {
+    // Use secure credential retrieval if available
+    if (function_exists('kwik_ai_retrieve_credential')) {
+      return kwik_ai_retrieve_credential('kwik_ai_openrouter_api_key', '');
+    }
     return get_option('kwik_ai_openrouter_api_key', '');
   } elseif ($provider === 'openai') {
+    // Use secure credential retrieval if available
+    if (function_exists('kwik_ai_retrieve_credential')) {
+      return kwik_ai_retrieve_credential('kwik_ai_openai_api_key', '');
+    }
     return get_option('kwik_ai_openai_api_key', '');
   }
   
@@ -82,7 +96,7 @@ function kwik_ai_tags_get_api_headers(): array
   );
   
   if ($provider === 'openrouter') {
-    $api_key = get_option('kwik_ai_openrouter_api_key', '');
+    $api_key = kwik_ai_tags_get_api_key();
     $endpoint = get_option('kwik_ai_api_endpoint', 'https://openrouter.ai/api/v1');
     
     if (!empty($api_key)) {
@@ -91,7 +105,7 @@ function kwik_ai_tags_get_api_headers(): array
       $headers['X-Title'] = get_bloginfo('name');
     }
   } elseif ($provider === 'openai') {
-    $api_key = get_option('kwik_ai_openai_api_key', '');
+    $api_key = kwik_ai_tags_get_api_key();
     
     if (!empty($api_key)) {
       $headers['Authorization'] = 'Bearer ' . $api_key;
@@ -147,6 +161,7 @@ function kwik_ai_tags_query_ai(string $prompt, array $images): ?string
   $model = kwik_ai_tags_get_ai_model();
   $headers = kwik_ai_tags_get_api_headers();
 
+  // Log only non-sensitive information
   error_log('Kwik AI: Provider: ' . $provider);
   error_log('Kwik AI: Endpoint: ' . $endpoint);
   error_log('Kwik AI: Model: ' . $model);
@@ -167,6 +182,7 @@ function kwik_ai_tags_query_ai(string $prompt, array $images): ?string
       'stream' => false,
     ];
     
+    // Log payload without images (too large)
     error_log('Kwik AI: Payload (without images): ' . json_encode(array_merge($payload, ['images' => '[' . count($images) . ' images]'])));
     
     $response = wp_remote_post(
@@ -227,6 +243,7 @@ function kwik_ai_tags_query_ai(string $prompt, array $images): ?string
       'max_tokens' => 100,
     );
     
+    // Log payload summary, not full content
     error_log('Kwik AI: Payload: ' . json_encode(array_merge($payload, array('messages' => '[' . count($messages) . ' messages]'))));
     
     $response = wp_remote_post(
@@ -263,12 +280,12 @@ function kwik_ai_tags_process_ollama_response($response, $prompt)
 
   if ($response_code !== 200) {
     $body = wp_remote_retrieve_body($response);
-    error_log('Kwik AI: HTTP error: ' . $response_code . ' - Response body: ' . $body);
+    error_log('Kwik AI: HTTP error: ' . $response_code . ' - Response body: ' . substr($body, 0, 200));
     return null;
   }
 
   $body = wp_remote_retrieve_body($response);
-  error_log('Kwik AI: Response body: ' . substr($body, 0, 500));
+  error_log('Kwik AI: Response body (' . strlen($body) . ' chars)');
 
   $data = json_decode($body, true);
 
@@ -302,7 +319,7 @@ function kwik_ai_tags_process_ollama_response($response, $prompt)
   }
 
   if (!isset($data['response'])) {
-    error_log('Kwik AI: No response field in data: ' . print_r($data, true));
+    error_log('Kwik AI: No response field in data');
     return null;
   }
 
@@ -327,7 +344,7 @@ function kwik_ai_tags_process_openai_response($response)
 
   if ($response_code !== 200) {
     $body = wp_remote_retrieve_body($response);
-    error_log('Kwik AI: HTTP error: ' . $response_code . ' - Response body: ' . $body);
+    error_log('Kwik AI: HTTP error: ' . $response_code);
     
     // Try to parse error message
     $error_data = json_decode($body, true);
@@ -339,7 +356,7 @@ function kwik_ai_tags_process_openai_response($response)
   }
 
   $body = wp_remote_retrieve_body($response);
-  error_log('Kwik AI: Response body: ' . substr($body, 0, 500));
+  error_log('Kwik AI: Response body (' . strlen($body) . ' chars)');
 
   $data = json_decode($body, true);
 
@@ -349,7 +366,7 @@ function kwik_ai_tags_process_openai_response($response)
   }
 
   if (!isset($data['choices'][0]['message']['content'])) {
-    error_log('Kwik AI: No content in response: ' . print_r($data, true));
+    error_log('Kwik AI: No content in response');
     return null;
   }
 
@@ -566,7 +583,7 @@ function kwik_ai_tags_test_ollama_connection()
  */
 function kwik_ai_tags_test_openrouter_connection()
 {
-  $api_key = get_option('kwik_ai_openrouter_api_key', '');
+  $api_key = kwik_ai_tags_get_api_key();
   $endpoint = get_option('kwik_ai_api_endpoint', 'https://openrouter.ai/api/v1');
   $selected_model = kwik_ai_tags_get_ai_model();
   
@@ -627,7 +644,7 @@ function kwik_ai_tags_test_openrouter_connection()
  */
 function kwik_ai_tags_test_openai_connection()
 {
-  $api_key = get_option('kwik_ai_openai_api_key', '');
+  $api_key = kwik_ai_tags_get_api_key();
   $endpoint = get_option('kwik_ai_api_endpoint', 'https://api.openai.com/v1');
   $selected_model = kwik_ai_tags_get_ai_model();
   

@@ -9,6 +9,11 @@ if (!defined('ABSPATH')) {
   exit; // Exit if accessed directly.
 }
 
+// Load security utilities if available
+if (file_exists(dirname(__DIR__) . '/includes/security-utilities.php')) {
+  require_once dirname(__DIR__) . '/includes/security-utilities.php';
+}
+
 /**
  * Add admin menu
  */
@@ -146,7 +151,7 @@ function kwik_ai_tags_settings_init()
     'kwik_ai_openrouter_api_key',
     array(
       'type' => 'string',
-      'sanitize_callback' => 'sanitize_text_field',
+      'sanitize_callback' => 'kwik_ai_tags_sanitize_api_key',
       'default' => ''
     )
   );
@@ -157,7 +162,7 @@ function kwik_ai_tags_settings_init()
     'kwik_ai_openai_api_key',
     array(
       'type' => 'string',
-      'sanitize_callback' => 'sanitize_text_field',
+      'sanitize_callback' => 'kwik_ai_tags_sanitize_api_key',
       'default' => ''
     )
   );
@@ -282,6 +287,26 @@ function kwik_ai_tags_sanitize_password($input)
 }
 
 /**
+ * Sanitize API key setting
+ * Uses secure storage if available
+ *
+ * @param string $input
+ * @return string
+ */
+function kwik_ai_tags_sanitize_api_key($input)
+{
+  $key = trim($input);
+  
+  // Store securely if available
+  if (function_exists('kwik_ai_store_credential')) {
+    kwik_ai_store_credential('kwik_ai_openrouter_api_key', $key);
+    kwik_ai_store_credential('kwik_ai_openai_api_key', $key);
+  }
+  
+  return $key;
+}
+
+/**
  * Settings section callback
  */
 function kwik_ai_tags_settings_section_callback()
@@ -302,7 +327,17 @@ function kwik_ai_tags_provider_section_callback()
  */
 function kwik_ai_tags_auth_section_callback()
 {
-  echo '<p>' . esc_html__('Enter credentials for your AI provider. These are stored securely.', KWIK_AI_DOMAIN) . '</p>';
+  $has_encryption = function_exists('kwik_ai_has_encryption') && kwik_ai_has_encryption();
+  
+  echo '<p>' . esc_html__('Enter credentials for your AI provider.', KWIK_AI_DOMAIN) . '</p>';
+  
+  if ($has_encryption) {
+    echo '<div class="notice notice-success inline" style="margin: 5px 0 0;"><p>' . 
+      esc_html__('Credentials will be encrypted before storage.', KWIK_AI_DOMAIN) . '</p></div>';
+  } else {
+    echo '<div class="notice notice-warning inline" style="margin: 5px 0 0;"><p>' . 
+      esc_html__('Credentials are stored without encryption. Ensure your database is properly secured.', KWIK_AI_DOMAIN) . '</p></div>';
+  }
 }
 
 /**
@@ -460,7 +495,12 @@ function kwik_ai_tags_ollama_password_callback()
  */
 function kwik_ai_openrouter_api_key_callback()
 {
-  $api_key = get_option('kwik_ai_openrouter_api_key', '');
+  // Use secure retrieval if available
+  if (function_exists('kwik_ai_retrieve_credential')) {
+    $api_key = kwik_ai_retrieve_credential('kwik_ai_openrouter_api_key', '');
+  } else {
+    $api_key = get_option('kwik_ai_openrouter_api_key', '');
+  }
   
   printf(
     '<input type="password" name="kwik_ai_openrouter_api_key" value="%s" class="regular-text" />',
@@ -477,7 +517,12 @@ function kwik_ai_openrouter_api_key_callback()
  */
 function kwik_ai_openai_api_key_callback()
 {
-  $api_key = get_option('kwik_ai_openai_api_key', '');
+  // Use secure retrieval if available
+  if (function_exists('kwik_ai_retrieve_credential')) {
+    $api_key = kwik_ai_retrieve_credential('kwik_ai_openai_api_key', '');
+  } else {
+    $api_key = get_option('kwik_ai_openai_api_key', '');
+  }
   
   printf(
     '<input type="password" name="kwik_ai_openai_api_key" value="%s" class="regular-text" />',
