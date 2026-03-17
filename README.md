@@ -1,6 +1,8 @@
 # KWIK AI
 
-Auto-tag posts with the Gemma3:27b model via Ollama. Analyzes both images (including block images and custom TRB belt gallery blocks) and text content (50+ words) with preview functionality. Also generates AI descriptions for belt posts based on attached images or content scraped from URLs, with customizable description length. Configure which post types to enable via Settings > KWIK AI.
+**Multi-Provider AI Tagging and Description Generation for WordPress**
+
+KWIK AI is a WordPress plugin that automatically generates relevant tags and descriptions for your content using AI. It supports multiple AI providers including **Ollama** (local models), **OpenRouter** (cloud models), and **OpenAI** (GPT models).
 
 ## Features
 
@@ -23,19 +25,40 @@ Auto-tag posts with the Gemma3:27b model via Ollama. Analyzes both images (inclu
 - **Customizable description length** with slider controls (50-500 words)
 - No insertion into post content - the block contains the description
 
+### 4. Multiple AI Provider Support
+- **Ollama**: Run models locally on your server
+- **OpenRouter**: Access hundreds of AI models through a unified API
+- **OpenAI**: Use GPT models directly
+
 ## Requirements
 
 - WordPress 5.6+ (any recent LTS)
-- Ollama running on http://localhost:11434
-- gemma3:27b model pulled (`ollama pull gemma3:27b`)
+- One of the following AI providers:
+  - **Ollama** running on `http://localhost:11434` (configurable)
+  - **OpenRouter** API key
+  - **OpenAI** API key
+- Vision-capable model for image analysis:
+  - **Ollama**: `gemma3:27b`, `llava:13b`, etc.
+  - **OpenRouter**: `anthropic/claude-3-5-sonnet-latest`, `openai/gpt-4o`, etc.
+  - **OpenAI**: `gpt-4o`, `gpt-4o-mini`, etc.
 - Posts with images or at least 50 words of text content
 
 ## Installation
 
 1. Upload the plugin to your WordPress site
 2. Activate the plugin
-3. Configure post types in Settings > KWIK AI
-4. Ensure Ollama is running with the gemma3:27b model
+3. Configure your AI provider in **Settings > KWIK AI**
+4. Ensure your AI provider is running with a vision-capable model
+
+## Configuration
+
+Navigate to **Settings > KWIK AI** to:
+- Select your AI provider (Ollama, OpenRouter, or OpenAI)
+- Configure the API endpoint
+- Select the model to use
+- Enter API credentials
+- Enable/disable specific post types
+- View connection status
 
 ## Usage
 
@@ -78,12 +101,49 @@ Auto-tag posts with the Gemma3:27b model via Ollama. Analyzes both images (inclu
 - ⚠️ Less flexible positioning
 - ✅ Still functional for existing workflows
 
-## Configuration
+## AI Provider Comparison
 
-Navigate to **Settings > KWIK AI** to:
-- Enable/disable specific post types
-- View Ollama connection status
-- Check requirements
+### Ollama (Local)
+**Pros:**
+- Free - no API costs
+- Privacy - all processing done locally
+- No rate limits
+- Works offline after models are downloaded
+
+**Cons:**
+- Requires local installation
+- Needs sufficient hardware resources
+- Model download time
+- Limited to available models
+
+**Best for:** Users with local hardware, privacy concerns, or limited budgets
+
+### OpenRouter (Cloud)
+**Pros:**
+- Access to hundreds of models
+- Pay-per-use pricing
+- No local setup required
+- High-quality models available
+
+**Cons:**
+- Costs money
+- Requires internet connection
+- Rate limits on free tier
+
+**Best for:** Users who want access to multiple models without local setup
+
+### OpenAI (Cloud)
+**Pros:**
+- Best-in-class models (GPT-4o)
+- Simple setup
+- Reliable service
+
+**Cons:**
+- Costs money
+- Requires internet connection
+- Limited to OpenAI models
+
+**Best for:** Users who want the best quality and don't mind paying
 
 ## Supported Post Types
 
@@ -104,11 +164,25 @@ Additional post types can be enabled in the settings.
 - Media & text blocks
 - Cover blocks
 
-### AI Model
-- Uses Gemma3:27b via Ollama
+### AI Models
+
+**Ollama Models:**
+- Uses Gemma3, LLaVA, or other vision-capable models
 - Vision model for image analysis
 - Text analysis for content with 50+ words
 - Generates concise, relevant tags and descriptions
+
+**OpenRouter Models:**
+- Anthropic Claude series
+- OpenAI GPT series
+- Meta Llama series
+- And many more...
+
+**OpenAI Models:**
+- GPT-4o
+- GPT-4o-mini
+- GPT-4
+- And more...
 
 ### Performance
 - 2-minute timeout for AI generation
@@ -129,7 +203,7 @@ The plugin has been restructured for better maintainability:
 │   └── functions.php
 ├── /includes/ (helper functions)
 │   ├── image-processing.php
-│   ├── ollama-api.php
+│   ├── ollama-api.php (supports Ollama, OpenRouter, OpenAI)
 │   ├── tag-generation.php
 │   └── description-generation.php
 ├── /admin/ (admin-specific functionality)
@@ -152,17 +226,36 @@ The plugin has been restructured for better maintainability:
 ├── debug-test.php
 ├── README.md
 ├── CHANGELOG.md
-├── TROUBLESHOOTING.md
-└── BLOCK-IMPLEMENTATION.md
+└── TROUBLESHOOTING.md
 ```
 
 ## Troubleshooting
 
 ### Common Issues
-1. **No tags/descriptions generated**: Ensure Ollama is running and gemma3:27b is installed
-2. **Timeout errors**: Ollama might be processing, try again
-3. **No images found**: Add images to the post or check image permissions
-4. **Block not appearing**: Check if post type is enabled in settings
+
+1. **No tags/descriptions generated**: 
+   - Ensure your AI provider is running/configured
+   - Check that you have a vision-capable model installed
+
+2. **Timeout errors**: 
+   - The AI provider might be processing, try again
+   - Increase the timeout in the code if needed
+
+3. **No images found**: 
+   - Add images to the post or check image permissions
+
+4. **Block not appearing**: 
+   - Check if post type is enabled in settings
+
+5. **Connection errors**: 
+   - Test the connection in Settings > KWIK AI
+   - Verify API credentials are correct
+   - Check firewall settings
 
 ### Debug Mode
+
 Enable `WP_DEBUG` to see detailed logging and status information in the meta boxes.
+
+## License
+
+GPL-2.0-or-later
