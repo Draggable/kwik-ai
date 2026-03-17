@@ -7,7 +7,7 @@ module.exports = {
     'settings': './assets/js/settings.js',
   },
   output: {
-    path: path.resolve(__dirname, 'dist'),
+    path: path.resolve(__dirname, 'assets/js'),
     filename: '[name].js',
     clean: true,
   },

@@ -1,6 +1,16 @@
-error_log
+# Dependencies
 node_modules/
-vendor/
-.phpunit.cache/
-tests/coverage/
-.phpcs.cache
+
+# Build output
+*.js.LICENSE.txt
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
