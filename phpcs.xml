@@ -1,0 +1,24 @@
+<?php
+/**
+ * PHP_CodeSniffer Configuration
+ *
+ * This file configures PHP_CodeSniffer for WordPress plugin development.
+ */
+
+$ruleset = new PHP_CodeSniffer_Ruleset(null);
+
+// Include WordPress coding standards
+$ruleset->config->setProperty('installed_paths', WP_Coding_Standards_DIR);
+
+// Set the standard to WordPress
+$ruleset->config->setProperty('standard', 'WordPress');
+
+// Set minimum PHP version for compatibility checking
+$ruleset->config->setProperty('runtime_path', '');
+
+// Enable caching
+$ruleset->config->setProperty('cache', true);
+$ruleset->config->setProperty('cache_location', '.phpcs.cache');
+
+// Set verbosity
+$ruleset->config->setProperty('verbosity', 0);

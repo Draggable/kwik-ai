@@ -65,7 +65,7 @@ function kwik_ai_description_block_editor_assets()
   // Enqueue block editor script
   wp_enqueue_script(
     'kwik-ai-description-block',
-    plugin_dir_url(KWIK_AI_PLUGIN_FILE) . 'assets/js/description-block.build.js',
+    plugin_dir_url(KWIK_AI_PLUGIN_FILE) . 'assets/js/description-block.js',
     array('react', 'react-dom', 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-i18n', 'wp-data'),
     $version,
     true

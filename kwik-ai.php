@@ -1,15 +1,15 @@
 <?php
 /**
  * Plugin Name: Kwik AI
- * Description: Auto‑tag posts using AI models via Ollama. Supports vision-capable models for image analysis (e.g., gemma3, llava) and text analysis (50+ words) with preview functionality. Also generates AI descriptions for posts based on attached images or content scraped from URLs. Configure model selection and post types via Settings > KWIK AI.
+ * Description: Auto‑tag posts using AI models. Supports vision-capable models for image analysis (e.g., gemma3, llava, gpt-4o) and text analysis (50+ words) with preview functionality. Also generates AI descriptions for posts based on attached images or content scraped from URLs. Supports Ollama, OpenRouter, and OpenAI. Configure model selection and post types via Settings > KWIK AI.
  * Version: 3.0
- * Author: Your Name
+ * Author: Kevin Chappell
  * Text Domain: kwik-ai-tags
  *
  * This plugin requires:
  *   • WordPress 5.6+ (any recent LTS)
- *   • Ollama running on http://localhost:11434 (configurable)
- *   • A vision-capable model (e.g., gemma3:27b, llava:13b) pulled (`ollama pull gemma3:27b`)
+ *   • AI provider configured (Ollama, OpenRouter, or OpenAI)
+ *   • A vision-capable model (e.g., gemma3:27b, llava:13b for Ollama; gpt-4o for OpenAI)
  */
 
 if (!defined('ABSPATH')) {
@@ -27,6 +27,7 @@ require_once plugin_dir_path(__FILE__) . 'core/functions.php';
 require_once plugin_dir_path(__FILE__) . 'core/init.php';
 
 // Include helper functions
+require_once plugin_dir_path(__FILE__) . 'includes/security-utilities.php';
 require_once plugin_dir_path(__FILE__) . 'includes/image-processing.php';
 require_once plugin_dir_path(__FILE__) . 'includes/ollama-api.php';
 require_once plugin_dir_path(__FILE__) . 'includes/tag-generation.php';

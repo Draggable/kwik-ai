@@ -10,6 +10,59 @@ if (!defined('ABSPATH')) {
 }
 
 /**
+ * Validate URL is not an internal/private address (SSRF protection)
+ *
+ * @param string $url URL to validate
+ * @return bool True if safe to fetch, false otherwise
+ */
+function kwik_ai_validate_url_safety($url) {
+  $parsed_url = parse_url($url);
+  
+  if (!$parsed_url || !isset($parsed_url['host'])) {
+    return false;
+  }
+  
+  $host = $parsed_url['host'];
+  
+  // Resolve hostname to IP
+  $ip = gethostbyname($host);
+  
+  if ($ip === $host) {
+    // Could not resolve hostname
+    return false;
+  }
+  
+  // Block private IP ranges (RFC 1918)
+  $private_ranges = [
+    '/^10\./',                    // 10.0.0.0/8
+    '/^172\.(1[6-9]|2[0-9]|3[0-1])\./',  // 172.16.0.0/12
+    '/^192\.168\./',              // 192.168.0.0/16
+    '/^127\./',                   // Loopback
+    '/^169\.254\./',              // Link-local
+  ];
+  
+  foreach ($private_ranges as $pattern) {
+    if (preg_match($pattern, $ip)) {
+      error_log('Kwik AI: Blocked SSRF attempt to private IP: ' . $ip . ' (from ' . $host . ')');
+      return false;
+    }
+  }
+  
+  // Block IPv6 loopback and link-local
+  if (strpos($host, '::1') === 0 || strpos($host, 'fe80:') === 0) {
+    error_log('Kwik AI: Blocked SSRF attempt to IPv6 private address: ' . $host);
+    return false;
+  }
+  
+  // Additional check: ensure URL uses http/https
+  if (!isset($parsed_url['scheme']) || !in_array(strtolower($parsed_url['scheme']), ['http', 'https'])) {
+    return false;
+  }
+  
+  return true;
+}
+
+/**
  * Scrape and summarize content from a URL
  *
  * @param string $url
@@ -21,10 +74,18 @@ function kwik_ai_scrape_and_summarize_url(string $url)
     error_log('Kwik AI: Scraping content from URL: ' . $url);
   }
 
-  // Validate URL
+  // Validate URL format
   if (!filter_var($url, FILTER_VALIDATE_URL)) {
     if (defined('WP_DEBUG') && WP_DEBUG) {
       error_log('Kwik AI: Invalid URL provided: ' . $url);
+    }
+    return false;
+  }
+
+  // SSRF protection - check if URL targets internal/private addresses
+  if (!kwik_ai_validate_url_safety($url)) {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+      error_log('Kwik AI: URL blocked by SSRF protection: ' . $url);
     }
     return false;
   }
@@ -249,7 +310,7 @@ function kwik_ai_summarize_content(string $content): ?string
   $prompt = 'Summarize the following content in a clear and concise way. Focus on the main points and key information. Keep the summary to 2-3 sentences. Respond with only the summary text, no extra formatting or labels.' . "\n\n" . $content;
 
   // Query Ollama for summary
-  $summary = kwik_ai_tags_query_ollama_text_only($prompt);
+  $summary = kwik_ai_tags_query_text_only($prompt);
 
   if ($summary) {
     $summary = trim($summary);

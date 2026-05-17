@@ -1,2 +1,19 @@
-error_log
+# Dependencies
 node_modules/
+
+# Build output
+*.js.LICENSE.txt
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# PHP
+.phpunit.cache/
