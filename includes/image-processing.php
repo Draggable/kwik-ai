@@ -347,9 +347,11 @@ function kwik_ai_tags_image_to_data_uri(string $url): ?string
     $content_type = wp_remote_retrieve_header($response, 'content-type');
 
     if ($image_data && $content_type) {
-      error_log('Kwik AI: Successfully got image via wp_remote_get, type: ' . $content_type);
-      // Return just base64 data for Ollama (not full data URI)
-      return base64_encode($image_data);
+      // Validate content is actually an image
+      if (strpos($content_type, 'image/') === 0) {
+        error_log('Kwik AI: Successfully got image via wp_remote_get, type: ' . $content_type);
+        return base64_encode($image_data);
+      }
     }
   }
 
@@ -419,7 +421,6 @@ function kwik_ai_tags_image_to_data_uri(string $url): ?string
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
     curl_setopt($ch, CURLOPT_TIMEOUT, 30);
     curl_setopt($ch, CURLOPT_USERAGENT, 'WordPress/' . get_bloginfo('version'));
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
     $image_data = curl_exec($ch);
     $content_type = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
@@ -427,9 +428,11 @@ function kwik_ai_tags_image_to_data_uri(string $url): ?string
     curl_close($ch);
 
     if ($image_data !== false && $http_code === 200 && $content_type) {
-      error_log('Kwik AI: Successfully got image via cURL, type: ' . $content_type);
-      // Return just base64 data for Ollama (not full data URI)
-      return base64_encode($image_data);
+      // Validate content is actually an image
+      if (strpos($content_type, 'image/') === 0) {
+        error_log('Kwik AI: Successfully got image via cURL, type: ' . $content_type);
+        return base64_encode($image_data);
+      }
     }
   }
 
