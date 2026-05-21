@@ -123,10 +123,10 @@ function kwik_ai_description_generate_from_image_urls(int $post_id, array $image
   error_log('Kwik AI: Using description prompt: ' . $prompt);
 
   /* ----------------------------------------------------- */
-  /* 3. Send request to Ollama */
+  /* 3. Send request to AI provider */
   /* ----------------------------------------------------- */
-  error_log('Kwik AI: Sending description request to Ollama');
-  $raw_response = kwik_ai_tags_query_ollama($prompt, $data_uris);
+  error_log('Kwik AI: Sending description request to AI provider');
+  $raw_response = kwik_ai_tags_query_ai($prompt, $data_uris);
   error_log('Kwik AI: Ollama description response: ' . substr($raw_response ?: 'NULL', 0, 200));
 
   if (!$raw_response) {
@@ -198,7 +198,7 @@ function kwik_ai_description_generate_from_urls(int $post_id, array $urls, int $
   error_log('Kwik AI: Using summary prompt: ' . $summary_prompt);
 
   // Get a summary of all the content
-  $summary_response = kwik_ai_tags_query_ollama_text_only($summary_prompt);
+  $summary_response = kwik_ai_tags_query_ai_text_only($summary_prompt);
   if (!$summary_response) {
     error_log('Kwik AI: Failed to get summary of combined content');
     return false;
@@ -212,10 +212,10 @@ function kwik_ai_description_generate_from_urls(int $post_id, array $urls, int $
   error_log('Kwik AI: Using description prompt: ' . $description_prompt);
 
   /* ----------------------------------------------------- */
-  /* 3. Send request to Ollama */
+  /* 3. Send request to AI provider */
   /* ----------------------------------------------------- */
-  error_log('Kwik AI: Sending description request to Ollama');
-  $raw_response = kwik_ai_tags_query_ollama_text_only($description_prompt);
+  error_log('Kwik AI: Sending description request to AI provider');
+  $raw_response = kwik_ai_tags_query_ai_text_only($description_prompt);
   error_log('Kwik AI: Ollama description response: ' . substr($raw_response ?: 'NULL', 0, 200));
 
   if (!$raw_response) {

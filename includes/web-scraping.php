@@ -309,8 +309,8 @@ function kwik_ai_summarize_content(string $content): ?string
   // Create a prompt for summarization
   $prompt = 'Summarize the following content in a clear and concise way. Focus on the main points and key information. Keep the summary to 2-3 sentences. Respond with only the summary text, no extra formatting or labels.' . "\n\n" . $content;
 
-  // Query Ollama for summary
-  $summary = kwik_ai_tags_query_text_only($prompt);
+  // Query AI provider for summary
+  $summary = kwik_ai_tags_query_ai_text_only($prompt);
 
   if ($summary) {
     $summary = trim($summary);

@@ -132,10 +132,10 @@ function kwik_ai_tags_generate_from_image_urls(int $post_id, array $image_urls)
   error_log('Kwik AI: Using image prompt: ' . $prompt);
 
   /* ----------------------------------------------------- */
-  /* 3. Send request to Ollama */
+  /* 3. Send request to AI provider */
   /* ----------------------------------------------------- */
-  error_log('Kwik AI: Sending image request to Ollama');
-  $raw_response = kwik_ai_tags_query_ollama($prompt, $data_uris);
+  error_log('Kwik AI: Sending image request to AI provider');
+  $raw_response = kwik_ai_tags_query_ai($prompt, $data_uris);
   error_log('Kwik AI: Ollama image response: ' . ($raw_response ?: 'NULL'));
 
   if (!$raw_response) {
@@ -209,10 +209,10 @@ Article text:
   error_log('Kwik AI: Using text prompt (first 200 chars): ' . substr($prompt, 0, 200) . '...');
 
   /* ----------------------------------------------------- */
-  /* 2. Send request to Ollama (text-only, no images) */
+  /* 2. Send request to AI provider (text-only, no images) */
   /* ----------------------------------------------------- */
-  error_log('Kwik AI: Sending text request to Ollama');
-  $raw_response = kwik_ai_tags_query_ollama($prompt, []); // Empty images array
+  error_log('Kwik AI: Sending text request to AI provider');
+  $raw_response = kwik_ai_tags_query_ai_text_only($prompt);
   error_log('Kwik AI: Ollama text response: ' . ($raw_response ?: 'NULL'));
 
   if (!$raw_response) {
