@@ -18,24 +18,24 @@ function kwik_ai_tags_enqueue_scripts($hook)
   
   // Debug logging
   if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('Kwik AI: Hook = ' . $hook);
+    kwik_ai_log('Kwik AI: Hook = ' . $hook);
   }
 
   if ($hook !== 'post.php' && $hook !== 'post-new.php') {
     if (defined('WP_DEBUG') && WP_DEBUG) {
-      error_log('Kwik AI: Wrong hook, returning');
+      kwik_ai_log('Kwik AI: Wrong hook, returning');
     }
     return;
   }
 
   $screen = get_current_screen();
   if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('Kwik AI: Screen post_type = ' . $screen->post_type);
+    kwik_ai_log('Kwik AI: Screen post_type = ' . $screen->post_type);
   }
 
   if (!in_array($screen->post_type, $enabled_post_types)) {
     if (defined('WP_DEBUG') && WP_DEBUG) {
-      error_log('Kwik AI: Post type not enabled, returning');
+      kwik_ai_log('Kwik AI: Post type not enabled, returning');
     }
     return;
   }
@@ -44,8 +44,8 @@ function kwik_ai_tags_enqueue_scripts($hook)
   $css_url = plugin_dir_url(KWIK_AI_PLUGIN_FILE) . 'assets/css/admin.css';
 
   if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('Kwik AI: Enqueueing JS from: ' . $js_url);
-    error_log('Kwik AI: Enqueueing CSS from: ' . $css_url);
+    kwik_ai_log('Kwik AI: Enqueueing JS from: ' . $js_url);
+    kwik_ai_log('Kwik AI: Enqueueing CSS from: ' . $css_url);
   }
 
   wp_enqueue_script(
@@ -65,7 +65,7 @@ function kwik_ai_tags_enqueue_scripts($hook)
 
   $post_id = get_the_ID();
   if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('Kwik AI: Post ID = ' . $post_id);
+    kwik_ai_log('Kwik AI: Post ID = ' . $post_id);
   }
 
   wp_localize_script('kwik-ai-tags-admin', 'kwikAiTags', [
@@ -93,6 +93,6 @@ function kwik_ai_tags_enqueue_scripts($hook)
   ]);
 
   if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('Kwik AI: Scripts and styles enqueued successfully');
+    kwik_ai_log('Kwik AI: Scripts and styles enqueued successfully');
   }
 }

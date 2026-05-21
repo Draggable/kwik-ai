@@ -78,15 +78,15 @@ function kwik_ai_tags_extract_block_images(string $content, int $post_id = 0): a
       foreach ($blocks as $block) {
         if ($block['blockName'] === 'trb/belt-gallery') {
           $trb_belt_galleries++;
-          error_log('Kwik AI: Found TRB belt gallery block #' . $trb_belt_galleries);
+          kwik_ai_log('Kwik AI: Found TRB belt gallery block #' . $trb_belt_galleries);
           if (isset($block['attrs']['images']) && is_array($block['attrs']['images'])) {
-            error_log('Kwik AI: TRB belt gallery has ' . count($block['attrs']['images']) . ' items');
+            kwik_ai_log('Kwik AI: TRB belt gallery has ' . count($block['attrs']['images']) . ' items');
             foreach ($block['attrs']['images'] as $index => $image) {
               $log_data = [];
               if (isset($image['id'])) $log_data[] = 'id=' . $image['id'];
               if (isset($image['url'])) $log_data[] = 'url=' . $image['url'];
               if (isset($image['title'])) $log_data[] = 'title=' . $image['title'];
-              error_log('Kwik AI: TRB gallery item ' . $index . ': ' . implode(', ', $log_data));
+              kwik_ai_log('Kwik AI: TRB gallery item ' . $index . ': ' . implode(', ', $log_data));
             }
           }
         }
@@ -102,7 +102,7 @@ function kwik_ai_tags_extract_block_images(string $content, int $post_id = 0): a
   $image_urls = array_unique($image_urls);
   $image_urls = kwik_ai_tags_deduplicate_sized_images($image_urls);
 
-  error_log('Kwik AI: Extracted ' . count($image_urls) . ' unique images from content (including ' . count($shortcode_images) . ' from gallery shortcodes)');
+  kwik_ai_log('Kwik AI: Extracted ' . count($image_urls) . ' unique images from content (including ' . count($shortcode_images) . ' from gallery shortcodes)');
   return $image_urls;
 }
 
@@ -119,7 +119,7 @@ function kwik_ai_tags_extract_gallery_shortcode_images(string $content, int $pos
 
   // Use WordPress shortcode regex to find gallery shortcodes
   $shortcode_regex = get_shortcode_regex(['gallery']);
-  error_log('Kwik AI: Extracted ' . strlen($shortcode_regex) . ' character shortcode regex');
+  kwik_ai_log('Kwik AI: Extracted ' . strlen($shortcode_regex) . ' character shortcode regex');
   preg_match_all('/' . $shortcode_regex . '/s', $content, $matches);
 
   if (!empty($matches[0])) {
@@ -148,14 +148,14 @@ function kwik_ai_tags_extract_gallery_shortcode_images(string $content, int $pos
         }
       }
 
-      error_log('Kwik AI: Found gallery shortcode with attributes: ' . print_r($atts, true));
+      kwik_ai_log('Kwik AI: Found gallery shortcode with attributes: ' . print_r($atts, true));
 
       if ($atts) {
         // Check if specific image IDs are provided
         if (isset($atts['ids']) && !empty($atts['ids'])) {
           // Parse comma-separated IDs
           $ids = array_map('intval', array_filter(explode(',', $atts['ids'])));
-          error_log('Kwik AI: Gallery shortcode has ' . count($ids) . ' specified IDs');
+          kwik_ai_log('Kwik AI: Gallery shortcode has ' . count($ids) . ' specified IDs');
 
           foreach ($ids as $attachment_id) {
             $url = wp_get_attachment_url($attachment_id);
@@ -167,7 +167,7 @@ function kwik_ai_tags_extract_gallery_shortcode_images(string $content, int $pos
             }
           }
 
-          error_log('Kwik AI: Extracted ' . count($ids) . ' images from gallery shortcode with IDs');
+          kwik_ai_log('Kwik AI: Extracted ' . count($ids) . ' images from gallery shortcode with IDs');
         }
         // If no IDs specified, get all image attachments for the post
         elseif ($post_id > 0) {
@@ -180,7 +180,7 @@ function kwik_ai_tags_extract_gallery_shortcode_images(string $content, int $pos
             }
           }
 
-          error_log('Kwik AI: Extracted ' . count($attachments) . ' images from gallery shortcode (all post attachments)');
+          kwik_ai_log('Kwik AI: Extracted ' . count($attachments) . ' images from gallery shortcode (all post attachments)');
         }
       }
     }
@@ -334,7 +334,7 @@ function kwik_ai_tags_extract_images_from_html(string $html): array
  */
 function kwik_ai_tags_image_to_data_uri(string $url): ?string
 {
-  error_log('Kwik AI: Converting image to data URI: ' . $url);
+  kwik_ai_log('Kwik AI: Converting image to data URI: ' . $url);
 
   // Method 1: Try WordPress HTTP API first (more reliable)
   $response = wp_remote_get($url, [
@@ -349,13 +349,13 @@ function kwik_ai_tags_image_to_data_uri(string $url): ?string
     if ($image_data && $content_type) {
       // Validate content is actually an image
       if (strpos($content_type, 'image/') === 0) {
-        error_log('Kwik AI: Successfully got image via wp_remote_get, type: ' . $content_type);
+        kwik_ai_log('Kwik AI: Successfully got image via wp_remote_get, type: ' . $content_type);
         return base64_encode($image_data);
       }
     }
   }
 
-  error_log('Kwik AI: wp_remote_get failed, trying file_get_contents');
+  kwik_ai_log('Kwik AI: wp_remote_get failed, trying file_get_contents');
 
   // Method 2: Try file_get_contents with context (original method improved)
   $context = stream_context_create([
@@ -406,12 +406,12 @@ function kwik_ai_tags_image_to_data_uri(string $url): ?string
       $mime_type = $mime_map[$ext] ?? 'image/jpeg'; // Default to JPEG
     }
 
-    error_log('Kwik AI: Successfully got image via file_get_contents, type: ' . $mime_type);
+    kwik_ai_log('Kwik AI: Successfully got image via file_get_contents, type: ' . $mime_type);
     // Return just base64 data for Ollama (not full data URI)
     return base64_encode($image_data);
   }
 
-  error_log('Kwik AI: file_get_contents failed, trying cURL');
+  kwik_ai_log('Kwik AI: file_get_contents failed, trying cURL');
 
   // Method 3: Try cURL if available
   if (function_exists('curl_init')) {
@@ -430,26 +430,26 @@ function kwik_ai_tags_image_to_data_uri(string $url): ?string
     if ($image_data !== false && $http_code === 200 && $content_type) {
       // Validate content is actually an image
       if (strpos($content_type, 'image/') === 0) {
-        error_log('Kwik AI: Successfully got image via cURL, type: ' . $content_type);
+        kwik_ai_log('Kwik AI: Successfully got image via cURL, type: ' . $content_type);
         return base64_encode($image_data);
       }
     }
   }
 
-  error_log('Kwik AI: cURL failed');
+  kwik_ai_log('Kwik AI: cURL failed');
 
   // Method 4: If it's a local file path, try direct file access
   if (strpos($url, home_url()) === 0) {
     $file_path = str_replace(home_url(), ABSPATH, $url);
     $file_path = str_replace('//', '/', $file_path);
 
-    error_log('Kwik AI: Trying local file path: ' . $file_path);
+    kwik_ai_log('Kwik AI: Trying local file path: ' . $file_path);
 
     if (file_exists($file_path) && is_readable($file_path)) {
       $image_data = file_get_contents($file_path);
       if ($image_data !== false) {
         $mime_type = mime_content_type($file_path) ?: 'image/jpeg';
-        error_log('Kwik AI: Successfully got local file, type: ' . $mime_type);
+        kwik_ai_log('Kwik AI: Successfully got local file, type: ' . $mime_type);
         // Return just base64 data for Ollama (not full data URI)
         return base64_encode($image_data);
       }

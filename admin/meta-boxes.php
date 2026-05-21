@@ -31,7 +31,9 @@ function kwik_ai_tags_add_meta_box()
     );
   }
 
-  error_log('Kwik AI: Meta box added for post types: ' . implode(', ', $enabled_post_types));
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: Meta box added for post types: ' . implode(', ', $enabled_post_types));
+  }
 }
 
 /**
@@ -56,7 +58,9 @@ function kwik_ai_description_add_meta_box()
     );
   }
 
-  error_log('Kwik AI: Description meta box added for post types: ' . implode(', ', $enabled_post_types));
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: Description meta box added for post types: ' . implode(', ', $enabled_post_types));
+  }
 }
 
 /**
@@ -152,16 +156,19 @@ function kwik_ai_tags_meta_box_callback($post)
        Word Count: <?php
         $word_count = str_word_count(wp_strip_all_tags($content));
         echo esc_html($word_count);
-        echo $word_count >= KWIK_AI_MIN_WORDS
-          ? ' (' . esc_html__('text analysis enabled', KWIK_AI_DOMAIN) . ')'
-          : ' (' . esc_html__('text analysis disabled', KWIK_AI_DOMAIN) . ')';
+        $text_analysis_status = $word_count >= KWIK_AI_MIN_WORDS
+          ? esc_html__('text analysis enabled', KWIK_AI_DOMAIN)
+          : esc_html__('text analysis disabled', KWIK_AI_DOMAIN);
+        echo ' (' . esc_html($text_analysis_status) . ')';
         ?>
       </div>
     <?php endif; ?>
   </div>
   <?php
 
-  error_log('Kwik AI: Meta box HTML rendered');
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: Meta box HTML rendered');
+  }
 }
 
 /**
@@ -249,5 +256,7 @@ function kwik_ai_description_meta_box_callback($post)
   </div>
   <?php
 
-  error_log('Kwik AI: Description meta box HTML rendered');
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: Description meta box HTML rendered');
+  }
 }

@@ -10,6 +10,21 @@ if (!defined('ABSPATH')) {
 }
 
 /**
+ * Log debug messages (gated by WP_DEBUG)
+ *
+ * Centralized logging helper that prevents excessive error_log() calls
+ * in production where WP_DEBUG is disabled.
+ *
+ * @param string $message Message to log
+ */
+function kwik_ai_log(string $message): void
+{
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log($message);
+  }
+}
+
+/**
  * Get enabled post types from settings
  * 
  * @return array Array of enabled post types
