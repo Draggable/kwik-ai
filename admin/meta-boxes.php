@@ -14,7 +14,9 @@ if (!defined('ABSPATH')) {
  */
 function kwik_ai_tags_add_meta_box()
 {
-  error_log('Kwik AI: Adding meta box');
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: Adding meta box');
+  }
 
   $enabled_post_types = kwik_ai_tags_get_enabled_post_types();
   
@@ -37,7 +39,9 @@ function kwik_ai_tags_add_meta_box()
  */
 function kwik_ai_description_add_meta_box()
 {
-  error_log('Kwik AI: Adding description meta box');
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: Adding description meta box');
+  }
 
   $enabled_post_types = kwik_ai_tags_get_enabled_post_types();
   
@@ -60,7 +64,9 @@ function kwik_ai_description_add_meta_box()
  */
 function kwik_ai_tags_meta_box_callback($post)
 {
-  error_log('Kwik AI: Meta box callback called for post ' . $post->ID);
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: Meta box callback called for post ' . $post->ID);
+  }
 
   wp_nonce_field('kwik_ai_tags_meta_box', 'kwik_ai_tags_nonce');
   ?>
@@ -143,10 +149,12 @@ function kwik_ai_tags_meta_box_callback($post)
         $image_urls = kwik_ai_tags_deduplicate_sized_images($image_urls);
         echo esc_html(count($image_urls));
         ?><br>
-        Word Count: <?php
+       Word Count: <?php
         $word_count = str_word_count(wp_strip_all_tags($content));
         echo esc_html($word_count);
-        echo $word_count >= KWIK_AI_MIN_WORDS ? ' (✓ text analysis enabled)' : ' (text analysis disabled)';
+        echo $word_count >= KWIK_AI_MIN_WORDS
+          ? ' (' . esc_html__('text analysis enabled', KWIK_AI_DOMAIN) . ')'
+          : ' (' . esc_html__('text analysis disabled', KWIK_AI_DOMAIN) . ')';
         ?>
       </div>
     <?php endif; ?>
@@ -161,7 +169,9 @@ function kwik_ai_tags_meta_box_callback($post)
  */
 function kwik_ai_description_meta_box_callback($post)
 {
-  error_log('Kwik AI: Description meta box callback called for post ' . $post->ID);
+  if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Kwik AI: Description meta box callback called for post ' . $post->ID);
+  }
 
   wp_nonce_field('kwik_ai_description_meta_box', 'kwik_ai_description_nonce');
   
