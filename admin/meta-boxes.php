@@ -72,7 +72,8 @@ function kwik_ai_tags_meta_box_callback($post)
     error_log('Kwik AI: Meta box callback called for post ' . $post->ID);
   }
 
-  wp_nonce_field('kwik_ai_tags_meta_box', 'kwik_ai_tags_nonce');
+  // Note: This meta box is AJAX-driven; nonce verification happens
+  // in admin/ajax-handlers.php via check_ajax_referer().
   ?>
   <div id="kwik-ai-tags-container">
     <p>
@@ -103,7 +104,7 @@ function kwik_ai_tags_meta_box_callback($post)
       <p class="error-message"></p>
     </div>
 
-    <?php if (WP_DEBUG): ?>
+    <?php if (current_user_can('manage_options') && defined('WP_DEBUG') && WP_DEBUG): ?>
       <div id="kwik-ai-tags-debug" style="margin-top: 10px; font-size: 11px; color: #666;">
         <strong>Debug Info:</strong><br>
         Post ID: <?php echo esc_html($post->ID); ?><br>
@@ -180,8 +181,9 @@ function kwik_ai_description_meta_box_callback($post)
     error_log('Kwik AI: Description meta box callback called for post ' . $post->ID);
   }
 
-  wp_nonce_field('kwik_ai_description_meta_box', 'kwik_ai_description_nonce');
-  
+  // Note: This meta box is AJAX-driven; nonce verification happens
+  // in admin/ajax-handlers.php via check_ajax_referer().
+
   // Get existing description
   $existing_description = kwik_ai_get_description($post->ID);
   ?>
