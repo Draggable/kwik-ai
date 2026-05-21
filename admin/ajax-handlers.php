@@ -188,10 +188,15 @@ function kwik_ai_description_ajax_generate()
     wp_send_json_error(__('Invalid post ID.', KWIK_AI_DOMAIN));
   }
 
-  // Get URLs if provided
+  // Get URLs if provided -- validate and sanitize each URL
   $urls = [];
   if (isset($_POST['urls']) && is_array($_POST['urls'])) {
-    $urls = array_filter(array_map('sanitize_text_field', $_POST['urls']));
+    foreach ($_POST['urls'] as $url) {
+      $sanitized = esc_url_raw(trim($url));
+      if (filter_var($sanitized, FILTER_VALIDATE_URL)) {
+        $urls[] = $sanitized;
+      }
+    }
   }
 
   // Get word count parameters if provided
@@ -248,16 +253,16 @@ function kwik_ai_description_ajax_generate()
   }
 
   if (empty($description)) {
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-      kwik_ai_log('Kwik AI: No description generated');
-    }
+    kwik_ai_log('Kwik AI: No description generated');
     wp_send_json_error(__('No description was generated. Try adding more descriptive images or URLs.', KWIK_AI_DOMAIN));
   }
 
-  if (defined('WP_DEBUG') && WP_DEBUG) {
-    kwik_ai_log('Kwik AI: Sending success response');
-  }
-  wp_send_json_success(['description' => $description]);
+  // Sanitize AI-generated content before storing in block attributes (LL-2)
+  // Strip all HTML tags to prevent stored XSS via AI-generated content
+  $sanitized_description = sanitize_textarea_field($description);
+
+  kwik_ai_log('Kwik AI: Sending success response');
+  wp_send_json_success(['description' => $sanitized_description]);
 }
 
 /**
