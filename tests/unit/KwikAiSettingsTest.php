@@ -15,7 +15,7 @@ class KwikAiSettingsTest extends TestCase
     public function testSettingsInitializeWithDefaults()
     {
         // Test default AI provider
-        $this->assertEquals('ollama', get_option('kwik_ai_ai_provider'));
+        $this->assertEquals('custom', get_option('kwik_ai_ai_provider'));
         
         // Test default endpoint
         $this->assertEquals('http://localhost:11434', get_option('kwik_ai_api_endpoint'));

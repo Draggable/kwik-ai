@@ -26,10 +26,12 @@ function kwik_ai_description_block_render($attributes)
     return '';
   }
 
-  // The description already contains HTML (paragraph tags from RichText.Content)
-  // so we don't need to wrap it in additional paragraph tags or escape it
+  // Sanitize the description to prevent stored XSS
+  // AI-generated content may contain HTML; allow safe markup only
+  $safe_description = wp_kses_post($description);
+
   return sprintf(
     '<div class="wp-block-kwik-ai-description">%s</div>',
-    $description
+    esc_html($safe_description)
   );
 }

@@ -26,7 +26,7 @@ define('KWIK_AI_DOMAIN', 'kwik-ai');
 
 // AI Provider constants - these will be set from settings if available
 if (!defined('KWIK_AI_AI_PROVIDER')) {
-  define('KWIK_AI_AI_PROVIDER', get_option('kwik_ai_ai_provider', 'ollama'));
+  define('KWIK_AI_AI_PROVIDER', get_option('kwik_ai_ai_provider', 'custom'));
 }
 
 if (!defined('KWIK_AI_API_ENDPOINT')) {
@@ -35,14 +35,6 @@ if (!defined('KWIK_AI_API_ENDPOINT')) {
 
 if (!defined('KWIK_AI_API_KEY')) {
   define('KWIK_AI_API_KEY', get_option('kwik_ai_api_key', ''));
-}
-
-if (!defined('KWIK_AI_API_USERNAME')) {
-  define('KWIK_AI_API_USERNAME', get_option('kwik_ai_api_username', ''));
-}
-
-if (!defined('KWIK_AI_API_PASSWORD')) {
-  define('KWIK_AI_API_PASSWORD', get_option('kwik_ai_api_password', ''));
 }
 
 if (!defined('KWIK_AI_MODEL')) {

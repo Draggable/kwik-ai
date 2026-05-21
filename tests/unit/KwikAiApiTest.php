@@ -23,8 +23,8 @@ class KwikAiApiTest extends TestCase
      */
     public function testGetAiProvider() {
         $provider = kwik_ai_tags_get_ai_provider();
-        $this->assertEquals('ollama', $provider);
-        $this->assertContains($provider, array('ollama', 'openrouter', 'openai'));
+        $this->assertEquals('custom', $provider);
+        $this->assertContains($provider, array('custom', 'openrouter', 'openai'));
     }
 
     /**
@@ -40,25 +40,23 @@ class KwikAiApiTest extends TestCase
      * Test that API key functions return empty by default
      */
     public function testApiKeysEmptyByDefault() {
-        $this->assertEquals('', kwik_ai_tags_get_api_key('ollama'));
+        $this->assertEquals('', kwik_ai_tags_get_api_key('custom'));
         $this->assertEquals('', kwik_ai_tags_get_api_key('openrouter'));
         $this->assertEquals('', kwik_ai_tags_get_api_key('openai'));
     }
 
     /**
-     * Test Ollama config retrieval
+     * Test custom endpoint config retrieval
      */
     public function testGetOllamaConfig() {
         $config = kwik_ai_tags_get_ollama_config();
         
         $this->assertArrayHasKey('url', $config);
-        $this->assertArrayHasKey('username', $config);
-        $this->assertArrayHasKey('password', $config);
+        $this->assertArrayHasKey('api_key', $config);
         $this->assertArrayHasKey('has_auth', $config);
         
         $this->assertEquals('http://localhost:11434', $config['url']);
-        $this->assertEquals('', $config['username']);
-        $this->assertEquals('', $config['password']);
+        $this->assertEquals('', $config['api_key']);
         $this->assertFalse($config['has_auth']);
     }
 
@@ -74,7 +72,7 @@ class KwikAiApiTest extends TestCase
      * Test that API headers function returns correct structure
      */
     public function testGetApiHeaders() {
-        $headers = kwik_ai_tags_get_api_headers('ollama');
+        $headers = kwik_ai_tags_get_api_headers('custom');
         $this->assertArrayHasKey('Content-Type', $headers);
         $this->assertEquals('application/json', $headers['Content-Type']);
     }

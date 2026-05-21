@@ -31,7 +31,7 @@ function kwik_ai_tags_get_ai_model(): string
  */
 function kwik_ai_tags_get_ai_provider(): string
 {
-  return get_option('kwik_ai_ai_provider', 'ollama');
+  return get_option('kwik_ai_ai_provider', 'custom');
 }
 
 /**
@@ -111,12 +111,10 @@ function kwik_ai_tags_get_api_headers(): array
       $headers['Authorization'] = 'Bearer ' . $api_key;
     }
   } else {
-    // Ollama - check for basic auth
-    $config = kwik_ai_tags_get_ollama_config();
-    if ($config['has_auth']) {
-      $credentials = $config['username'] . ':' . $config['password'];
-      $encoded_credentials = base64_encode($credentials);
-      $headers['Authorization'] = 'Basic ' . $encoded_credentials;
+    // Custom - check for API key
+    $api_key = get_option('kwik_ai_custom_api_key', '');
+    if (!empty($api_key)) {
+      $headers['Authorization'] = 'Bearer ' . $api_key;
     }
   }
   
@@ -124,24 +122,22 @@ function kwik_ai_tags_get_api_headers(): array
 }
 
 /**
- * Get Ollama config (for backward compatibility)
+ * Get custom endpoint config
  *
  * @return array
  */
 function kwik_ai_tags_get_ollama_config()
 {
   $url = get_option('kwik_ai_api_endpoint', 'http://localhost:11434');
-  $username = get_option('kwik_ai_tags_ollama_username', '');
-  $password = get_option('kwik_ai_tags_ollama_password', '');
+  $api_key = get_option('kwik_ai_custom_api_key', '');
 
   // Ensure URL doesn't have trailing slash
   $url = rtrim($url, '/');
 
   return array(
     'url' => $url,
-    'username' => $username,
-    'password' => $password,
-    'has_auth' => !empty($username) && !empty($password)
+    'api_key' => $api_key,
+    'has_auth' => !empty($api_key)
   );
 }
 
@@ -171,8 +167,8 @@ function kwik_ai_tags_query_ai(string $prompt, array $images): ?string
   // Build payload based on provider
   $payload = array();
   
-  if ($provider === 'ollama') {
-    // Ollama /api/generate endpoint
+  if ($provider === 'custom') {
+    // Custom /api/generate endpoint
     $url = $endpoint . '/api/generate';
     
     $payload = [
@@ -392,8 +388,8 @@ function kwik_ai_tags_query_ai_text_only(string $prompt): ?string
   error_log('Kwik AI: Auth configured: ' . (count($headers) > 1 ? 'Yes' : 'No'));
 
   // Build payload based on provider
-  if ($provider === 'ollama') {
-    // Ollama /api/generate endpoint
+  if ($provider === 'custom') {
+    // Custom /api/generate endpoint
     $url = $endpoint . '/api/generate';
     
     $payload = [
@@ -507,7 +503,7 @@ function kwik_ai_tags_test_ai_connection()
 {
   $provider = kwik_ai_tags_get_ai_provider();
   
-  if ($provider === 'ollama') {
+  if ($provider === 'custom') {
     return kwik_ai_tags_test_ollama_connection();
   } elseif ($provider === 'openrouter') {
     return kwik_ai_tags_test_openrouter_connection();
@@ -697,20 +693,17 @@ function kwik_ai_tags_test_openai_connection()
 }
 
 /**
- * Get basic auth header for Ollama requests (for backward compatibility)
+ * Get auth header for custom endpoint requests
  *
  * @return array
  */
 function kwik_ai_tags_get_ollama_auth_header()
 {
   $config = kwik_ai_tags_get_ollama_config();
-  
+
   if (!$config['has_auth']) {
     return array();
   }
-  
-  $credentials = $config['username'] . ':' . $config['password'];
-  $encoded_credentials = base64_encode($credentials);
-  
-  return array('Authorization' => 'Basic ' . $encoded_credentials);
+
+  return array('Authorization' => 'Bearer ' . $config['api_key']);
 }
