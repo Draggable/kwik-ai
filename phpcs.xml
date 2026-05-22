@@ -1,24 +1,37 @@
-<?php
-/**
- * PHP_CodeSniffer Configuration
- *
- * This file configures PHP_CodeSniffer for WordPress plugin development.
- */
+<?xml version="1.0"?>
+<ruleset name="Kwik AI Tags">
+    <description>PHP_CodeSniffer configuration for Kwik AI Tags WordPress plugin.</description>
 
-$ruleset = new PHP_CodeSniffer_Ruleset(null);
+    <!-- Scan these directories -->
+    <file>.</file>
 
-// Include WordPress coding standards
-$ruleset->config->setProperty('installed_paths', WP_Coding_Standards_DIR);
+    <!-- Exclude non-PHP and third-party code -->
+    <exclude-pattern>vendor/*</exclude-pattern>
+    <exclude-pattern>node_modules/*</exclude-pattern>
+    <exclude-pattern>assets/*</exclude-pattern>
+    <exclude-pattern>dist/*</exclude-pattern>
+    <exclude-pattern>tests/*</exclude-pattern>
+    <exclude-pattern>*.js</exclude-pattern>
+    <exclude-pattern>*.css</exclude-pattern>
+    <exclude-pattern>test-*.php</exclude-pattern>
 
-// Set the standard to WordPress
-$ruleset->config->setProperty('standard', 'WordPress');
+    <!-- Only check PHP files -->
+    <arg name="extensions" value="php" />
 
-// Set minimum PHP version for compatibility checking
-$ruleset->config->setProperty('runtime_path', '');
+    <!-- PHP Compatibility checking -->
+    <config name="testVersion" value="8.0-" />
+    <rule ref="PHPCompatibility" />
 
-// Enable caching
-$ruleset->config->setProperty('cache', true);
-$ruleset->config->setProperty('cache_location', '.phpcs.cache');
+    <!-- Critical WordPress security sniffs only -->
+    <rule ref="WordPress.Security.EscapeOutput" />
+    <rule ref="WordPress.Security.NonceVerification" />
+    <rule ref="WordPress.Security.ValidatedSanitizedInput" />
+    <rule ref="WordPress.WP.DeprecatedFunctions" />
 
-// Set verbosity
-$ruleset->config->setProperty('verbosity', 0);
+    <!-- Show progress -->
+    <arg value="ps" />
+    <arg name="colors" />
+
+    <!-- Enable caching -->
+    <arg name="cache" value=".phpcs.cache" />
+</ruleset>

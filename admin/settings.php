@@ -87,7 +87,7 @@ function kwik_ai_tags_settings_init()
     array(
       'type' => 'string',
       'sanitize_callback' => 'sanitize_text_field',
-      'default' => 'ollama'
+      'default' => 'custom'
     )
   );
 
@@ -124,34 +124,13 @@ function kwik_ai_tags_settings_init()
     )
   );
 
-  // Ollama-specific credentials (for backward compatibility)
-  register_setting(
-    'kwik_ai_tags_settings',
-    'kwik_ai_tags_ollama_username',
-    array(
-      'type' => 'string',
-      'sanitize_callback' => 'sanitize_text_field',
-      'default' => ''
-    )
-  );
-
-  register_setting(
-    'kwik_ai_tags_settings',
-    'kwik_ai_tags_ollama_password',
-    array(
-      'type' => 'string',
-      'sanitize_callback' => 'kwik_ai_tags_sanitize_password',
-      'default' => ''
-    )
-  );
-
   // OpenRouter-specific API key
   register_setting(
     'kwik_ai_tags_settings',
     'kwik_ai_openrouter_api_key',
     array(
       'type' => 'string',
-      'sanitize_callback' => 'kwik_ai_tags_sanitize_api_key',
+      'sanitize_callback' => 'kwik_ai_tags_sanitize_openrouter_api_key',
       'default' => ''
     )
   );
@@ -162,7 +141,18 @@ function kwik_ai_tags_settings_init()
     'kwik_ai_openai_api_key',
     array(
       'type' => 'string',
-      'sanitize_callback' => 'kwik_ai_tags_sanitize_api_key',
+      'sanitize_callback' => 'kwik_ai_tags_sanitize_openai_api_key',
+      'default' => ''
+    )
+  );
+
+  // Custom/Ollama API key
+  register_setting(
+    'kwik_ai_tags_settings',
+    'kwik_ai_custom_api_key',
+    array(
+      'type' => 'string',
+      'sanitize_callback' => 'kwik_ai_tags_sanitize_custom_api_key',
       'default' => ''
     )
   );
@@ -221,17 +211,9 @@ function kwik_ai_tags_settings_init()
   );
 
   add_settings_field(
-    'kwik_ai_tags_ollama_username',
-    __('Ollama Username', KWIK_AI_DOMAIN),
-    'kwik_ai_tags_ollama_username_callback',
-    'kwik_ai_tags_settings',
-    'kwik_ai_tags_auth_section'
-  );
-
-  add_settings_field(
-    'kwik_ai_tags_ollama_password',
-    __('Ollama Password', KWIK_AI_DOMAIN),
-    'kwik_ai_tags_ollama_password_callback',
+    'kwik_ai_custom_api_key',
+    __('Custom API Key', KWIK_AI_DOMAIN),
+    'kwik_ai_custom_api_key_callback',
     'kwik_ai_tags_settings',
     'kwik_ai_tags_auth_section'
   );
@@ -287,22 +269,59 @@ function kwik_ai_tags_sanitize_password($input)
 }
 
 /**
- * Sanitize API key setting
+ * Sanitize OpenRouter API key setting
  * Uses secure storage if available
  *
  * @param string $input
  * @return string
  */
-function kwik_ai_tags_sanitize_api_key($input)
+function kwik_ai_tags_sanitize_openrouter_api_key($input)
 {
   $key = trim($input);
-  
+
   // Store securely if available
   if (function_exists('kwik_ai_store_credential')) {
     kwik_ai_store_credential('kwik_ai_openrouter_api_key', $key);
+  }
+
+  return $key;
+}
+
+/**
+ * Sanitize OpenAI API key setting
+ * Uses secure storage if available
+ *
+ * @param string $input
+ * @return string
+ */
+function kwik_ai_tags_sanitize_openai_api_key($input)
+{
+  $key = trim($input);
+
+  // Store securely if available
+  if (function_exists('kwik_ai_store_credential')) {
     kwik_ai_store_credential('kwik_ai_openai_api_key', $key);
   }
-  
+
+  return $key;
+}
+
+/**
+ * Sanitize Custom/Ollama API key setting
+ * Uses secure storage if available
+ *
+ * @param string $input
+ * @return string
+ */
+function kwik_ai_tags_sanitize_custom_api_key($input)
+{
+  $key = trim($input);
+
+  // Store securely if available
+  if (function_exists('kwik_ai_store_credential')) {
+    kwik_ai_store_credential('kwik_ai_custom_api_key', $key);
+  }
+
   return $key;
 }
 
@@ -312,6 +331,33 @@ function kwik_ai_tags_sanitize_api_key($input)
 function kwik_ai_tags_settings_section_callback()
 {
   echo '<p>' . esc_html__('Choose which post types should have AI tag and description generation enabled.', KWIK_AI_DOMAIN) . '</p>';
+}
+
+/**
+ * Enabled Post Types field callback
+ * Renders checkboxes for all public post types
+ */
+function kwik_ai_tags_enabled_post_types_callback()
+{
+  $enabled = get_option('kwik_ai_tags_enabled_post_types', array('post', 'belt'));
+  if (!is_array($enabled)) {
+    $enabled = array('post', 'belt');
+  }
+
+  $post_types = get_post_types(array('public' => true), 'objects');
+
+  echo '<div style="max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;">';
+  foreach ($post_types as $pt) {
+    $checked = in_array($pt->name, $enabled) ? 'checked' : '';
+    printf(
+      '<label style="display: block; margin: 4px 0;"><input type="checkbox" name="kwik_ai_tags_enabled_post_types[]" value="%s" %s /> %s</label>',
+      esc_attr($pt->name),
+      esc_attr($checked),
+      esc_html($pt->labels->singular_name)
+    );
+  }
+  echo '</div>';
+  echo '<p class="description">' . esc_html__('Select the post types where AI tag and description generation should be enabled.', KWIK_AI_DOMAIN) . '</p>';
 }
 
 /**
@@ -345,29 +391,23 @@ function kwik_ai_tags_auth_section_callback()
  */
 function kwik_ai_ai_provider_callback()
 {
-  $provider = get_option('kwik_ai_ai_provider', 'ollama');
+  $provider = get_option('kwik_ai_ai_provider', 'custom');
   
   echo '<select name="kwik_ai_ai_provider" id="kwik-ai-provider-select" class="regular-text">';
   
   $providers = array(
-    'ollama' => 'Ollama (Local)',
+    "custom" => "Custom",
     'openrouter' => 'OpenRouter',
     'openai' => 'OpenAI',
   );
   
   foreach ($providers as $value => $label) {
-    $selected = selected($provider, $value, false);
-    printf(
-      '<option value="%s" %s>%s</option>',
-      esc_attr($value),
-      $selected,
-      esc_html($label)
-    );
+    echo '<option value="' . esc_attr($value) . '" ' . selected($provider, $value, false) . '>' . esc_html($label) . '</option>';
   }
   
   echo '</select>';
   echo '<p class="description">';
-  echo esc_html__('Ollama requires a local installation. OpenRouter and OpenAI require API keys.');
+  echo esc_html__('Custom requires a configured endpoint URL. OpenRouter and OpenAI require API keys.');
   echo '</p>';
 }
 
@@ -377,7 +417,7 @@ function kwik_ai_ai_provider_callback()
 function kwik_ai_api_endpoint_callback()
 {
   $endpoint = get_option('kwik_ai_api_endpoint', 'http://localhost:11434');
-  $provider = get_option('kwik_ai_ai_provider', 'ollama');
+  $provider = get_option('kwik_ai_ai_provider', 'custom');
   
   // Set default endpoint based on provider
   if ($provider === 'openrouter' && empty($endpoint)) {
@@ -391,7 +431,7 @@ function kwik_ai_api_endpoint_callback()
     esc_attr($endpoint)
   );
   echo '<p class="description">';
-  echo esc_html__('For Ollama: your local URL (e.g., http://localhost:11434).');
+  echo esc_html__('For Custom: your API server URL (e.g., http://localhost:11434).');
   echo ' <strong>OpenRouter:</strong> https://openrouter.ai/api/v1';
   echo ' <strong>OpenAI:</strong> https://api.openai.com/v1';
   echo '</p>';
@@ -402,7 +442,7 @@ function kwik_ai_api_endpoint_callback()
  */
 function kwik_ai_model_callback()
 {
-  $provider = get_option('kwik_ai_ai_provider', 'ollama');
+  $provider = get_option('kwik_ai_ai_provider', 'custom');
   $selected_model = get_option('kwik_ai_model', 'gemma3:27b');
   $models = kwik_ai_tags_fetch_models();
 
@@ -420,18 +460,10 @@ function kwik_ai_model_callback()
     echo '<select name="kwik_ai_model" id="kwik-ai-model-select" class="regular-text">';
 
     foreach ($models as $model) {
-      $selected = selected($selected_model, $model['name'], false);
       $vision_indicator = isset($model['has_vision']) && $model['has_vision'] ? ' ' . __('(Vision)', KWIK_AI_DOMAIN) : '';
       $vision_class = isset($model['has_vision']) && $model['has_vision'] ? 'vision-model' : '';
 
-      printf(
-        '<option value="%s" %s class="%s">%s%s</option>',
-        esc_attr($model['name']),
-        $selected,
-        esc_attr($vision_class),
-        esc_html($model['name']),
-        esc_html($vision_indicator)
-      );
+      echo '<option value="' . esc_attr($model['name']) . '" ' . selected($selected_model, $model['name'], false) . ' class="' . esc_attr($vision_class) . '">' . esc_html($model['name']) . esc_html($vision_indicator) . '</option>';
     }
 
     echo '</select>';
@@ -452,7 +484,7 @@ function kwik_ai_model_callback()
       }
     }
 
-    if (!$selected_has_vision && $provider === 'ollama') {
+    if (!$selected_has_vision && $provider === 'custom') {
       echo '<div class="notice notice-warning inline" style="margin-top: 10px;">';
       echo '<p>' . esc_html__('Warning: The selected model may not support image analysis. For best results with this plugin, select a vision-capable model.', KWIK_AI_DOMAIN) . '</p>';
       echo '</div>';
@@ -463,31 +495,22 @@ function kwik_ai_model_callback()
 }
 
 /**
- * Ollama username field callback
+ * Custom API key field callback
  */
-function kwik_ai_tags_ollama_username_callback()
+function kwik_ai_custom_api_key_callback()
 {
-  $username = get_option('kwik_ai_tags_ollama_username', '');
-  
-  printf(
-    '<input type="text" name="kwik_ai_tags_ollama_username" value="%s" class="regular-text" />',
-    esc_attr($username)
-  );
-  echo '<p class="description">' . esc_html__('Enter the username for basic authentication (leave blank if no authentication is required)', KWIK_AI_DOMAIN) . '</p>';
-}
-
-/**
- * Ollama password field callback
- */
-function kwik_ai_tags_ollama_password_callback()
-{
-  $password = get_option('kwik_ai_tags_ollama_password', '');
+  // Use secure retrieval if available
+  if (function_exists('kwik_ai_retrieve_credential')) {
+    $api_key = kwik_ai_retrieve_credential('kwik_ai_custom_api_key', '');
+  } else {
+    $api_key = get_option('kwik_ai_custom_api_key', '');
+  }
 
   printf(
-    '<input type="password" name="kwik_ai_tags_ollama_password" value="%s" class="regular-text" />',
-    esc_attr($password)
+    '<input type="password" name="kwik_ai_custom_api_key" value="%s" class="regular-text" id="kwik-ai-custom-api-key" />',
+    esc_attr($api_key)
   );
-  echo '<p class="description">' . esc_html__('Enter the password for basic authentication (leave blank if no authentication is required)', KWIK_AI_DOMAIN) . '</p>';
+  echo '<p class="description">' . esc_html__('Enter the API key for your custom/Ollama endpoint (leave blank if no authentication is required)', KWIK_AI_DOMAIN) . '</p>';
 }
 
 /**
@@ -601,9 +624,9 @@ function kwik_ai_tags_model_has_vision($model_name)
  */
 function kwik_ai_tags_fetch_models()
 {
-  $provider = get_option('kwik_ai_ai_provider', 'ollama');
+  $provider = get_option('kwik_ai_ai_provider', 'custom');
   
-  if ($provider === 'ollama') {
+  if ($provider === 'custom') {
     return kwik_ai_tags_fetch_ollama_models();
   }
   
@@ -758,9 +781,9 @@ function kwik_ai_tags_fetch_ollama_models()
  */
 function kwik_ai_tags_test_provider_connection()
 {
-  $provider = get_option('kwik_ai_ai_provider', 'ollama');
+  $provider = get_option('kwik_ai_ai_provider', 'custom');
   
-  if ($provider === 'ollama') {
+  if ($provider === 'custom') {
     return kwik_ai_tags_test_ollama_connection();
   } elseif ($provider === 'openrouter') {
     return kwik_ai_tags_test_openrouter_connection();
@@ -777,7 +800,7 @@ function kwik_ai_tags_test_provider_connection()
 function kwik_ai_tags_settings_page()
 {
   if (!current_user_can('manage_options')) {
-    wp_die(__('You do not have sufficient permissions to access this page.', KWIK_AI_DOMAIN));
+    wp_die(esc_html__('You do not have sufficient permissions to access this page.', KWIK_AI_DOMAIN));
   }
   
   ?>
@@ -790,7 +813,7 @@ function kwik_ai_tags_settings_page()
       
       <h3><?php esc_html_e('Requirements', KWIK_AI_DOMAIN); ?></h3>
       <ul>
-        <li><?php esc_html_e('AI provider configured (Ollama, OpenRouter, or OpenAI)', KWIK_AI_DOMAIN); ?></li>
+        <li><?php esc_html_e('AI provider configured (Custom, OpenRouter, or OpenAI)', KWIK_AI_DOMAIN); ?></li>
         <li><?php esc_html_e('Vision-capable model for image analysis (e.g., gemma3:27b, llava:13b, gpt-4o)', KWIK_AI_DOMAIN); ?></li>
         <li><?php esc_html_e('Posts with images or at least 50 words of text content', KWIK_AI_DOMAIN); ?></li>
       </ul>
@@ -799,9 +822,9 @@ function kwik_ai_tags_settings_page()
       <p>
         <strong><?php esc_html_e('AI Provider:', KWIK_AI_DOMAIN); ?></strong>
         <code><?php
-          $provider = get_option('kwik_ai_ai_provider', 'ollama');
+          $provider = get_option('kwik_ai_ai_provider', 'custom');
           $provider_labels = array(
-            'ollama' => 'Ollama',
+            'custom' => 'Custom',
             'openrouter' => 'OpenRouter',
             'openai' => 'OpenAI',
           );

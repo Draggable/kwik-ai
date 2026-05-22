@@ -17,9 +17,10 @@ This branch adds support for multiple AI providers to the KWIK AI WordPress plug
 - **Model** (`kwik_ai_model`): Configurable model name
 - **OpenRouter API Key** (`kwik_ai_openrouter_api_key`): Separate key field
 - **OpenAI API Key** (`kwik_ai_openai_api_key`): Separate key field
+- **Custom API Key** (`kwik_ai_custom_api_key`): Bearer token for custom/Ollama endpoints
 
 #### Updated Settings
-- **Ollama Username/Password**: Now uses `kwik_ai_api_endpoint` instead of `kwik_ai_tags_ollama_url`
+- **Ollama Authentication**: Replaced username/password with API key (Bearer token)
 
 ### 2. API Integration (`includes/ollama-api.php`)
 
@@ -50,7 +51,7 @@ All constants now read from settings instead of hardcoded values:
 
 ### Ollama
 - **Endpoint**: `http://localhost:11434` (default)
-- **Authentication**: Basic auth (username/password)
+- **Authentication**: Bearer token (API key)
 - **Models**: gemma3, llava, etc.
 - **API Endpoint**: `/api/generate`
 

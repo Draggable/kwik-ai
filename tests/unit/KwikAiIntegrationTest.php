@@ -51,9 +51,9 @@ class KwikAiIntegrationTest extends TestCase
             'KWIK_AI_MIN_WORDS',
             'KWIK_AI_MAX_DESCRIPTION_LENGTH',
             'KWIK_AI_DOMAIN',
-            'KWIK_AI_AI_PROVIDER',
-            'KWIK_AI_API_ENDPOINT',
-            'KWIK_AI_MODEL',
+            'KWIK_AI_DEFAULT_OLLAMA_HOST',
+            'KWIK_AI_DEFAULT_OPENROUTER_ENDPOINT',
+            'KWIK_AI_DEFAULT_OPENAI_ENDPOINT',
         );
 
         foreach ($constants as $constant) {
@@ -62,6 +62,18 @@ class KwikAiIntegrationTest extends TestCase
                 "Constant {$constant} should be defined"
             );
         }
+
+        // Dynamic settings (provider, endpoint, model, API keys) must NOT
+        // be defined as constants -- they use getter functions instead.
+        // See LL-1 fix: constants freeze values on first load.
+        $this->assertFalse(
+            defined('KWIK_AI_AI_PROVIDER'),
+            'KWIK_AI_AI_PROVIDER should NOT be a constant (use getter function)'
+        );
+        $this->assertFalse(
+            defined('KWIK_AI_API_KEY'),
+            'KWIK_AI_API_KEY should NOT be a constant (use getter function)'
+        );
     }
 
     /**

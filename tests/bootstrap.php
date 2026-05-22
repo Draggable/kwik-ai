@@ -25,14 +25,13 @@ if (!function_exists('get_option')) {
     function get_option($option, $default = false) {
         // Return test defaults
         $defaults = array(
-            'kwik_ai_ai_provider' => 'ollama',
+            'kwik_ai_ai_provider' => 'custom',
             'kwik_ai_api_endpoint' => 'http://localhost:11434',
             'kwik_ai_model' => 'gemma3:27b',
             'kwik_ai_tags_enabled_post_types' => array('post', 'belt'),
             'kwik_ai_openrouter_api_key' => '',
             'kwik_ai_openai_api_key' => '',
-            'kwik_ai_tags_ollama_username' => '',
-            'kwik_ai_tags_ollama_password' => '',
+            'kwik_ai_custom_api_key' => '',
             'kwik_ai_api_key' => '',
         );
         return isset($defaults[$option]) ? $defaults[$option] : $default;
