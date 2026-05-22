@@ -18,3 +18,4 @@ Thumbs.db
 
 # PHP
 .phpunit.cache/
+.phpcs.cache

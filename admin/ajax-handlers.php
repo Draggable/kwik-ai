@@ -37,16 +37,15 @@ function kwik_ai_check_rate_limit(string $action, int $cooldown_seconds = 15): b
  */
 function kwik_ai_tags_ajax_generate()
 {
+  check_ajax_referer('kwik_ai_tags_ajax', 'nonce');
+
   if (defined('WP_DEBUG') && WP_DEBUG) {
     kwik_ai_log('Kwik AI: Generate AJAX called');
-    kwik_ai_log('Kwik AI: POST data: ' . print_r($_POST, true));
   }
-
-  check_ajax_referer('kwik_ai_tags_ajax', 'nonce');
 
   if (!current_user_can('edit_posts')) {
     kwik_ai_log('Kwik AI: User does not have edit_posts capability');
-    wp_die(__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+    wp_die(esc_html__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
   }
 
   // Rate limiting: 1 request per 15 seconds per user
@@ -54,6 +53,9 @@ function kwik_ai_tags_ajax_generate()
     wp_send_json_error(__('Please wait a moment before generating tags again.', KWIK_AI_DOMAIN));
   }
 
+  if (!isset($_POST['post_id'])) {
+    wp_send_json_error(__('Missing post ID.', KWIK_AI_DOMAIN));
+  }
   $post_id = intval($_POST['post_id']);
   if (defined('WP_DEBUG') && WP_DEBUG) {
     kwik_ai_log('Kwik AI: Post ID: ' . $post_id);
@@ -122,11 +124,15 @@ function kwik_ai_tags_ajax_apply()
   check_ajax_referer('kwik_ai_tags_ajax', 'nonce');
 
   if (!current_user_can('edit_posts')) {
-    wp_die(__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+    wp_die(esc_html__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+  }
+
+  if (!isset($_POST['post_id']) || !isset($_POST['tags'])) {
+    wp_send_json_error(__('Missing required fields.', KWIK_AI_DOMAIN));
   }
 
   $post_id = intval($_POST['post_id']);
-  $tags = sanitize_text_field($_POST['tags']);
+  $tags = sanitize_text_field(wp_unslash($_POST['tags']));
 
   if (!$post_id || get_post_status($post_id) === false) {
     wp_send_json_error(__('Invalid post ID.', KWIK_AI_DOMAIN));
@@ -159,16 +165,15 @@ function kwik_ai_tags_ajax_apply()
  */
 function kwik_ai_description_ajax_generate()
 {
+  check_ajax_referer('kwik_ai_description_ajax', 'nonce');
+
   if (defined('WP_DEBUG') && WP_DEBUG) {
     kwik_ai_log('Kwik AI: Description generate AJAX called');
-    kwik_ai_log('Kwik AI: POST data: ' . print_r($_POST, true));
   }
-
-  check_ajax_referer('kwik_ai_description_ajax', 'nonce');
 
   if (!current_user_can('edit_posts')) {
     kwik_ai_log('Kwik AI: User does not have edit_posts capability');
-    wp_die(__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+    wp_die(esc_html__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
   }
 
   // Rate limiting: 1 request per 15 seconds per user
@@ -176,6 +181,9 @@ function kwik_ai_description_ajax_generate()
     wp_send_json_error(__('Please wait a moment before generating descriptions again.', KWIK_AI_DOMAIN));
   }
 
+  if (!isset($_POST['post_id'])) {
+    wp_send_json_error(__('Missing post ID.', KWIK_AI_DOMAIN));
+  }
   $post_id = intval($_POST['post_id']);
   if (defined('WP_DEBUG') && WP_DEBUG) {
     kwik_ai_log('Kwik AI: Post ID: ' . $post_id);
@@ -191,7 +199,8 @@ function kwik_ai_description_ajax_generate()
   // Get URLs if provided -- validate and sanitize each URL
   $urls = [];
   if (isset($_POST['urls']) && is_array($_POST['urls'])) {
-    foreach ($_POST['urls'] as $url) {
+    $raw_urls = array_map('sanitize_text_field', wp_unslash($_POST['urls']));
+    foreach ($raw_urls as $url) {
       $sanitized = esc_url_raw(trim($url));
       if (filter_var($sanitized, FILTER_VALIDATE_URL)) {
         $urls[] = $sanitized;
@@ -273,11 +282,15 @@ function kwik_ai_description_ajax_apply()
   check_ajax_referer('kwik_ai_description_ajax', 'nonce');
 
   if (!current_user_can('edit_posts')) {
-    wp_die(__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+    wp_die(esc_html__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+  }
+
+  if (!isset($_POST['post_id']) || !isset($_POST['description'])) {
+    wp_send_json_error(__('Missing required fields.', KWIK_AI_DOMAIN));
   }
 
   $post_id = intval($_POST['post_id']);
-  $description = sanitize_textarea_field($_POST['description']);
+  $description = sanitize_textarea_field(wp_unslash($_POST['description']));
 
   if (!$post_id || get_post_status($post_id) === false) {
     wp_send_json_error(__('Invalid post ID.', KWIK_AI_DOMAIN));

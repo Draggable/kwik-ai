@@ -352,7 +352,7 @@ function kwik_ai_tags_enabled_post_types_callback()
     printf(
       '<label style="display: block; margin: 4px 0;"><input type="checkbox" name="kwik_ai_tags_enabled_post_types[]" value="%s" %s /> %s</label>',
       esc_attr($pt->name),
-      $checked,
+      esc_attr($checked),
       esc_html($pt->labels->singular_name)
     );
   }
@@ -402,13 +402,7 @@ function kwik_ai_ai_provider_callback()
   );
   
   foreach ($providers as $value => $label) {
-    $selected = selected($provider, $value, false);
-    printf(
-      '<option value="%s" %s>%s</option>',
-      esc_attr($value),
-      $selected,
-      esc_html($label)
-    );
+    echo '<option value="' . esc_attr($value) . '" ' . selected($provider, $value, false) . '>' . esc_html($label) . '</option>';
   }
   
   echo '</select>';
@@ -466,18 +460,10 @@ function kwik_ai_model_callback()
     echo '<select name="kwik_ai_model" id="kwik-ai-model-select" class="regular-text">';
 
     foreach ($models as $model) {
-      $selected = selected($selected_model, $model['name'], false);
       $vision_indicator = isset($model['has_vision']) && $model['has_vision'] ? ' ' . __('(Vision)', KWIK_AI_DOMAIN) : '';
       $vision_class = isset($model['has_vision']) && $model['has_vision'] ? 'vision-model' : '';
 
-      printf(
-        '<option value="%s" %s class="%s">%s%s</option>',
-        esc_attr($model['name']),
-        $selected,
-        esc_attr($vision_class),
-        esc_html($model['name']),
-        esc_html($vision_indicator)
-      );
+      echo '<option value="' . esc_attr($model['name']) . '" ' . selected($selected_model, $model['name'], false) . ' class="' . esc_attr($vision_class) . '">' . esc_html($model['name']) . esc_html($vision_indicator) . '</option>';
     }
 
     echo '</select>';
@@ -814,7 +800,7 @@ function kwik_ai_tags_test_provider_connection()
 function kwik_ai_tags_settings_page()
 {
   if (!current_user_can('manage_options')) {
-    wp_die(__('You do not have sufficient permissions to access this page.', KWIK_AI_DOMAIN));
+    wp_die(esc_html__('You do not have sufficient permissions to access this page.', KWIK_AI_DOMAIN));
   }
   
   ?>
