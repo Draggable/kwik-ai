@@ -112,13 +112,27 @@ function kwik_ai_tags_get_api_headers(): array
     }
   } else {
     // Custom - check for API key
-    $api_key = get_option('kwik_ai_custom_api_key', '');
+    $api_key = kwik_ai_tags_get_custom_api_key();
     if (!empty($api_key)) {
       $headers['Authorization'] = 'Bearer ' . $api_key;
     }
   }
-  
+
   return $headers;
+}
+
+/**
+ * Get the custom/Ollama API key, decrypting it from secure storage if available.
+ *
+ * @return string
+ */
+function kwik_ai_tags_get_custom_api_key(): string
+{
+  if (function_exists('kwik_ai_retrieve_credential')) {
+    return kwik_ai_retrieve_credential('kwik_ai_custom_api_key', '');
+  }
+
+  return get_option('kwik_ai_custom_api_key', '');
 }
 
 /**
@@ -129,7 +143,7 @@ function kwik_ai_tags_get_api_headers(): array
 function kwik_ai_tags_get_ollama_config()
 {
   $url = get_option('kwik_ai_api_endpoint', 'http://localhost:11434');
-  $api_key = get_option('kwik_ai_custom_api_key', '');
+  $api_key = kwik_ai_tags_get_custom_api_key();
 
   // Ensure URL doesn't have trailing slash
   $url = rtrim($url, '/');
@@ -522,43 +536,20 @@ function kwik_ai_tags_test_ai_connection()
 function kwik_ai_tags_test_ollama_connection()
 {
   $config = kwik_ai_tags_get_ollama_config();
-  $url = $config['url'] . '/api/tags';
-  $auth_headers = kwik_ai_tags_get_ollama_auth_header();
   $selected_model = kwik_ai_tags_get_ai_model();
 
-  error_log('Kwik AI: Testing connection to: ' . $url);
-  error_log('Kwik AI: Auth configured: ' . ($config['has_auth'] ? 'Yes' : 'No'));
-  error_log('Kwik AI: Selected model: ' . $selected_model);
+  // Use the robust model fetch, which tries the OpenAI-compatible /models
+  // endpoint first and falls back to Ollama's /api/tags. This makes the test
+  // work for any custom provider, not just Ollama.
+  $models = kwik_ai_tags_fetch_models_live('custom', $config['url'], $config['api_key']);
 
-  $headers = array_merge(
-    array('Content-Type' => 'application/json'),
-    $auth_headers
-  );
-
-  $response = wp_remote_get($url, array(
-    'timeout' => 5,
-    'headers' => $headers
-  ));
-
-  if (is_wp_error($response)) {
-    return __('Connection failed: ', KWIK_AI_DOMAIN) . $response->get_error_message();
+  if (!is_array($models) || empty($models)) {
+    return __('Could not connect to the AI provider. Please check the endpoint URL and API key.', KWIK_AI_DOMAIN);
   }
 
-  $response_code = wp_remote_retrieve_response_code($response);
-  if ($response_code !== 200) {
-    return sprintf(__('HTTP Error %d', KWIK_AI_DOMAIN), $response_code);
-  }
-
-  $body = wp_remote_retrieve_body($response);
-  $data = json_decode($body, true);
-
-  if (!$data || !isset($data['models'])) {
-    return __('Invalid response from Ollama', KWIK_AI_DOMAIN);
-  }
-
-  // Check if selected model is available
+  // Check if the selected model is available.
   $has_model = false;
-  foreach ($data['models'] as $model) {
+  foreach ($models as $model) {
     if (isset($model['name']) && $model['name'] === $selected_model) {
       $has_model = true;
       break;
@@ -566,7 +557,11 @@ function kwik_ai_tags_test_ollama_connection()
   }
 
   if (!$has_model) {
-    return sprintf(__('Connected, but "%s" model not found. Please pull the model or select a different one.', KWIK_AI_DOMAIN), $selected_model);
+    return sprintf(
+      /* translators: %s: model name */
+      __('Connected, but the "%s" model was not found. Please select a different model.', KWIK_AI_DOMAIN),
+      $selected_model
+    );
   }
 
   return true;
@@ -706,4 +701,214 @@ function kwik_ai_tags_get_ollama_auth_header()
   }
 
   return array('Authorization' => 'Bearer ' . $config['api_key']);
+}
+
+/**
+ * Resolve the default API endpoint for a provider when none is supplied.
+ *
+ * @param string $provider
+ * @return string
+ */
+function kwik_ai_tags_default_endpoint_for_provider($provider)
+{
+  if ($provider === 'openrouter') {
+    return 'https://openrouter.ai/api/v1';
+  }
+
+  if ($provider === 'openai') {
+    return 'https://api.openai.com/v1';
+  }
+
+  return 'http://localhost:11434';
+}
+
+/**
+ * Build request headers for a models/test request from explicit values.
+ *
+ * @param string $provider
+ * @param string $api_key
+ * @return array
+ */
+function kwik_ai_tags_build_request_headers($provider, $api_key)
+{
+  $headers = array('Content-Type' => 'application/json');
+
+  if (!empty($api_key)) {
+    $headers['Authorization'] = 'Bearer ' . $api_key;
+  }
+
+  if ($provider === 'openrouter') {
+    $headers['HTTP-Referer'] = home_url();
+    $headers['X-Title'] = get_bloginfo('name');
+  }
+
+  return $headers;
+}
+
+/**
+ * Sort a model list: vision-capable models first, then alphabetically.
+ *
+ * @param array $models
+ * @return array
+ */
+function kwik_ai_tags_sort_model_list(array $models)
+{
+  usort($models, function ($a, $b) {
+    if ($a['has_vision'] !== $b['has_vision']) {
+      return $b['has_vision'] ? 1 : -1;
+    }
+    return strcasecmp($a['name'], $b['name']);
+  });
+
+  return $models;
+}
+
+/**
+ * Fetch models from an OpenAI-compatible /models endpoint.
+ *
+ * Works for OpenAI, OpenRouter, and any custom provider that exposes the
+ * standard /models endpoint (LM Studio, vLLM, LocalAI, etc.).
+ *
+ * @param string $endpoint Base API URL (e.g. https://api.openai.com/v1)
+ * @param string $api_key  Optional bearer token
+ * @param string $provider Provider slug (affects extra headers)
+ * @return array|false     Array of model info or false on error
+ */
+function kwik_ai_tags_request_openai_models($endpoint, $api_key, $provider = 'custom')
+{
+  $url = rtrim($endpoint, '/') . '/models';
+
+  $response = wp_remote_get($url, array(
+    'timeout' => 10,
+    'headers' => kwik_ai_tags_build_request_headers($provider, $api_key),
+  ));
+
+  if (is_wp_error($response)) {
+    return false;
+  }
+
+  if (wp_remote_retrieve_response_code($response) !== 200) {
+    return false;
+  }
+
+  $data = json_decode(wp_remote_retrieve_body($response), true);
+
+  if (!is_array($data) || !isset($data['data']) || !is_array($data['data'])) {
+    return false;
+  }
+
+  $models = array();
+  foreach ($data['data'] as $model) {
+    $id = '';
+    if (isset($model['id'])) {
+      $id = $model['id'];
+    } elseif (isset($model['name'])) {
+      $id = $model['name'];
+    }
+
+    if ($id === '') {
+      continue;
+    }
+
+    $models[] = array(
+      'name' => $id,
+      'has_vision' => kwik_ai_tags_model_has_vision($id),
+    );
+  }
+
+  if (empty($models)) {
+    return false;
+  }
+
+  return kwik_ai_tags_sort_model_list($models);
+}
+
+/**
+ * Fetch models from an Ollama /api/tags endpoint.
+ *
+ * @param string $endpoint Base API URL (e.g. http://localhost:11434)
+ * @param string $api_key  Optional bearer token
+ * @return array|false     Array of model info or false on error
+ */
+function kwik_ai_tags_request_ollama_models($endpoint, $api_key)
+{
+  $url = rtrim($endpoint, '/') . '/api/tags';
+
+  $headers = array('Content-Type' => 'application/json');
+  if (!empty($api_key)) {
+    $headers['Authorization'] = 'Bearer ' . $api_key;
+  }
+
+  $response = wp_remote_get($url, array(
+    'timeout' => 10,
+    'headers' => $headers,
+  ));
+
+  if (is_wp_error($response)) {
+    return false;
+  }
+
+  if (wp_remote_retrieve_response_code($response) !== 200) {
+    return false;
+  }
+
+  $data = json_decode(wp_remote_retrieve_body($response), true);
+
+  if (!is_array($data) || !isset($data['models']) || !is_array($data['models'])) {
+    return false;
+  }
+
+  $models = array();
+  foreach ($data['models'] as $model) {
+    if (!isset($model['name'])) {
+      continue;
+    }
+
+    $models[] = array(
+      'name' => $model['name'],
+      'has_vision' => kwik_ai_tags_model_has_vision($model['name']),
+      'size' => isset($model['size']) ? $model['size'] : null,
+      'modified_at' => isset($model['modified_at']) ? $model['modified_at'] : null,
+    );
+  }
+
+  if (empty($models)) {
+    return false;
+  }
+
+  return kwik_ai_tags_sort_model_list($models);
+}
+
+/**
+ * Fetch available models from a provider using explicit connection values.
+ *
+ * This does not depend on saved settings, so it can be used to populate the
+ * model dropdown live while the settings form is being edited.
+ *
+ * For custom providers it tries the OpenAI-compatible /models endpoint first
+ * (where most providers expose their model list), then falls back to Ollama's
+ * /api/tags endpoint.
+ *
+ * @param string $provider Provider slug (custom|openrouter|openai)
+ * @param string $endpoint Base API URL (empty to use provider default)
+ * @param string $api_key  Optional bearer token
+ * @return array|false     Array of model info or false on error
+ */
+function kwik_ai_tags_fetch_models_live($provider, $endpoint, $api_key)
+{
+  if (empty($endpoint)) {
+    $endpoint = kwik_ai_tags_default_endpoint_for_provider($provider);
+  }
+
+  if ($provider === 'custom') {
+    $models = kwik_ai_tags_request_openai_models($endpoint, $api_key, 'custom');
+    if ($models !== false) {
+      return $models;
+    }
+
+    // Fall back to Ollama's native model listing.
+    return kwik_ai_tags_request_ollama_models($endpoint, $api_key);
+  }
+
+  return kwik_ai_tags_request_openai_models($endpoint, $api_key, $provider);
 }

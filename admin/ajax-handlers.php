@@ -100,7 +100,7 @@ function kwik_ai_tags_ajax_generate()
     if (defined('WP_DEBUG') && WP_DEBUG) {
       kwik_ai_log('Kwik AI: Tag generation failed');
     }
-    wp_send_json_error(__('Failed to generate tags. Please check if Ollama is running and try again.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Failed to generate tags. Please check your AI provider connection and try again.', KWIK_AI_DOMAIN));
   }
 
   if (empty($tags)) {
@@ -258,7 +258,7 @@ function kwik_ai_description_ajax_generate()
     if (defined('WP_DEBUG') && WP_DEBUG) {
       kwik_ai_log('Kwik AI: Description generation failed');
     }
-    wp_send_json_error(__('Failed to generate description. Please check if Ollama is running and try again.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Failed to generate description. Please check your AI provider connection and try again.', KWIK_AI_DOMAIN));
   }
 
   if (empty($description)) {
@@ -307,7 +307,47 @@ function kwik_ai_description_ajax_apply()
 }
 
 /**
- * AJAX handler for fetching available Ollama models
+ * Read provider connection parameters from the request.
+ *
+ * Falls back to saved options when a value isn't supplied, so the same handler
+ * works both from the live settings form (unsaved values) and elsewhere.
+ *
+ * @return array{0:string,1:string,2:string} [provider, endpoint, api_key]
+ */
+function kwik_ai_tags_get_connection_params_from_request()
+{
+  // The nonce is verified by the calling AJAX handler via check_ajax_referer().
+  // phpcs:disable WordPress.Security.NonceVerification.Missing
+  $allowed = array('custom', 'openrouter', 'openai');
+
+  $provider = isset($_POST['provider'])
+    ? sanitize_text_field(wp_unslash($_POST['provider']))
+    : get_option('kwik_ai_ai_provider', 'custom');
+  if (!in_array($provider, $allowed, true)) {
+    $provider = 'custom';
+  }
+
+  if (isset($_POST['endpoint'])) {
+    $endpoint = trim(esc_url_raw(wp_unslash($_POST['endpoint'])));
+  } else {
+    $endpoint = get_option('kwik_ai_api_endpoint', '');
+  }
+
+  if (isset($_POST['api_key'])) {
+    $api_key = sanitize_text_field(wp_unslash($_POST['api_key']));
+  } else {
+    $api_key = kwik_ai_tags_get_provider_api_key($provider);
+  }
+
+  // phpcs:enable WordPress.Security.NonceVerification.Missing
+  return array($provider, $endpoint, $api_key);
+}
+
+/**
+ * AJAX handler for fetching available models from the configured provider.
+ *
+ * Accepts live provider/endpoint/api_key values from the settings form so the
+ * model list can be populated without saving first.
  */
 function kwik_ai_tags_ajax_fetch_models()
 {
@@ -317,14 +357,84 @@ function kwik_ai_tags_ajax_fetch_models()
     wp_send_json_error(__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
   }
 
-  $models = kwik_ai_tags_fetch_ollama_models();
+  list($provider, $endpoint, $api_key) = kwik_ai_tags_get_connection_params_from_request();
 
-  if ($models === false) {
-    wp_send_json_error(__('Failed to fetch models from Ollama server. Please check your connection settings.', KWIK_AI_DOMAIN));
+  $models = kwik_ai_tags_fetch_models_live($provider, $endpoint, $api_key);
+
+  // Fall back to a curated list for hosted providers when the live list
+  // can't be retrieved.
+  if ((!is_array($models) || empty($models)) && ($provider === 'openrouter' || $provider === 'openai')) {
+    $models = kwik_ai_tags_get_provider_models($provider);
+  }
+
+  if (!is_array($models) || empty($models)) {
+    wp_send_json_error(__('Failed to fetch models. Please check your endpoint URL and API key.', KWIK_AI_DOMAIN));
   }
 
   wp_send_json_success(array(
     'models' => $models,
-    'selected' => get_option('kwik_ai_tags_ollama_model', 'gemma3:27b')
+    'selected' => get_option('kwik_ai_model', 'gemma3:27b'),
+  ));
+}
+
+/**
+ * AJAX handler for testing the provider connection from the settings form.
+ *
+ * Uses the values currently entered in the form (provider, endpoint, API key)
+ * so the connection can be verified without saving.
+ */
+function kwik_ai_tags_ajax_test_connection()
+{
+  check_ajax_referer('kwik_ai_tags_ajax', 'nonce');
+
+  if (!current_user_can('manage_options')) {
+    wp_send_json_error(__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+  }
+
+  list($provider, $endpoint, $api_key) = kwik_ai_tags_get_connection_params_from_request();
+  $model = isset($_POST['model']) ? sanitize_text_field(wp_unslash($_POST['model'])) : '';
+
+  if (($provider === 'openrouter' || $provider === 'openai') && empty($api_key)) {
+    wp_send_json_error(__('An API key is required for this provider.', KWIK_AI_DOMAIN));
+  }
+
+  $models = kwik_ai_tags_fetch_models_live($provider, $endpoint, $api_key);
+
+  if (!is_array($models) || empty($models)) {
+    wp_send_json_error(__('Could not connect. Please check your endpoint URL and API key.', KWIK_AI_DOMAIN));
+  }
+
+  // Verify the selected model is actually offered by the provider.
+  $model_found = false;
+  if ($model !== '') {
+    foreach ($models as $available) {
+      if ($available['name'] === $model) {
+        $model_found = true;
+        break;
+      }
+    }
+  }
+
+  $count = count($models);
+  $message = sprintf(
+    /* translators: %d: number of available models */
+    _n('Connected — %d model available.', 'Connected — %d models available.', $count, KWIK_AI_DOMAIN),
+    $count
+  );
+
+  if ($model !== '' && !$model_found) {
+    $message .= ' ' . sprintf(
+      /* translators: %s: model name */
+      __('Note: the selected model "%s" was not found in the list.', KWIK_AI_DOMAIN),
+      $model
+    );
+  }
+
+  wp_send_json_success(array(
+    'message' => $message,
+    'count' => $count,
+    'models' => $models,
+    'selected' => $model,
+    'model_found' => $model_found,
   ));
 }

@@ -109,7 +109,7 @@ function kwik_ai_tags_meta_box_callback($post)
         <strong>Debug Info:</strong><br>
         Post ID: <?php echo esc_html($post->ID); ?><br>
         Ajax URL: <?php echo esc_html(admin_url('admin-ajax.php')); ?><br>
-        Ollama Host: <?php echo esc_html(kwik_ai_tags_get_ollama_url()); ?><br>
+        Ollama Host: <?php echo esc_html(get_option('kwik_ai_api_endpoint', 'http://localhost:11434')); ?><br>
         Attached Images: <?php
         $attachments = get_attached_media('image', $post->ID);
         echo esc_html(count($attachments));

@@ -99,7 +99,7 @@ function kwik_ai_description_block_editor_assets()
       'regenerateButton' => __('Regenerate', KWIK_AI_DOMAIN),
       'generating' => __('Generating...', KWIK_AI_DOMAIN),
       'placeholder' => __('Click "Generate Description" to create an AI-powered description based on the images in this post or content from URLs.', KWIK_AI_DOMAIN),
-      'error' => __('Failed to generate description. Please ensure Ollama is running and try again.', KWIK_AI_DOMAIN),
+      'error' => __('Failed to generate description. Please ensure your AI provider is reachable and try again.', KWIK_AI_DOMAIN),
       'noImages' => __('No images found. Please add images to the post or provide URLs to generate a description.', KWIK_AI_DOMAIN),
     ),
   ));

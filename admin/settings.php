@@ -36,11 +36,20 @@ function kwik_ai_tags_add_admin_menu()
  */
 function kwik_ai_tags_enqueue_settings_styles()
 {
+  $plugin_dir = plugin_dir_path(KWIK_AI_PLUGIN_FILE);
+  $css_path = $plugin_dir . 'assets/css/settings.css';
+  $js_path = $plugin_dir . 'assets/js/settings.js';
+
+  // Use file modification time for cache busting so asset changes are picked
+  // up without manually bumping a version string.
+  $css_ver = file_exists($css_path) ? filemtime($css_path) : '3.0';
+  $js_ver = file_exists($js_path) ? filemtime($js_path) : '3.0';
+
   wp_enqueue_style(
     'kwik-ai-tags-settings',
     plugin_dir_url(KWIK_AI_PLUGIN_FILE) . 'assets/css/settings.css',
     array(),
-    '3.0'
+    $css_ver
   );
 
   // Enqueue settings JavaScript
@@ -48,7 +57,7 @@ function kwik_ai_tags_enqueue_settings_styles()
     'kwik-ai-tags-settings',
     plugin_dir_url(KWIK_AI_PLUGIN_FILE) . 'assets/js/settings.js',
     array('jquery'),
-    '3.0',
+    $js_ver,
     true
   );
 
@@ -60,6 +69,8 @@ function kwik_ai_tags_enqueue_settings_styles()
       'error' => __('Failed to fetch models. Please check your connection.', KWIK_AI_DOMAIN),
       'vision' => __('(Vision)', KWIK_AI_DOMAIN),
       'refresh' => __('Refresh Models', KWIK_AI_DOMAIN),
+      'testing' => __('Testing connection...', KWIK_AI_DOMAIN),
+      'testError' => __('Connection failed. Please check your endpoint URL and API key.', KWIK_AI_DOMAIN),
     ]
   ]);
 }
@@ -269,60 +280,64 @@ function kwik_ai_tags_sanitize_password($input)
 }
 
 /**
- * Sanitize OpenRouter API key setting
- * Uses secure storage if available
+ * Encrypt an API key for storage by the Settings API.
+ *
+ * This is a sanitize_callback helper: it MUST return the value to be stored
+ * and MUST NOT call update_option() itself. Calling update_option() on the
+ * same option here re-triggers the sanitize_option_{$option} filter and causes
+ * infinite recursion (and memory exhaustion). The encrypted value is returned
+ * so the Settings API stores it; kwik_ai_retrieve_credential() decrypts on read.
+ *
+ * @param string $input Raw key submitted from the form
+ * @return string Encrypted value to store (or plaintext if encryption unavailable)
+ */
+function kwik_ai_tags_encrypt_api_key_for_storage($input)
+{
+  $key = trim((string) $input);
+
+  if ($key === '') {
+    return '';
+  }
+
+  // Encrypt before storage if encryption utilities are available.
+  if (function_exists('kwik_ai_encrypt')) {
+    return kwik_ai_encrypt($key);
+  }
+
+  return $key;
+}
+
+/**
+ * Sanitize OpenRouter API key setting (encrypts for secure storage).
  *
  * @param string $input
  * @return string
  */
 function kwik_ai_tags_sanitize_openrouter_api_key($input)
 {
-  $key = trim($input);
-
-  // Store securely if available
-  if (function_exists('kwik_ai_store_credential')) {
-    kwik_ai_store_credential('kwik_ai_openrouter_api_key', $key);
-  }
-
-  return $key;
+  return kwik_ai_tags_encrypt_api_key_for_storage($input);
 }
 
 /**
- * Sanitize OpenAI API key setting
- * Uses secure storage if available
+ * Sanitize OpenAI API key setting (encrypts for secure storage).
  *
  * @param string $input
  * @return string
  */
 function kwik_ai_tags_sanitize_openai_api_key($input)
 {
-  $key = trim($input);
-
-  // Store securely if available
-  if (function_exists('kwik_ai_store_credential')) {
-    kwik_ai_store_credential('kwik_ai_openai_api_key', $key);
-  }
-
-  return $key;
+  return kwik_ai_tags_encrypt_api_key_for_storage($input);
 }
 
 /**
- * Sanitize Custom/Ollama API key setting
- * Uses secure storage if available
+ * Sanitize Custom/Ollama API key setting (encrypts for secure storage).
  *
  * @param string $input
  * @return string
  */
 function kwik_ai_tags_sanitize_custom_api_key($input)
 {
-  $key = trim($input);
-
-  // Store securely if available
-  if (function_exists('kwik_ai_store_credential')) {
-    kwik_ai_store_credential('kwik_ai_custom_api_key', $key);
-  }
-
-  return $key;
+  return kwik_ai_tags_encrypt_api_key_for_storage($input);
 }
 
 /**
@@ -334,8 +349,50 @@ function kwik_ai_tags_settings_section_callback()
 }
 
 /**
+ * Get the post types that should be offered on the settings page.
+ *
+ * Includes any post type with an admin editing UI (show_ui), so custom post
+ * types registered by other plugins/themes appear even when they aren't
+ * flagged "public". WordPress internal types that aren't user content
+ * (media, block/template/navigation types) are excluded.
+ *
+ * @return WP_Post_Type[] Keyed by post type name.
+ */
+function kwik_ai_tags_get_selectable_post_types()
+{
+  $ui_types = get_post_types(array('show_ui' => true), 'objects');
+
+  // WordPress internal post types that aren't editorial content.
+  $excluded = array(
+    'attachment',
+    'wp_block',
+    'wp_template',
+    'wp_template_part',
+    'wp_navigation',
+    'wp_global_styles',
+    'wp_font_family',
+    'wp_font_face',
+  );
+
+  $post_types = array();
+  foreach ($ui_types as $name => $object) {
+    if (in_array($name, $excluded, true)) {
+      continue;
+    }
+    $post_types[$name] = $object;
+  }
+
+  /**
+   * Filter the list of post types offered for AI tag/description generation.
+   *
+   * @param WP_Post_Type[] $post_types Post types keyed by name.
+   */
+  return apply_filters('kwik_ai_tags_selectable_post_types', $post_types);
+}
+
+/**
  * Enabled Post Types field callback
- * Renders checkboxes for all public post types
+ * Renders checkboxes for all selectable post types (built-in and custom).
  */
 function kwik_ai_tags_enabled_post_types_callback()
 {
@@ -344,20 +401,24 @@ function kwik_ai_tags_enabled_post_types_callback()
     $enabled = array('post', 'belt');
   }
 
-  $post_types = get_post_types(array('public' => true), 'objects');
+  $post_types = kwik_ai_tags_get_selectable_post_types();
 
   echo '<div style="max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;">';
   foreach ($post_types as $pt) {
     $checked = in_array($pt->name, $enabled) ? 'checked' : '';
+    $label = isset($pt->labels->singular_name) && $pt->labels->singular_name !== ''
+      ? $pt->labels->singular_name
+      : $pt->name;
     printf(
-      '<label style="display: block; margin: 4px 0;"><input type="checkbox" name="kwik_ai_tags_enabled_post_types[]" value="%s" %s /> %s</label>',
+      '<label style="display: block; margin: 4px 0;"><input type="checkbox" name="kwik_ai_tags_enabled_post_types[]" value="%s" %s /> %s <code>%s</code></label>',
       esc_attr($pt->name),
       esc_attr($checked),
-      esc_html($pt->labels->singular_name)
+      esc_html($label),
+      esc_html($pt->name)
     );
   }
   echo '</div>';
-  echo '<p class="description">' . esc_html__('Select the post types where AI tag and description generation should be enabled.', KWIK_AI_DOMAIN) . '</p>';
+  echo '<p class="description">' . esc_html__('Select the post types where AI tag and description generation should be enabled. Custom post types added by other plugins or your theme are included here.', KWIK_AI_DOMAIN) . '</p>';
 }
 
 /**
@@ -442,54 +503,52 @@ function kwik_ai_api_endpoint_callback()
  */
 function kwik_ai_model_callback()
 {
-  $provider = get_option('kwik_ai_ai_provider', 'custom');
   $selected_model = get_option('kwik_ai_model', 'gemma3:27b');
   $models = kwik_ai_tags_fetch_models();
 
-  echo '<div class="kwik-ai-model-selector-wrapper">';
+  if (!is_array($models)) {
+    $models = array();
+  }
 
-  if ($models === false) {
-    // Could not fetch models, show text input
-    printf(
-      '<input type="text" name="kwik_ai_model" value="%s" class="regular-text" id="kwik-ai-model-input" />',
-      esc_attr($selected_model)
-    );
-    echo '<p class="description">' . esc_html__('Enter the model name manually.', KWIK_AI_DOMAIN) . '</p>';
-  } else {
-    // Show dropdown with models
-    echo '<select name="kwik_ai_model" id="kwik-ai-model-select" class="regular-text">';
-
-    foreach ($models as $model) {
-      $vision_indicator = isset($model['has_vision']) && $model['has_vision'] ? ' ' . __('(Vision)', KWIK_AI_DOMAIN) : '';
-      $vision_class = isset($model['has_vision']) && $model['has_vision'] ? 'vision-model' : '';
-
-      echo '<option value="' . esc_attr($model['name']) . '" ' . selected($selected_model, $model['name'], false) . ' class="' . esc_attr($vision_class) . '">' . esc_html($model['name']) . esc_html($vision_indicator) . '</option>';
-    }
-
-    echo '</select>';
-    echo '<button type="button" class="button" id="kwik-ai-refresh-models" style="margin-left: 10px;">' . esc_html__('Refresh Models', KWIK_AI_DOMAIN) . '</button>';
-    echo '<span id="kwik-ai-model-loading" style="display: none; margin-left: 10px;">' . esc_html__('Loading...', KWIK_AI_DOMAIN) . '</span>';
-
-    echo '<p class="description">';
-    echo esc_html__('Select the model to use for AI tag and description generation.');
-    echo ' <strong>' . esc_html__('Models marked with "(Vision)" support image analysis.', KWIK_AI_DOMAIN) . '</strong>';
-    echo '</p>';
-
-    // Show warning if selected model doesn't have vision
-    $selected_has_vision = false;
-    foreach ($models as $model) {
-      if ($model['name'] === $selected_model && isset($model['has_vision']) && $model['has_vision']) {
-        $selected_has_vision = true;
-        break;
-      }
-    }
-
-    if (!$selected_has_vision && $provider === 'custom') {
-      echo '<div class="notice notice-warning inline" style="margin-top: 10px;">';
-      echo '<p>' . esc_html__('Warning: The selected model may not support image analysis. For best results with this plugin, select a vision-capable model.', KWIK_AI_DOMAIN) . '</p>';
-      echo '</div>';
+  // Always keep the currently saved model selectable, even when the provider
+  // is unreachable or the model isn't in the fetched list. This preserves the
+  // saved value on submit and lets the user re-populate via "Refresh Models".
+  $has_selected = false;
+  foreach ($models as $model) {
+    if ($model['name'] === $selected_model) {
+      $has_selected = true;
+      break;
     }
   }
+  if (!$has_selected && $selected_model !== '') {
+    array_unshift($models, array(
+      'name' => $selected_model,
+      'has_vision' => kwik_ai_tags_model_has_vision($selected_model),
+    ));
+  }
+
+  echo '<div class="kwik-ai-model-selector-wrapper">';
+
+  echo '<select name="kwik_ai_model" id="kwik-ai-model-select" class="regular-text">';
+  foreach ($models as $model) {
+    $has_vision = !empty($model['has_vision']);
+    $vision_indicator = $has_vision ? ' ' . __('(Vision)', KWIK_AI_DOMAIN) : '';
+    $vision_class = $has_vision ? 'vision-model' : '';
+
+    echo '<option value="' . esc_attr($model['name']) . '" ' . selected($selected_model, $model['name'], false) . ' class="' . esc_attr($vision_class) . '">' . esc_html($model['name'] . $vision_indicator) . '</option>';
+  }
+  echo '</select>';
+
+  echo '<button type="button" class="button" id="kwik-ai-refresh-models" style="margin-left: 10px;">' . esc_html__('Refresh Models', KWIK_AI_DOMAIN) . '</button>';
+  echo '<button type="button" class="button" id="kwik-ai-test-connection" style="margin-left: 6px;">' . esc_html__('Test Connection', KWIK_AI_DOMAIN) . '</button>';
+  echo '<span id="kwik-ai-model-loading" style="display: none; margin-left: 10px;">' . esc_html__('Loading...', KWIK_AI_DOMAIN) . '</span>';
+
+  echo '<div id="kwik-ai-connection-result" class="kwik-ai-connection-result" style="display: none; margin-top: 10px;"></div>';
+
+  echo '<p class="description">';
+  echo esc_html__('Select the model to use for AI tag and description generation. Use "Refresh Models" to load the list from your provider, or "Test Connection" to verify your endpoint and API key without saving.', KWIK_AI_DOMAIN);
+  echo ' <strong>' . esc_html__('Models marked with "(Vision)" support image analysis.', KWIK_AI_DOMAIN) . '</strong>';
+  echo '</p>';
 
   echo '</div>';
 }
@@ -510,7 +569,7 @@ function kwik_ai_custom_api_key_callback()
     '<input type="password" name="kwik_ai_custom_api_key" value="%s" class="regular-text" id="kwik-ai-custom-api-key" />',
     esc_attr($api_key)
   );
-  echo '<p class="description">' . esc_html__('Enter the API key for your custom/Ollama endpoint (leave blank if no authentication is required)', KWIK_AI_DOMAIN) . '</p>';
+  echo '<p class="description">' . esc_html__('Enter the API key for your custom provider endpoint (leave blank if no authentication is required)', KWIK_AI_DOMAIN) . '</p>';
 }
 
 /**
@@ -625,14 +684,23 @@ function kwik_ai_tags_model_has_vision($model_name)
 function kwik_ai_tags_fetch_models()
 {
   $provider = get_option('kwik_ai_ai_provider', 'custom');
-  
-  if ($provider === 'custom') {
-    return kwik_ai_tags_fetch_ollama_models();
+  $endpoint = get_option('kwik_ai_api_endpoint', '');
+  $api_key = kwik_ai_tags_get_provider_api_key($provider);
+
+  // Try to fetch the live model list from the provider's /models endpoint
+  // (or Ollama's /api/tags for custom providers that use it).
+  $models = kwik_ai_tags_fetch_models_live($provider, $endpoint, $api_key);
+  if (is_array($models) && !empty($models)) {
+    return $models;
   }
-  
-  // For OpenRouter/OpenAI, return a list of commonly used models
-  // since they don't have a simple /api/tags endpoint
-  return kwik_ai_tags_get_provider_models($provider);
+
+  // Fall back to a curated list for hosted providers when the live list
+  // can't be retrieved (e.g. no API key entered yet).
+  if ($provider === 'openrouter' || $provider === 'openai') {
+    return kwik_ai_tags_get_provider_models($provider);
+  }
+
+  return false;
 }
 
 /**
@@ -721,57 +789,32 @@ function kwik_ai_tags_get_provider_models($provider)
 function kwik_ai_tags_fetch_ollama_models()
 {
   $config = kwik_ai_tags_get_ollama_config();
-  $url = $config['url'] . '/api/tags';
-  $auth_headers = kwik_ai_tags_get_ollama_auth_header();
+  $models = kwik_ai_tags_request_ollama_models($config['url'], $config['api_key']);
 
-  $headers = array_merge(
-    array('Content-Type' => 'application/json'),
-    $auth_headers
-  );
+  return $models === false ? false : $models;
+}
 
-  $response = wp_remote_get($url, array(
-    'timeout' => 10,
-    'headers' => $headers
-  ));
-
-  if (is_wp_error($response)) {
-    return false;
+/**
+ * Get the stored API key for a provider, using secure retrieval if available.
+ *
+ * @param string $provider
+ * @return string
+ */
+function kwik_ai_tags_get_provider_api_key($provider)
+{
+  if ($provider === 'openrouter') {
+    $option = 'kwik_ai_openrouter_api_key';
+  } elseif ($provider === 'openai') {
+    $option = 'kwik_ai_openai_api_key';
+  } else {
+    $option = 'kwik_ai_custom_api_key';
   }
 
-  $response_code = wp_remote_retrieve_response_code($response);
-  if ($response_code !== 200) {
-    return false;
+  if (function_exists('kwik_ai_retrieve_credential')) {
+    return kwik_ai_retrieve_credential($option, '');
   }
 
-  $body = wp_remote_retrieve_body($response);
-  $data = json_decode($body, true);
-
-  if (!$data || !isset($data['models'])) {
-    return false;
-  }
-
-  // Process and sort models
-  $models = array();
-  foreach ($data['models'] as $model) {
-    if (isset($model['name'])) {
-      $models[] = array(
-        'name' => $model['name'],
-        'has_vision' => kwik_ai_tags_model_has_vision($model['name']),
-        'size' => isset($model['size']) ? $model['size'] : null,
-        'modified_at' => isset($model['modified_at']) ? $model['modified_at'] : null,
-      );
-    }
-  }
-
-  // Sort models: vision models first, then alphabetically
-  usort($models, function ($a, $b) {
-    if ($a['has_vision'] !== $b['has_vision']) {
-      return $b['has_vision'] ? 1 : -1;
-    }
-    return strcasecmp($a['name'], $b['name']);
-  });
-
-  return $models;
+  return get_option($option, '');
 }
 
 /**

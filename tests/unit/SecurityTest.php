@@ -180,9 +180,11 @@ class SecurityTest extends TestCase
     {
         $content = $this->getFileContent('admin/settings.php');
 
-        // The custom API key setting should use secure sanitization
+        // The custom API key setting should use secure sanitization. The
+        // sanitize callback encrypts the value for storage (it must NOT call
+        // update_option(), which would recurse via the sanitize_option filter).
         $this->assertMatchesRegularExpression(
-            '/kwik_ai_custom_api_key.*kwik_ai.*sanitize.*api.*key|kwik_ai.*store_credential.*kwik_ai_custom_api_key/i',
+            '/kwik_ai.*store_credential.*kwik_ai_custom_api_key|kwik_ai_encrypt\s*\(/i',
             $content,
             'Custom API key should use secure credential storage'
         );

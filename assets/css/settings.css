@@ -67,11 +67,17 @@
   color: #007cba;
 }
 
-#kwik-ai-refresh-models {
+#kwik-ai-refresh-models,
+#kwik-ai-test-connection {
   vertical-align: top;
 }
 
-#kwik-ai-refresh-models:disabled {
+#kwik-ai-refresh-models:disabled,
+#kwik-ai-test-connection:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.kwik-ai-connection-result {
+  font-weight: bold;
 }
