@@ -50,7 +50,7 @@ function kwik_ai_description_add_meta_box()
   foreach ($enabled_post_types as $post_type) {
     add_meta_box(
       'kwik-ai-description-preview-box',
-      __('AI Description', KWIK_AI_DOMAIN),
+      __('AI Excerpt', KWIK_AI_DOMAIN),
       'kwik_ai_description_meta_box_callback',
       $post_type,
       'side',
@@ -184,20 +184,20 @@ function kwik_ai_description_meta_box_callback($post)
   // Note: This meta box is AJAX-driven; nonce verification happens
   // in admin/ajax-handlers.php via check_ajax_referer().
 
-  // Get existing description
-  $existing_description = kwik_ai_get_description($post->ID);
+  // Get the post's current excerpt
+  $existing_description = get_post_field('post_excerpt', $post->ID);
   ?>
   <div id="kwik-ai-description-container">
     <?php if (!empty($existing_description)): ?>
       <div id="kwik-ai-description-current" style="margin-bottom: 15px; padding: 10px; background: #e8f4fd; border: 1px solid #4f94d4; border-radius: 3px;">
-        <h4 style="margin: 0 0 8px 0; color: #1d2327;"><?php esc_html_e('Current AI Description:', KWIK_AI_DOMAIN); ?></h4>
+        <h4 style="margin: 0 0 8px 0; color: #1d2327;"><?php esc_html_e('Current Excerpt:', KWIK_AI_DOMAIN); ?></h4>
         <div style="font-size: 13px; line-height: 1.4; white-space: pre-wrap;"><?php echo esc_html($existing_description); ?></div>
       </div>
     <?php endif; ?>
     
     <p>
       <button type="button" id="kwik-ai-description-generate" class="button button-secondary">
-        <?php esc_html_e('Generate AI Description', KWIK_AI_DOMAIN); ?>
+        <?php esc_html_e('Generate AI Excerpt', KWIK_AI_DOMAIN); ?>
       </button>
     </p>
 
@@ -207,7 +207,7 @@ function kwik_ai_description_meta_box_callback($post)
     </div>
 
     <div id="kwik-ai-description-preview" style="display: none;">
-      <h4><?php esc_html_e('Generated Description:', KWIK_AI_DOMAIN); ?></h4>
+      <h4><?php esc_html_e('Generated Excerpt:', KWIK_AI_DOMAIN); ?></h4>
       <div id="kwik-ai-description-text" style="margin-bottom: 15px; padding: 10px; background: #f6f7f7; border: 1px solid #dcdcde; border-radius: 3px; font-size: 13px; line-height: 1.4;"></div>
       <p>
         <button type="button" id="kwik-ai-description-apply" class="button button-primary">

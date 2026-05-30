@@ -1,16 +1,19 @@
 const path = require('path');
 
 module.exports = {
+  // Only the Gutenberg "description" block needs bundling — it imports
+  // node modules (rc-slider) and uses wp.element/JSX. The other admin scripts
+  // (admin.js, settings.js, featured-image.js) are hand-written jQuery loaded
+  // directly from assets/js and are intentionally NOT part of the build.
   entry: {
-    'description-block': './assets/js/description-block.js',
-    'admin': './assets/js/admin.js',
-    'settings': './assets/js/settings.js',
-    'featured-image': './assets/js/featured-image.js',
+    'description-block': './assets/src/description-block.js',
   },
   output: {
+    // Emit the bundle straight to where the plugin enqueues it.
     path: path.resolve(__dirname, 'assets/js'),
     filename: '[name].js',
-    clean: true,
+    // IMPORTANT: do NOT enable `clean` here. assets/js also contains the
+    // hand-written jQuery files, and cleaning would delete them.
   },
   module: {
     rules: [

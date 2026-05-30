@@ -10,6 +10,57 @@ if (!defined('ABSPATH')) {
 }
 
 /**
+ * Generate an excerpt for a post from its title and text content.
+ *
+ * Unlike the image/URL based description helpers, this works for any post that
+ * has written content, using the provider-agnostic text-only query path that
+ * already powers tag and image-prompt generation.
+ *
+ * @param int $post_id  The post to summarize.
+ * @param int $max_words Maximum length of the excerpt in words.
+ * @return string|false  The excerpt text, or false on failure.
+ */
+function kwik_ai_excerpt_generate_for_post(int $post_id, int $max_words = 55)
+{
+  kwik_ai_log('Kwik AI: Starting excerpt generation for post ' . $post_id);
+
+  $title = get_the_title($post_id);
+  $content = wp_strip_all_tags(get_post_field('post_content', $post_id));
+  $content = trim(preg_replace('/\s+/', ' ', (string) $content));
+
+  if ($content === '' && trim((string) $title) === '') {
+    kwik_ai_log('Kwik AI: No title or content available for excerpt generation');
+    return false;
+  }
+
+  // Keep the prompt within a reasonable size for the provider.
+  $basis = trim($title . "\n\n" . $content);
+  if (strlen($basis) > 6000) {
+    $basis = substr($basis, 0, 6000);
+  }
+
+  $system = 'You write concise, engaging excerpts for blog posts. Respond with only the excerpt text, no labels, quotes, or extra formatting.';
+  $prompt = 'Write an engaging excerpt of at most ' . $max_words . ' words that summarizes the following post. Write in a natural style and avoid uncommon punctuation such as the em dash. Respond with only the excerpt text.' . "\n\n" . $basis;
+
+  $raw_response = kwik_ai_tags_query_ai_text_only($prompt, $system, 300);
+  kwik_ai_log('Kwik AI: Excerpt response: ' . substr($raw_response ?: 'NULL', 0, 200));
+
+  if (!$raw_response) {
+    kwik_ai_log('Kwik AI: No response from AI provider for excerpt');
+    return false;
+  }
+
+  $excerpt = trim($raw_response);
+  // Strip any leading label the model may add and surrounding quotes.
+  $excerpt = preg_replace('/^(Excerpt|Description|Summary)\s*:\s*/i', '', $excerpt);
+  $excerpt = trim($excerpt, " \t\n\r\0\x0B\"'");
+
+  kwik_ai_log('Kwik AI: Cleaned excerpt: ' . substr($excerpt, 0, 100) . '...');
+
+  return $excerpt;
+}
+
+/**
  * Generate description for a specific post from images
  *
  * @param int $post_id

@@ -196,82 +196,31 @@ function kwik_ai_description_ajax_generate()
     wp_send_json_error(__('Invalid post ID.', KWIK_AI_DOMAIN));
   }
 
-  // Get URLs if provided -- validate and sanitize each URL
-  $urls = [];
-  if (isset($_POST['urls']) && is_array($_POST['urls'])) {
-    $raw_urls = array_map('sanitize_text_field', wp_unslash($_POST['urls']));
-    foreach ($raw_urls as $url) {
-      $sanitized = esc_url_raw(trim($url));
-      if (filter_var($sanitized, FILTER_VALIDATE_URL)) {
-        $urls[] = $sanitized;
-      }
-    }
-  }
-
-  // Get word count parameters if provided
-  $min_words = 50;
-  $max_words = 200;
-  if (isset($_POST['min_words']) && is_numeric($_POST['min_words'])) {
-    $min_words = max(50, intval($_POST['min_words'])); // Ensure minimum of 50
-  }
-  if (isset($_POST['max_words']) && is_numeric($_POST['max_words'])) {
-    $max_words = max($min_words, intval($_POST['max_words'])); // Ensure max is not less than min
-  }
-
-  // Check if post has images
-  $attachments = get_attached_media('image', $post_id);
-  $post_content = get_post_field('post_content', $post_id);
-  $block_images = kwik_ai_tags_extract_block_images($post_content, $post_id);
-  $total_images = count($attachments) + count($block_images);
+  // Generate an excerpt from the post's title and text content.
+  $excerpt = kwik_ai_excerpt_generate_for_post($post_id);
 
   if (defined('WP_DEBUG') && WP_DEBUG) {
-    kwik_ai_log('Kwik AI: Found ' . count($attachments) . ' attached images, ' . count($block_images) . ' block images');
+    kwik_ai_log('Kwik AI: Generated excerpt: ' . substr((string) $excerpt, 0, 100) . '...');
   }
 
-  // Check if we have either images or URLs
-  if ($total_images === 0 && empty($urls)) {
+  if ($excerpt === false) {
     if (defined('WP_DEBUG') && WP_DEBUG) {
-      kwik_ai_log('Kwik AI: No images or URLs found for description generation');
+      kwik_ai_log('Kwik AI: Excerpt generation failed');
     }
-    wp_send_json_error(__('Please add images or provide URLs to generate a description.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Failed to generate excerpt. Please check your AI provider connection and try again.', KWIK_AI_DOMAIN));
   }
 
-  // If URLs are provided, use the new URL-based generation
-  if (!empty($urls)) {
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-      kwik_ai_log('Kwik AI: Generating description from URLs: ' . print_r($urls, true));
-    }
-    $description = kwik_ai_description_generate_from_urls($post_id, $urls, $min_words, $max_words);
-  } else {
-    // Fall back to image-based generation
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-      kwik_ai_log('Kwik AI: Calling kwik_ai_description_generate_for_post');
-    }
-    $description = kwik_ai_description_generate_for_post($post_id, $min_words, $max_words);
+  if (empty($excerpt)) {
+    kwik_ai_log('Kwik AI: No excerpt generated');
+    wp_send_json_error(__('No excerpt was generated. Try adding more content to the post first.', KWIK_AI_DOMAIN));
   }
 
-  if (defined('WP_DEBUG') && WP_DEBUG) {
-    kwik_ai_log('Kwik AI: Generated description: ' . substr($description, 0, 100) . '...');
-  }
-
-  if ($description === false) {
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-      kwik_ai_log('Kwik AI: Description generation failed');
-    }
-    wp_send_json_error(__('Failed to generate description. Please check your AI provider connection and try again.', KWIK_AI_DOMAIN));
-  }
-
-  if (empty($description)) {
-    kwik_ai_log('Kwik AI: No description generated');
-    wp_send_json_error(__('No description was generated. Try adding more descriptive images or URLs.', KWIK_AI_DOMAIN));
-  }
-
-  // Sanitize AI-generated content before storing in block attributes (LL-2)
-  // Strip all HTML tags to prevent stored XSS via AI-generated content
-  $sanitized_description = sanitize_textarea_field($description);
+  // Sanitize AI-generated content before returning it to the editor.
+  $sanitized_excerpt = sanitize_textarea_field($excerpt);
 
   kwik_ai_log('Kwik AI: Sending success response');
-  wp_send_json_success(['description' => $sanitized_description]);
+  // Keep the 'description' key for backward compatibility with the admin JS.
+  wp_send_json_success(['description' => $sanitized_excerpt]);
 }
 
 /**

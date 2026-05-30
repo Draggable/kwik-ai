@@ -1,1 +1,457 @@
-jQuery(document).ready(function(e){"use strict";function t(e,t){kwikAiTags.debug&&console.log("KWIK AI Tags: "+e,t||"")}t("Script loaded",kwikAiTags);var i=e("#kwik-ai-tags-container"),n=e("#kwik-ai-tags-generate"),a=e("#kwik-ai-tags-regenerate"),o=e("#kwik-ai-tags-apply"),r=e("#kwik-ai-tags-loading"),s=e("#kwik-ai-tags-preview"),p=e("#kwik-ai-tags-list"),c=e("#kwik-ai-tags-error"),d=e("#kwik-ai-description-container"),k=e("#kwik-ai-description-generate"),g=e("#kwik-ai-description-regenerate"),l=e("#kwik-ai-description-apply"),u=e("#kwik-ai-description-loading"),w=e("#kwik-ai-description-preview"),f=e("#kwik-ai-description-text"),A=e("#kwik-ai-description-error");t("Elements found",{container:i.length,generateBtn:n.length,loading:r.length,preview:s.length});var v=[];function x(){t("Hiding loading state"),n.prop("disabled",!1).text("Generate AI Tags"),a.prop("disabled",!1),r.hide()}function h(e){t("Showing error",e),x(),c.find(".error-message").text(e),c.show(),s.hide()}function y(i){t("Displaying tags",i),v=i,p.empty(),i.forEach(function(i,n){var a=e('<div class="kwik-ai-tag-item"></div>'),o=e('<span class="kwik-ai-tag"></span>').text(i),r=e('<button type="button" class="kwik-ai-tag-remove" title="Remove tag">×</button>');r.on("click",function(e){e.preventDefault(),e.stopPropagation(),function(e){t("Removing tag at index",e),v.splice(e,1),y(v)}(n)}),a.append(o).append(r),p.append(a)}),x(),s.show(),c.hide()}function D(i){if(t("Starting tag generation"),i&&(i.preventDefault(),i.stopPropagation()),kwikAiTags.postId){t("Showing loading state"),n.prop("disabled",!0).text("Analyzing..."),a.prop("disabled",!0),r.show(),s.hide(),c.hide();var o={action:"kwik_ai_tags_generate",nonce:kwikAiTags.nonce,post_id:kwikAiTags.postId};t("AJAX data",o),e.ajax({url:kwikAiTags.ajaxUrl,type:"POST",data:o,timeout:12e4,success:function(e){t("AJAX success",e),e.success?y(e.data.tags):h(e.data||kwikAiTags.strings.error)},error:function(e,i,n){t("AJAX error",{xhr:e,status:i,error:n});var a=kwikAiTags.strings.error;if("timeout"===i)a="Request timed out. Ollama might be processing - try again.";else if(e.responseText)try{a=JSON.parse(e.responseText).data||a}catch(t){a="Server error: "+e.status}h(a)}})}else h("No post ID found. Please save the post first.")}i.on("click","#kwik-ai-tags-generate",function(e){e.preventDefault(),e.stopPropagation(),D()}),i.on("click","#kwik-ai-tags-regenerate",function(e){e.preventDefault(),e.stopPropagation(),D()}),i.on("click","#kwik-ai-tags-apply",function(n){n.preventDefault(),n.stopPropagation(),t("Applying tags",v),0!==v.length?(o.prop("disabled",!0).text("Applying..."),e.ajax({url:kwikAiTags.ajaxUrl,type:"POST",data:{action:"kwik_ai_tags_apply",nonce:kwikAiTags.nonce,post_id:kwikAiTags.postId,tags:v.join(",")},success:function(n){if(t("Apply success",n),n.success){var a=e('<div class="kwik-ai-tags-success"></div>').text(n.data);i.prepend(a),setTimeout(function(){a.fadeOut(function(){a.remove()})},3e3),"undefined"!=typeof tagBox&&tagBox.get("post_tag")}else h(n.data||kwikAiTags.strings.error)},error:function(e,i,n){t("Apply error",{xhr:e,status:i,error:n}),h(kwikAiTags.strings.error)},complete:function(){o.prop("disabled",!1).text("Apply Tags")}})):h("No tags to apply.")}),t("Event handlers attached");var b="";function T(){t("Hiding description loading state"),k.prop("disabled",!1).text("Generate AI Description"),g.prop("disabled",!1),u.hide()}function m(e){t("Showing description error",e),T(),A.find(".error-message").text(e),A.show(),w.hide()}function I(i){if(t("Starting description generation"),i&&(i.preventDefault(),i.stopPropagation()),kwikAiDescription.postId){t("Showing description loading state"),k.prop("disabled",!0).text("Analyzing..."),g.prop("disabled",!0),u.show(),w.hide(),A.hide();var n={action:"kwik_ai_description_generate",nonce:kwikAiDescription.nonce,post_id:kwikAiDescription.postId};t("Description AJAX data",n),e.ajax({url:kwikAiDescription.ajaxUrl,type:"POST",data:n,timeout:12e4,success:function(e){var i;t("Description AJAX success",e),e.success?(t("Displaying description",(i=e.data.description).substring(0,100)+"..."),b=i,f.text(i),T(),w.show(),A.hide()):m(e.data||kwikAiDescription.strings.error)},error:function(e,i,n){t("Description AJAX error",{xhr:e,status:i,error:n});var a=kwikAiDescription.strings.error;if("timeout"===i)a="Request timed out. Ollama might be processing - try again.";else if(e.responseText)try{a=JSON.parse(e.responseText).data||a}catch(t){a="Server error: "+e.status}m(a)}})}else m("No post ID found. Please save the post first.")}d.on("click","#kwik-ai-description-generate",function(e){e.preventDefault(),e.stopPropagation(),I()}),d.on("click","#kwik-ai-description-regenerate",function(e){e.preventDefault(),e.stopPropagation(),I()}),d.on("click","#kwik-ai-description-apply",function(i){i.preventDefault(),i.stopPropagation(),t("Applying description",b.substring(0,100)+"..."),0!==b.length?(l.prop("disabled",!0).text("Applying..."),e.ajax({url:kwikAiDescription.ajaxUrl,type:"POST",data:{action:"kwik_ai_description_apply",nonce:kwikAiDescription.nonce,post_id:kwikAiDescription.postId,description:b},success:function(i){if(t("Description apply success",i),i.success){!function(i){if(t("Inserting description into editor"),"undefined"!=typeof wp&&wp.data&&wp.blocks&&wp.data.select("core/block-editor")){var n=wp.data,a=(n.select,n.dispatch),o=(0,wp.blocks.createBlock)("core/paragraph",{content:i});a("core/block-editor").insertBlocks([o],0),t("Inserted paragraph block into Block Editor")}else if("undefined"!=typeof wp&&wp.data&&wp.data.select("core/editor")){var r="\x3c!-- AI Generated Description --\x3e\n"+i+"\n\x3c!-- End AI Generated Description --\x3e\n\n"+wp.data.select("core/editor").getEditedPostContent();wp.data.dispatch("core/editor").editPost({content:r}),t("Inserted into Gutenberg editor (fallback)")}else if("undefined"!=typeof tinyMCE&&tinyMCE.activeEditor){var s="\x3c!-- AI Generated Description --\x3e\n"+i+"\n\x3c!-- End AI Generated Description --\x3e\n\n",p=tinyMCE.activeEditor,c=s+p.getContent();p.setContent(c),t("Inserted into TinyMCE editor")}else if("undefined"!=typeof wp&&wp.editor){var d="\x3c!-- AI Generated Description --\x3e\n"+i+"\n\x3c!-- End AI Generated Description --\x3e\n\n"+e("#content").val();e("#content").val(d),t("Inserted into textarea editor")}else t("No compatible editor found")}(b);var n=e('<div class="kwik-ai-tags-success"></div>').text(i.data);d.prepend(n),setTimeout(function(){n.fadeOut(function(){n.remove()})},3e3)}else m(i.data||kwikAiDescription.strings.error)},error:function(e,i,n){t("Description apply error",{xhr:e,status:i,error:n}),m(kwikAiDescription.strings.error)},complete:function(){l.prop("disabled",!1).text("Apply Description")}})):m("No description to apply.")})});
+/**
+ * KWIK AI Tags - Admin JavaScript
+ */
+jQuery(document).ready(function($) {
+    'use strict';
+    
+    // Debug logging function
+    function debugLog(message, data) {
+        if (kwikAiTags.debug) {
+            console.log('KWIK AI Tags: ' + message, data || '');
+        }
+    }
+    
+    debugLog('Script loaded', kwikAiTags);
+    
+    const $container = $('#kwik-ai-tags-container');
+    const $generateBtn = $('#kwik-ai-tags-generate');
+    const $regenerateBtn = $('#kwik-ai-tags-regenerate');
+    const $applyBtn = $('#kwik-ai-tags-apply');
+    const $loading = $('#kwik-ai-tags-loading');
+    const $preview = $('#kwik-ai-tags-preview');
+    const $tagsList = $('#kwik-ai-tags-list');
+    const $error = $('#kwik-ai-tags-error');
+    
+    // Description elements
+    const $descContainer = $('#kwik-ai-description-container');
+    const $descGenerateBtn = $('#kwik-ai-description-generate');
+    const $descRegenerateBtn = $('#kwik-ai-description-regenerate');
+    const $descApplyBtn = $('#kwik-ai-description-apply');
+    const $descLoading = $('#kwik-ai-description-loading');
+    const $descPreview = $('#kwik-ai-description-preview');
+    const $descText = $('#kwik-ai-description-text');
+    const $descError = $('#kwik-ai-description-error');
+    
+    debugLog('Elements found', {
+        container: $container.length,
+        generateBtn: $generateBtn.length,
+        loading: $loading.length,
+        preview: $preview.length
+    });
+    
+    let currentTags = [];
+    
+    /**
+     * Show loading state
+     */
+    function showLoading() {
+        debugLog('Showing loading state');
+        $generateBtn.prop('disabled', true).text('Analyzing...');
+        $regenerateBtn.prop('disabled', true);
+        $loading.show();
+        $preview.hide();
+        $error.hide();
+    }
+    
+    /**
+     * Hide loading state
+     */
+    function hideLoading() {
+        debugLog('Hiding loading state');
+        $generateBtn.prop('disabled', false).text('Generate AI Tags');
+        $regenerateBtn.prop('disabled', false);
+        $loading.hide();
+    }
+    
+    /**
+     * Show error message
+     */
+    function showError(message) {
+        debugLog('Showing error', message);
+        hideLoading();
+        $error.find('.error-message').text(message);
+        $error.show();
+        $preview.hide();
+    }
+    
+    /**
+     * Display tags in the preview
+     */
+    function displayTags(tags) {
+        debugLog('Displaying tags', tags);
+        currentTags = tags;
+        $tagsList.empty();
+        
+        tags.forEach(function(tag, index) {
+            const $tagItem = $('<div class="kwik-ai-tag-item"></div>');
+            const $tagSpan = $('<span class="kwik-ai-tag"></span>').text(tag);
+            const $removeBtn = $('<button type="button" class="kwik-ai-tag-remove" title="Remove tag">×</button>');
+            
+            $removeBtn.on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                removeTag(index);
+            });
+            
+            $tagItem.append($tagSpan).append($removeBtn);
+            $tagsList.append($tagItem);
+        });
+        
+        hideLoading();
+        $preview.show();
+        $error.hide();
+    }
+    
+    /**
+     * Remove a tag from the preview
+     */
+    function removeTag(index) {
+        debugLog('Removing tag at index', index);
+        currentTags.splice(index, 1);
+        displayTags(currentTags);
+    }
+    
+    /**
+     * Generate tags via AJAX
+     */
+    function generateTags(e) {
+        debugLog('Starting tag generation');
+        
+        // Prevent default if this is triggered by a button
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        if (!kwikAiTags.postId) {
+            showError('No post ID found. Please save the post first.');
+            return;
+        }
+        
+        showLoading();
+        
+        const ajaxData = {
+            action: 'kwik_ai_tags_generate',
+            nonce: kwikAiTags.nonce,
+            post_id: kwikAiTags.postId
+        };
+        
+        debugLog('AJAX data', ajaxData);
+        
+        $.ajax({
+            url: kwikAiTags.ajaxUrl,
+            type: 'POST',
+            data: ajaxData,
+            timeout: 120000, // 2 minutes
+            success: function(response) {
+                debugLog('AJAX success', response);
+                if (response.success) {
+                    displayTags(response.data.tags);
+                } else {
+                    showError(response.data || kwikAiTags.strings.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                debugLog('AJAX error', {xhr: xhr, status: status, error: error});
+                let errorMessage = kwikAiTags.strings.error;
+                
+                if (status === 'timeout') {
+                    errorMessage = 'Request timed out. Ollama might be processing - try again.';
+                } else if (xhr.responseText) {
+                    try {
+                        const errorData = JSON.parse(xhr.responseText);
+                        errorMessage = errorData.data || errorMessage;
+                    } catch (e) {
+                        errorMessage = 'Server error: ' + xhr.status;
+                    }
+                }
+                
+                showError(errorMessage);
+            }
+        });
+    }
+    
+    /**
+     * Apply tags to the post
+     */
+    function applyTags(e) {
+        debugLog('Applying tags', currentTags);
+        
+        // Prevent default if this is triggered by a button
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        if (currentTags.length === 0) {
+            showError('No tags to apply.');
+            return;
+        }
+        
+        $applyBtn.prop('disabled', true).text('Applying...');
+        
+        $.ajax({
+            url: kwikAiTags.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'kwik_ai_tags_apply',
+                nonce: kwikAiTags.nonce,
+                post_id: kwikAiTags.postId,
+                tags: currentTags.join(',')
+            },
+            success: function(response) {
+                debugLog('Apply success', response);
+                if (response.success) {
+                    // Show success message briefly
+                    const $success = $('<div class="kwik-ai-tags-success"></div>').text(response.data);
+                    $container.prepend($success);
+                    
+                    setTimeout(function() {
+                        $success.fadeOut(function() {
+                            $success.remove();
+                        });
+                    }, 3000);
+                    
+                    // Refresh the WordPress tags meta box if it exists
+                    if (typeof tagBox !== 'undefined') {
+                        tagBox.get('post_tag');
+                    }
+                    
+                } else {
+                    showError(response.data || kwikAiTags.strings.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                debugLog('Apply error', {xhr: xhr, status: status, error: error});
+                showError(kwikAiTags.strings.error);
+            },
+            complete: function() {
+                $applyBtn.prop('disabled', false).text('Apply Tags');
+            }
+        });
+    }
+    
+    // Event handlers - use event delegation and prevent default
+    $container.on('click', '#kwik-ai-tags-generate', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        generateTags();
+    });
+    
+    $container.on('click', '#kwik-ai-tags-regenerate', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        generateTags();
+    });
+    
+    $container.on('click', '#kwik-ai-tags-apply', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        applyTags();
+    });
+    
+    debugLog('Event handlers attached');
+    
+    // Description-specific functions
+    let currentDescription = '';
+    
+    /**
+     * Show description loading state
+     */
+    function showDescLoading() {
+        debugLog('Showing description loading state');
+        $descGenerateBtn.prop('disabled', true).text('Analyzing...');
+        $descRegenerateBtn.prop('disabled', true);
+        $descLoading.show();
+        $descPreview.hide();
+        $descError.hide();
+    }
+    
+    /**
+     * Hide description loading state
+     */
+    function hideDescLoading() {
+        debugLog('Hiding description loading state');
+        $descGenerateBtn.prop('disabled', false).text('Generate AI Excerpt');
+        $descRegenerateBtn.prop('disabled', false);
+        $descLoading.hide();
+    }
+    
+    /**
+     * Show description error message
+     */
+    function showDescError(message) {
+        debugLog('Showing description error', message);
+        hideDescLoading();
+        $descError.find('.error-message').text(message);
+        $descError.show();
+        $descPreview.hide();
+    }
+    
+    /**
+     * Display description in the preview
+     */
+    function displayDescription(description) {
+        debugLog('Displaying description', description.substring(0, 100) + '...');
+        currentDescription = description;
+        $descText.text(description);
+        hideDescLoading();
+        $descPreview.show();
+        $descError.hide();
+    }
+    
+    /**
+     * Generate description via AJAX
+     */
+    function generateDescription(e) {
+        debugLog('Starting description generation');
+        
+        // Prevent default if this is triggered by a button
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        if (!kwikAiDescription.postId) {
+            showDescError('No post ID found. Please save the post first.');
+            return;
+        }
+        
+        showDescLoading();
+        
+        const ajaxData = {
+            action: 'kwik_ai_description_generate',
+            nonce: kwikAiDescription.nonce,
+            post_id: kwikAiDescription.postId
+        };
+        
+        debugLog('Description AJAX data', ajaxData);
+        
+        $.ajax({
+            url: kwikAiDescription.ajaxUrl,
+            type: 'POST',
+            data: ajaxData,
+            timeout: 120000, // 2 minutes
+            success: function(response) {
+                debugLog('Description AJAX success', response);
+                if (response.success) {
+                    displayDescription(response.data.description);
+                } else {
+                    showDescError(response.data || kwikAiDescription.strings.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                debugLog('Description AJAX error', {xhr: xhr, status: status, error: error});
+                let errorMessage = kwikAiDescription.strings.error;
+                
+                if (status === 'timeout') {
+                    errorMessage = 'Request timed out. Ollama might be processing - try again.';
+                } else if (xhr.responseText) {
+                    try {
+                        const errorData = JSON.parse(xhr.responseText);
+                        errorMessage = errorData.data || errorMessage;
+                    } catch (e) {
+                        errorMessage = 'Server error: ' + xhr.status;
+                    }
+                }
+                
+                showDescError(errorMessage);
+            }
+        });
+    }
+    
+    /**
+     * Apply the generated excerpt to the post.
+     */
+    function applyExcerptToEditor(excerpt) {
+        debugLog('Setting post excerpt');
+
+        if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch && wp.data.dispatch('core/editor')) {
+            // Block editor: stage the excerpt; it is saved with the post.
+            wp.data.dispatch('core/editor').editPost({ excerpt: excerpt });
+            debugLog('Set excerpt via block editor');
+        } else if ($('#excerpt').length) {
+            // Classic editor excerpt field.
+            $('#excerpt').val(excerpt);
+            debugLog('Set excerpt via classic editor field');
+        } else {
+            debugLog('No excerpt field found');
+        }
+    }
+    
+    /**
+     * Apply description to the post
+     */
+    function applyDescription(e) {
+        debugLog('Applying description', currentDescription.substring(0, 100) + '...');
+        
+        // Prevent default if this is triggered by a button
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        if (currentDescription.length === 0) {
+            showDescError('No description to apply.');
+            return;
+        }
+        
+        $descApplyBtn.prop('disabled', true).text('Applying...');
+        
+        $.ajax({
+            url: kwikAiDescription.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'kwik_ai_description_apply',
+                nonce: kwikAiDescription.nonce,
+                post_id: kwikAiDescription.postId,
+                description: currentDescription
+            },
+            success: function(response) {
+                debugLog('Description apply success', response);
+                if (response.success) {
+                    // Apply the generated excerpt to the post
+                    applyExcerptToEditor(currentDescription);
+                    
+                    // Show success message briefly
+                    const $success = $('<div class="kwik-ai-tags-success"></div>').text(response.data);
+                    $descContainer.prepend($success);
+                    
+                    setTimeout(function() {
+                        $success.fadeOut(function() {
+                            $success.remove();
+                        });
+                    }, 3000);
+                } else {
+                    showDescError(response.data || kwikAiDescription.strings.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                debugLog('Description apply error', {xhr: xhr, status: status, error: error});
+                showDescError(kwikAiDescription.strings.error);
+            },
+            complete: function() {
+                $descApplyBtn.prop('disabled', false).text('Apply');
+            }
+        });
+    }
+    
+    // Description event handlers
+    $descContainer.on('click', '#kwik-ai-description-generate', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        generateDescription();
+    });
+    
+    $descContainer.on('click', '#kwik-ai-description-regenerate', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        generateDescription();
+    });
+    
+    $descContainer.on('click', '#kwik-ai-description-apply', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        applyDescription();
+    });
+});
