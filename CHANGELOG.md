@@ -1,5 +1,61 @@
 # KWIK AI Tags Plugin - Changelog
 
+## Version 3.1 - FAL.AI Featured Image Generation (May 2026)
+
+### New Features
+
+#### **AI Featured Image Generation (FAL.AI)**
+- New **"AI Featured Image"** meta box in the post editor with a single button to
+  generate a featured image from the post's content.
+- Your configured text AI provider (Ollama / OpenRouter / OpenAI) reads the whole
+  post, distills it into its visual theme, and then crafts a creative image prompt
+  illustrating that theme (two-step summarize-then-illustrate), which is sent to FAL.AI.
+- Optional **guidance** field lets you steer style, subject, and mood.
+- **Two-step workflow with a visible, editable prompt**: click "Generate Prompt" to
+  see the prompt in an editable field (it reports whether it came from the AI or a
+  fallback excerpt), tweak it as needed — e.g. to remove words an image content filter
+  wrongly flags — then click "Generate Image". You can also type a prompt from scratch.
+- Generated images are **previewed** before being sideloaded into the Media Library
+  and set as the featured image. A **Regenerate** button lets you retry first.
+- New **FAL.AI Image Generation** settings section: encrypted API key, image model
+  selection, and default image size.
+- The image-model dropdown is populated from FAL.AI's **live text-to-image catalog**
+  (cached for 12 hours, with a "Refresh Models" link), so new models like Nano Banana 2
+  appear automatically. Falls back to a built-in list if FAL.AI can't be reached.
+
+### New Settings
+- **Dedicated "Text Model" setting.** Text-only generation (featured-image prompts
+  and URL-based descriptions) can now use a separate model from the main (vision)
+  model. Leave it on "Use the main Model" to keep prior behavior, or pick a text/chat
+  model when your main model is vision-only. The image-prompt step now uses this model.
+
+### Bug Fixes
+- **Custom (OpenAI-compatible) providers can now generate text.** Text generation
+  for the `custom` provider previously only called Ollama's native `/api/generate`,
+  which fails on OpenAI-compatible servers (Open WebUI, LM Studio, vLLM, LocalAI).
+  It now tries `/chat/completions` first and falls back to `/api/generate`, matching
+  how the model list is already fetched. This affected the AI image-prompt step
+  (which silently fell back to a raw post excerpt).
+- **Support newer OpenAI models that reject `max_tokens`.** Chat-completion requests
+  now retry with `max_completion_tokens` when a model/proxy reports that `max_tokens`
+  is unsupported (GPT-5-class models), instead of failing the request.
+- **Support reasoning models.** Reasoning models spend tokens on hidden reasoning and
+  can return empty content (`finish_reason: length`) when the token budget is small.
+  Chat requests now retry once with a much larger budget in that case, and the
+  image-prompt steps request a generous budget up front to avoid the extra round trip.
+
+### Technical Notes
+- Uses FAL.AI's asynchronous **queue API** with client-side polling, so slow image
+  models do not block a single long-running request.
+- FAL job tracking URLs and the resulting image URL are stored server-side
+  (per-request transient with ownership checks); the browser only ever holds an
+  opaque `request_id`.
+- `kwik_ai_tags_query_ai_text_only()` now accepts optional system-prompt and
+  max-token arguments (backward compatible) so the image-prompt step isn't biased
+  by the tag-generation system prompt.
+
+---
+
 ## Version 3.0 - Multi-Provider Support (March 2026)
 
 ### New Features

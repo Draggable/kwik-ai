@@ -25,7 +25,14 @@ KWIK AI is a WordPress plugin that automatically generates relevant tags and des
 - **Customizable description length** with slider controls (50-500 words)
 - No insertion into post content - the block contains the description
 
-### 4. Multiple AI Provider Support
+### 4. AI Featured Image Generation (FAL.AI)
+- Generates a **featured image** from your post content with a single button
+- Scans the post and uses your text AI provider to craft an image prompt
+- Optional guidance field to steer style, subject, and mood
+- Preview the result before it's saved, with a Regenerate option
+- Uses FAL.AI's queue API so slow image models don't time out
+
+### 5. Multiple AI Provider Support
 - **Ollama**: Run models locally on your server
 - **OpenRouter**: Access hundreds of AI models through a unified API
 - **OpenAI**: Use GPT models directly
@@ -56,9 +63,12 @@ Navigate to **Settings > KWIK AI** to:
 - Select your AI provider (Ollama, OpenRouter, or OpenAI)
 - Configure the API endpoint
 - Select the model to use
+- (Optional) Set a separate **Text Model** for text-only generation (image prompts,
+  URL-based descriptions) when your main model is vision-only
 - Enter API credentials
 - Enable/disable specific post types
 - View connection status
+- (Optional) Add a FAL.AI API key and pick an image model/size for AI featured images
 
 ## Usage
 
@@ -75,6 +85,18 @@ Navigate to **Settings > KWIK AI** to:
 3. Click "Generate AI Description" to analyze images
 4. Review the generated description
 5. Click "Apply" to insert into post content
+
+### AI Featured Image Meta Box (FAL.AI)
+1. Add a FAL.AI API key in **Settings > KWIK AI** and choose an image model and size
+2. Create or edit a post with a title and some content
+3. Find the "AI Featured Image" meta box in the sidebar
+4. (Optional) Enter guidance such as "watercolor style, warm lighting, no people"
+5. Click "Generate Prompt" to draft an image prompt from the post, then review and
+   edit it in the prompt field (or type your own). This is also where you can remove
+   any wording an image content filter might wrongly flag
+6. Click "Generate Image" and wait while the image is created
+7. Review the preview, then click "Set as Featured Image" (or "Regenerate" for a new
+   image from the same prompt)
 
 ### AI Description Block (Recommended)
 1. Add a new block and search for "AI Description"

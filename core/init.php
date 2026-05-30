@@ -24,6 +24,7 @@ function kwik_ai_tags_init()
   // Add meta box for AI tags preview
   add_action('add_meta_boxes', 'kwik_ai_tags_add_meta_box');
   add_action('add_meta_boxes', 'kwik_ai_description_add_meta_box');
+  add_action('add_meta_boxes', 'kwik_ai_featured_image_add_meta_box');
 
   // Enqueue scripts and styles
   add_action('admin_enqueue_scripts', 'kwik_ai_tags_enqueue_scripts');
@@ -35,6 +36,10 @@ function kwik_ai_tags_init()
   add_action('wp_ajax_kwik_ai_description_apply', 'kwik_ai_description_ajax_apply');
   add_action('wp_ajax_kwik_ai_tags_fetch_models', 'kwik_ai_tags_ajax_fetch_models');
   add_action('wp_ajax_kwik_ai_tags_test_connection', 'kwik_ai_tags_ajax_test_connection');
+  add_action('wp_ajax_kwik_ai_featured_image_prompt', 'kwik_ai_featured_image_ajax_prompt');
+  add_action('wp_ajax_kwik_ai_featured_image_generate', 'kwik_ai_featured_image_ajax_generate');
+  add_action('wp_ajax_kwik_ai_featured_image_status', 'kwik_ai_featured_image_ajax_status');
+  add_action('wp_ajax_kwik_ai_featured_image_apply', 'kwik_ai_featured_image_ajax_apply');
 
   // Register blocks
   kwik_ai_register_blocks();

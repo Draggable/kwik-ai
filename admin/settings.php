@@ -135,6 +135,17 @@ function kwik_ai_tags_settings_init()
     )
   );
 
+  // Text model setting (used for text-only generation; empty = use main model)
+  register_setting(
+    'kwik_ai_tags_settings',
+    'kwik_ai_text_model',
+    array(
+      'type' => 'string',
+      'sanitize_callback' => 'sanitize_text_field',
+      'default' => ''
+    )
+  );
+
   // OpenRouter-specific API key
   register_setting(
     'kwik_ai_tags_settings',
@@ -168,6 +179,39 @@ function kwik_ai_tags_settings_init()
     )
   );
 
+  // FAL.AI API key (encrypted for secure storage)
+  register_setting(
+    'kwik_ai_tags_settings',
+    'kwik_ai_fal_api_key',
+    array(
+      'type' => 'string',
+      'sanitize_callback' => 'kwik_ai_tags_sanitize_fal_api_key',
+      'default' => ''
+    )
+  );
+
+  // FAL.AI image model
+  register_setting(
+    'kwik_ai_tags_settings',
+    'kwik_ai_fal_model',
+    array(
+      'type' => 'string',
+      'sanitize_callback' => 'sanitize_text_field',
+      'default' => KWIK_AI_FAL_DEFAULT_MODEL
+    )
+  );
+
+  // FAL.AI image size
+  register_setting(
+    'kwik_ai_tags_settings',
+    'kwik_ai_fal_image_size',
+    array(
+      'type' => 'string',
+      'sanitize_callback' => 'kwik_ai_tags_sanitize_fal_image_size',
+      'default' => KWIK_AI_FAL_DEFAULT_IMAGE_SIZE
+    )
+  );
+
   add_settings_section(
     'kwik_ai_tags_main_section',
     __('Post Type Settings', KWIK_AI_DOMAIN),
@@ -186,6 +230,13 @@ function kwik_ai_tags_settings_init()
     'kwik_ai_tags_auth_section',
     __('Authentication', KWIK_AI_DOMAIN),
     'kwik_ai_tags_auth_section_callback',
+    'kwik_ai_tags_settings'
+  );
+
+  add_settings_section(
+    'kwik_ai_tags_fal_section',
+    __('FAL.AI Image Generation', KWIK_AI_DOMAIN),
+    'kwik_ai_tags_fal_section_callback',
     'kwik_ai_tags_settings'
   );
 
@@ -222,6 +273,14 @@ function kwik_ai_tags_settings_init()
   );
 
   add_settings_field(
+    'kwik_ai_text_model',
+    __('Text Model', KWIK_AI_DOMAIN),
+    'kwik_ai_text_model_callback',
+    'kwik_ai_tags_settings',
+    'kwik_ai_tags_provider_section'
+  );
+
+  add_settings_field(
     'kwik_ai_custom_api_key',
     __('Custom API Key', KWIK_AI_DOMAIN),
     'kwik_ai_custom_api_key_callback',
@@ -243,6 +302,30 @@ function kwik_ai_tags_settings_init()
     'kwik_ai_openai_api_key_callback',
     'kwik_ai_tags_settings',
     'kwik_ai_tags_auth_section'
+  );
+
+  add_settings_field(
+    'kwik_ai_fal_api_key',
+    __('FAL.AI API Key', KWIK_AI_DOMAIN),
+    'kwik_ai_fal_api_key_callback',
+    'kwik_ai_tags_settings',
+    'kwik_ai_tags_fal_section'
+  );
+
+  add_settings_field(
+    'kwik_ai_fal_model',
+    __('Image Model', KWIK_AI_DOMAIN),
+    'kwik_ai_fal_model_callback',
+    'kwik_ai_tags_settings',
+    'kwik_ai_tags_fal_section'
+  );
+
+  add_settings_field(
+    'kwik_ai_fal_image_size',
+    __('Image Size', KWIK_AI_DOMAIN),
+    'kwik_ai_fal_image_size_callback',
+    'kwik_ai_tags_settings',
+    'kwik_ai_tags_fal_section'
   );
 }
 
@@ -338,6 +421,30 @@ function kwik_ai_tags_sanitize_openai_api_key($input)
 function kwik_ai_tags_sanitize_custom_api_key($input)
 {
   return kwik_ai_tags_encrypt_api_key_for_storage($input);
+}
+
+/**
+ * Sanitize FAL.AI API key setting (encrypts for secure storage).
+ *
+ * @param string $input
+ * @return string
+ */
+function kwik_ai_tags_sanitize_fal_api_key($input)
+{
+  return kwik_ai_tags_encrypt_api_key_for_storage($input);
+}
+
+/**
+ * Sanitize FAL.AI image size, restricting to supported enum values.
+ *
+ * @param string $input
+ * @return string
+ */
+function kwik_ai_tags_sanitize_fal_image_size($input)
+{
+  $input = sanitize_text_field($input);
+  $allowed = function_exists('kwik_ai_fal_get_image_sizes') ? kwik_ai_fal_get_image_sizes() : array();
+  return isset($allowed[$input]) ? $input : KWIK_AI_FAL_DEFAULT_IMAGE_SIZE;
 }
 
 /**
@@ -554,6 +661,49 @@ function kwik_ai_model_callback()
 }
 
 /**
+ * Text Model field callback
+ *
+ * Optional model used for text-only generation (featured-image prompts and
+ * URL-based descriptions). Leaving it on "Use the main Model" reuses the model
+ * above; pick a text/chat model here when the main model is vision-only.
+ */
+function kwik_ai_text_model_callback()
+{
+  $selected = get_option('kwik_ai_text_model', '');
+  $models = kwik_ai_tags_fetch_models();
+
+  if (!is_array($models)) {
+    $models = array();
+  }
+
+  echo '<select name="kwik_ai_text_model" id="kwik-ai-text-model-select" class="regular-text">';
+  echo '<option value="" ' . selected($selected, '', false) . '>' . esc_html__('Use the main Model (above)', KWIK_AI_DOMAIN) . '</option>';
+
+  // Keep the saved text model selectable even if it isn't in the fetched list.
+  $has_selected = false;
+  foreach ($models as $model) {
+    if ($model['name'] === $selected) {
+      $has_selected = true;
+      break;
+    }
+  }
+  if (!$has_selected && $selected !== '') {
+    echo '<option value="' . esc_attr($selected) . '" selected>' . esc_html($selected) . '</option>';
+  }
+
+  foreach ($models as $model) {
+    $has_vision = !empty($model['has_vision']);
+    $vision_indicator = $has_vision ? ' ' . __('(Vision)', KWIK_AI_DOMAIN) : '';
+    echo '<option value="' . esc_attr($model['name']) . '" ' . selected($selected, $model['name'], false) . '>' . esc_html($model['name'] . $vision_indicator) . '</option>';
+  }
+  echo '</select>';
+
+  echo '<p class="description">';
+  echo esc_html__('Model used for text-only generation: featured-image prompts and URL-based descriptions. Leave on "Use the main Model" to reuse the model above. Choose a text/chat model here if your main Model is a vision model that cannot handle plain text.', KWIK_AI_DOMAIN);
+  echo '</p>';
+}
+
+/**
  * Custom API key field callback
  */
 function kwik_ai_custom_api_key_callback()
@@ -614,6 +764,116 @@ function kwik_ai_openai_api_key_callback()
   echo esc_html__('Get your API key from ');
   echo '<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI</a>.';
   echo '</p>';
+}
+
+/**
+ * FAL.AI section callback
+ */
+function kwik_ai_tags_fal_section_callback()
+{
+  echo '<p>' . esc_html__('Generate featured images from your post content using FAL.AI. The post is scanned, an image prompt is crafted with your selected AI provider above, and the image is created by the FAL model below.', KWIK_AI_DOMAIN) . '</p>';
+
+  $configured = function_exists('kwik_ai_fal_has_api_key') && kwik_ai_fal_has_api_key();
+  echo '<p><strong>' . esc_html__('FAL.AI Status:', KWIK_AI_DOMAIN) . '</strong> ';
+  if ($configured) {
+    echo '<span class="kwik-ai-tags-status-connected"><span class="kwik-ai-tags-status-icon">✓</span>' . esc_html__('API key configured', KWIK_AI_DOMAIN) . '</span>';
+  } else {
+    echo '<span class="kwik-ai-tags-status-error"><span class="kwik-ai-tags-status-icon">✗</span>' . esc_html__('No API key configured', KWIK_AI_DOMAIN) . '</span>';
+  }
+  echo '</p>';
+}
+
+/**
+ * FAL.AI API key field callback
+ */
+function kwik_ai_fal_api_key_callback()
+{
+  if (function_exists('kwik_ai_retrieve_credential')) {
+    $api_key = kwik_ai_retrieve_credential('kwik_ai_fal_api_key', '');
+  } else {
+    $api_key = get_option('kwik_ai_fal_api_key', '');
+  }
+
+  printf(
+    '<input type="password" name="kwik_ai_fal_api_key" value="%s" class="regular-text" autocomplete="new-password" />',
+    esc_attr($api_key)
+  );
+  echo '<p class="description">';
+  echo esc_html__('Get your API key from ');
+  echo '<a href="https://fal.ai/dashboard/keys" target="_blank" rel="noopener">FAL.AI</a>.';
+  echo '</p>';
+}
+
+/**
+ * FAL.AI model field callback
+ *
+ * Populates the dropdown from FAL's live text-to-image catalog (cached), with a
+ * nonce-protected link to refresh that list. Falls back to the curated list if
+ * the catalog can't be fetched.
+ */
+function kwik_ai_fal_model_callback()
+{
+  // A nonce-protected "Refresh" link forces a refetch of the live model list.
+  $force = false;
+  if (isset($_GET['kwik_ai_fal_refresh_models'])) {
+    check_admin_referer('kwik_ai_fal_refresh_models');
+    $force = true;
+  }
+
+  $selected = kwik_ai_fal_get_model();
+  $models = kwik_ai_fal_get_available_models($force);
+  $is_live = !empty(kwik_ai_fal_fetch_models(false));
+
+  echo '<select name="kwik_ai_fal_model" class="regular-text">';
+
+  // Keep a custom/saved model selectable even if it isn't in the fetched list.
+  if (!isset($models[$selected])) {
+    echo '<option value="' . esc_attr($selected) . '" selected>' . esc_html($selected) . '</option>';
+  }
+
+  foreach ($models as $value => $label) {
+    echo '<option value="' . esc_attr($value) . '" ' . selected($selected, $value, false) . '>' . esc_html($label) . '</option>';
+  }
+  echo '</select>';
+
+  $refresh_url = wp_nonce_url(
+    add_query_arg(
+      'kwik_ai_fal_refresh_models',
+      '1',
+      admin_url('options-general.php?page=kwik-ai-tags-settings')
+    ),
+    'kwik_ai_fal_refresh_models'
+  );
+  echo ' <a href="' . esc_url($refresh_url) . '" class="button">' . esc_html__('Refresh Models', KWIK_AI_DOMAIN) . '</a>';
+
+  echo '<p class="description">';
+  echo esc_html__('The FAL.AI text-to-image model used to create featured images.', KWIK_AI_DOMAIN);
+  if ($is_live) {
+    echo ' ' . sprintf(
+      /* translators: %d: number of models */
+      esc_html__('Showing %d models from FAL.AI.', KWIK_AI_DOMAIN),
+      count($models)
+    );
+  } else {
+    echo ' ' . esc_html__('Showing a built-in list (could not reach FAL.AI). Click "Refresh Models" to try again.', KWIK_AI_DOMAIN);
+  }
+  echo '</p>';
+}
+
+/**
+ * FAL.AI image size field callback
+ */
+function kwik_ai_fal_image_size_callback()
+{
+  $selected = kwik_ai_fal_get_image_size();
+  $sizes = kwik_ai_fal_get_image_sizes();
+
+  echo '<select name="kwik_ai_fal_image_size" class="regular-text">';
+  foreach ($sizes as $value => $label) {
+    echo '<option value="' . esc_attr($value) . '" ' . selected($selected, $value, false) . '>' . esc_html($label) . '</option>';
+  }
+  echo '</select>';
+  echo '<p class="description">' . esc_html__('Aspect ratio for generated featured images. Landscape works best for most themes.', KWIK_AI_DOMAIN) . '</p>';
 }
 
 /**

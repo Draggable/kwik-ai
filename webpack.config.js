@@ -5,6 +5,7 @@ module.exports = {
     'description-block': './assets/js/description-block.js',
     'admin': './assets/js/admin.js',
     'settings': './assets/js/settings.js',
+    'featured-image': './assets/js/featured-image.js',
   },
   output: {
     path: path.resolve(__dirname, 'assets/js'),

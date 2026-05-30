@@ -438,3 +438,210 @@ function kwik_ai_tags_ajax_test_connection()
     'model_found' => $model_found,
   ));
 }
+
+/**
+ * AJAX handler: generate an image prompt from the post for review.
+ *
+ * Returns the prompt text (without contacting FAL) so the editor can see and
+ * edit it before generating an image. Also reports whether the prompt came from
+ * the text AI ('ai') or the verbatim-excerpt fallback ('fallback'), which helps
+ * diagnose an unreachable text AI provider.
+ */
+function kwik_ai_featured_image_ajax_prompt()
+{
+  check_ajax_referer('kwik_ai_featured_image_ajax', 'nonce');
+
+  if (!current_user_can('edit_posts')) {
+    wp_die(esc_html__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+  }
+
+  // Rate limit prompt generation since it calls the text AI provider.
+  if (!kwik_ai_check_rate_limit('kwik_ai_featured_image_prompt', 10)) {
+    wp_send_json_error(__('Please wait a moment before generating another prompt.', KWIK_AI_DOMAIN));
+  }
+
+  if (!isset($_POST['post_id'])) {
+    wp_send_json_error(__('Missing post ID.', KWIK_AI_DOMAIN));
+  }
+  $post_id = intval($_POST['post_id']);
+
+  if (!$post_id || get_post_status($post_id) === false) {
+    wp_send_json_error(__('Invalid post ID.', KWIK_AI_DOMAIN));
+  }
+
+  if (!current_user_can('edit_post', $post_id)) {
+    wp_send_json_error(__('You cannot edit this post.', KWIK_AI_DOMAIN));
+  }
+
+  $guidance = isset($_POST['guidance'])
+    ? sanitize_textarea_field(wp_unslash($_POST['guidance']))
+    : '';
+
+  $result = kwik_ai_featured_image_generate_prompt($post_id, $guidance);
+
+  if (empty($result['prompt'])) {
+    wp_send_json_error(__('Could not build a prompt. Add a title or content to the post.', KWIK_AI_DOMAIN));
+  }
+
+  wp_send_json_success(array(
+    'prompt'   => $result['prompt'],
+    'source'   => $result['source'],
+    'provider' => $result['provider'],
+  ));
+}
+
+/**
+ * AJAX handler: submit a FAL.AI featured image generation job.
+ *
+ * Sends the supplied (reviewed/edited) prompt to FAL's queue and returns the
+ * request_id the browser then polls with kwik_ai_featured_image_ajax_status().
+ */
+function kwik_ai_featured_image_ajax_generate()
+{
+  check_ajax_referer('kwik_ai_featured_image_ajax', 'nonce');
+
+  if (!current_user_can('edit_posts')) {
+    wp_die(esc_html__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+  }
+
+  // Rate limit job submission (not status polls) to avoid hammering FAL.
+  if (!kwik_ai_check_rate_limit('kwik_ai_featured_image_generate', 15)) {
+    wp_send_json_error(__('Please wait a moment before generating another image.', KWIK_AI_DOMAIN));
+  }
+
+  if (!isset($_POST['post_id'])) {
+    wp_send_json_error(__('Missing post ID.', KWIK_AI_DOMAIN));
+  }
+  $post_id = intval($_POST['post_id']);
+
+  if (!$post_id || get_post_status($post_id) === false) {
+    wp_send_json_error(__('Invalid post ID.', KWIK_AI_DOMAIN));
+  }
+
+  if (!current_user_can('edit_post', $post_id)) {
+    wp_send_json_error(__('You cannot edit this post.', KWIK_AI_DOMAIN));
+  }
+
+  $prompt = isset($_POST['prompt'])
+    ? sanitize_textarea_field(wp_unslash($_POST['prompt']))
+    : '';
+
+  if (trim($prompt) === '') {
+    wp_send_json_error(__('Please generate or enter a prompt before creating an image.', KWIK_AI_DOMAIN));
+  }
+
+  $result = kwik_ai_featured_image_submit($post_id, $prompt);
+
+  if (is_wp_error($result)) {
+    wp_send_json_error($result->get_error_message());
+  }
+
+  wp_send_json_success(array(
+    'request_id' => $result['request_id'],
+    'prompt'     => $result['prompt'],
+  ));
+}
+
+/**
+ * AJAX handler: poll the status of a queued FAL.AI image job.
+ *
+ * Looks up the job's tracking URLs from the transient stored at submit time
+ * (verifying ownership) so the browser never supplies FAL URLs directly.
+ */
+function kwik_ai_featured_image_ajax_status()
+{
+  check_ajax_referer('kwik_ai_featured_image_ajax', 'nonce');
+
+  if (!current_user_can('edit_posts')) {
+    wp_die(esc_html__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+  }
+
+  if (empty($_POST['request_id'])) {
+    wp_send_json_error(__('Missing request ID.', KWIK_AI_DOMAIN));
+  }
+  $request_id = sanitize_text_field(wp_unslash($_POST['request_id']));
+
+  $transient_key = kwik_ai_featured_image_transient_key($request_id);
+  $job = get_transient($transient_key);
+
+  if (!is_array($job) || (int) $job['user_id'] !== get_current_user_id()) {
+    wp_send_json_error(__('This image request could not be found. Please generate again.', KWIK_AI_DOMAIN));
+  }
+
+  $status = kwik_ai_fal_check_status($job['status_url']);
+  if (is_wp_error($status)) {
+    wp_send_json_error($status->get_error_message());
+  }
+
+  if ($status !== 'COMPLETED') {
+    wp_send_json_success(array(
+      'status' => 'pending',
+      'state'  => $status,
+    ));
+  }
+
+  $image_url = kwik_ai_fal_get_result($job['response_url']);
+  if (is_wp_error($image_url)) {
+    wp_send_json_error($image_url->get_error_message());
+  }
+
+  // Persist the resolved image URL so the apply step doesn't trust client input.
+  $job['image_url'] = $image_url;
+  set_transient($transient_key, $job, KWIK_AI_FAL_REQUEST_TTL);
+
+  wp_send_json_success(array(
+    'status'    => 'completed',
+    'image_url' => $image_url,
+    'prompt'    => $job['prompt'],
+  ));
+}
+
+/**
+ * AJAX handler: sideload the generated image and set it as the featured image.
+ *
+ * Uses the image URL stored server-side for the request rather than a
+ * client-supplied URL.
+ */
+function kwik_ai_featured_image_ajax_apply()
+{
+  check_ajax_referer('kwik_ai_featured_image_ajax', 'nonce');
+
+  if (!current_user_can('edit_posts') || !current_user_can('upload_files')) {
+    wp_die(esc_html__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+  }
+
+  if (empty($_POST['request_id'])) {
+    wp_send_json_error(__('Missing request ID.', KWIK_AI_DOMAIN));
+  }
+  $request_id = sanitize_text_field(wp_unslash($_POST['request_id']));
+
+  $transient_key = kwik_ai_featured_image_transient_key($request_id);
+  $job = get_transient($transient_key);
+
+  if (!is_array($job) || (int) $job['user_id'] !== get_current_user_id()) {
+    wp_send_json_error(__('This image request could not be found. Please generate again.', KWIK_AI_DOMAIN));
+  }
+
+  $post_id = (int) $job['post_id'];
+  if (!$post_id || !current_user_can('edit_post', $post_id)) {
+    wp_send_json_error(__('You cannot edit this post.', KWIK_AI_DOMAIN));
+  }
+
+  if (empty($job['image_url'])) {
+    wp_send_json_error(__('The image is not ready yet. Please wait for generation to finish.', KWIK_AI_DOMAIN));
+  }
+
+  $attachment_id = kwik_ai_featured_image_set_as_thumbnail($post_id, $job['image_url']);
+  if (is_wp_error($attachment_id)) {
+    wp_send_json_error($attachment_id->get_error_message());
+  }
+
+  // The job is consumed once applied.
+  delete_transient($transient_key);
+
+  wp_send_json_success(array(
+    'attachment_id' => $attachment_id,
+    'thumbnail'     => wp_get_attachment_image_url($attachment_id, 'medium'),
+    'message'       => __('Featured image set!', KWIK_AI_DOMAIN),
+  ));
+}

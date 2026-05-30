@@ -25,6 +25,24 @@ function kwik_ai_tags_get_ai_model(): string
 }
 
 /**
+ * Get the model used for text-only generation (image prompts, URL-based
+ * descriptions).
+ *
+ * Falls back to the main model when no dedicated text model is configured, so
+ * existing setups are unaffected. Set a text/chat model here when the main
+ * model is a vision model that can't (or shouldn't) handle plain text work.
+ *
+ * @return string
+ */
+function kwik_ai_tags_get_text_model(): string
+{
+  $text_model = get_option('kwik_ai_text_model', '');
+  $text_model = is_string($text_model) ? trim($text_model) : '';
+
+  return $text_model !== '' ? $text_model : kwik_ai_tags_get_ai_model();
+}
+
+/**
  * Get the configured AI provider
  *
  * @return string
@@ -156,6 +174,73 @@ function kwik_ai_tags_get_ollama_config()
 }
 
 /**
+ * POST an OpenAI-compatible chat completion, retrying with
+ * 'max_completion_tokens' when the server rejects 'max_tokens'.
+ *
+ * Newer OpenAI (GPT-5-class) models — and proxies that front them — reject the
+ * legacy 'max_tokens' parameter with a 400 and ask for 'max_completion_tokens'.
+ * Older models/servers only understand 'max_tokens'. This sends 'max_tokens'
+ * first (widest compatibility) and transparently retries with the new field
+ * name when that specific error is returned.
+ *
+ * @param string $url        Full /chat/completions URL.
+ * @param array  $headers    Request headers.
+ * @param array  $payload    Payload without any token-limit field.
+ * @param int    $max_tokens Token limit to apply.
+ * @return array|WP_Error    wp_remote_post() response.
+ */
+function kwik_ai_tags_post_chat_completion(string $url, array $headers, array $payload, int $max_tokens)
+{
+  $headers = array_merge($headers, array('Content-Type' => 'application/json'));
+
+  $post = function (array $payload) use ($url, $headers) {
+    return wp_remote_post($url, array(
+      'body' => wp_json_encode($payload),
+      'headers' => $headers,
+      'timeout' => 120,
+    ));
+  };
+
+  // Most models accept the legacy 'max_tokens'; start there for compatibility.
+  $token_field = 'max_tokens';
+  $payload[$token_field] = $max_tokens;
+  $response = $post($payload);
+
+  // Newer OpenAI (GPT-5-class) models reject 'max_tokens' with a 400 asking for
+  // 'max_completion_tokens'. Switch field names and retry.
+  if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 400
+      && stripos(wp_remote_retrieve_body($response), 'max_completion_tokens') !== false) {
+    error_log('Kwik AI: Server rejected max_tokens; retrying with max_completion_tokens');
+    unset($payload['max_tokens']);
+    $token_field = 'max_completion_tokens';
+    $payload[$token_field] = $max_tokens;
+    $response = $post($payload);
+  }
+
+  // Reasoning models spend tokens on hidden reasoning and can return empty
+  // content with finish_reason "length" when the budget is too small. Retry
+  // once with a much larger budget so the actual answer has room.
+  if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 200) {
+    $data = json_decode(wp_remote_retrieve_body($response), true);
+    $content = isset($data['choices'][0]['message']['content'])
+      ? trim((string) $data['choices'][0]['message']['content'])
+      : '';
+    $finish = isset($data['choices'][0]['finish_reason'])
+      ? $data['choices'][0]['finish_reason']
+      : '';
+
+    if ($content === '' && $finish === 'length') {
+      $bigger = max($max_tokens * 8, 2048);
+      error_log('Kwik AI: Empty content with finish_reason=length (likely a reasoning model); retrying with ' . $token_field . '=' . $bigger);
+      $payload[$token_field] = $bigger;
+      $response = $post($payload);
+    }
+  }
+
+  return $response;
+}
+
+/**
  * Send a request to the AI provider's generate endpoint.
  *
  * Supports Ollama, OpenRouter, and OpenAI.
@@ -245,29 +330,22 @@ function kwik_ai_tags_query_ai(string $prompt, array $images): ?string
       'content' => $user_content,
     );
     
-    // Build payload
+    // Build payload (token limit added by the helper, which handles the
+    // max_tokens vs max_completion_tokens difference between models).
     $payload = array(
       'model' => $model,
       'messages' => $messages,
       'temperature' => 0.7,
-      'max_tokens' => 100,
     );
-    
+
     // Log payload summary, not full content
     error_log('Kwik AI: Payload: ' . json_encode(array_merge($payload, array('messages' => '[' . count($messages) . ' messages]'))));
-    
-    $response = wp_remote_post(
-      $url,
-      [
-        'body' => wp_json_encode($payload),
-        'headers' => array_merge($headers, array('Content-Type' => 'application/json')),
-        'timeout' => 120,
-      ]
-    );
-    
+
+    $response = kwik_ai_tags_post_chat_completion($url, $headers, $payload, 100);
+
     return kwik_ai_tags_process_openai_response($response);
   }
-  
+
   return null;
 }
 
@@ -386,14 +464,18 @@ function kwik_ai_tags_process_openai_response($response)
 /**
  * Send a request to the AI provider's generate endpoint with text only (no images).
  *
- * @param string $prompt
- * @return string|null     Raw response string
+ * @param string      $prompt
+ * @param string|null $system     Optional system instruction. Defaults to the
+ *                                tag-generation system prompt when null, so
+ *                                existing callers behave unchanged.
+ * @param int         $max_tokens Maximum tokens for hosted providers (default 100).
+ * @return string|null            Raw response string
  */
-function kwik_ai_tags_query_ai_text_only(string $prompt): ?string
+function kwik_ai_tags_query_ai_text_only(string $prompt, ?string $system = null, int $max_tokens = 100): ?string
 {
   $provider = kwik_ai_tags_get_ai_provider();
   $endpoint = kwik_ai_tags_get_api_endpoint();
-  $model = kwik_ai_tags_get_ai_model();
+  $model = kwik_ai_tags_get_text_model();
   $headers = kwik_ai_tags_get_api_headers();
 
   error_log('Kwik AI: Provider: ' . $provider);
@@ -403,66 +485,101 @@ function kwik_ai_tags_query_ai_text_only(string $prompt): ?string
 
   // Build payload based on provider
   if ($provider === 'custom') {
-    // Custom /api/generate endpoint
-    $url = $endpoint . '/api/generate';
-    
-    $payload = [
+    // "Custom" servers come in two flavors: OpenAI-compatible (Open WebUI,
+    // LM Studio, vLLM, LocalAI — expose /chat/completions) and native Ollama
+    // (exposes /api/generate). Try the OpenAI-compatible endpoint first, to
+    // match how the model list is fetched (/models first), and fall back to
+    // Ollama's native endpoint only when that path is absent (404/405/error).
+    $messages = array();
+    if ($system !== null && $system !== '') {
+      $messages[] = array('role' => 'system', 'content' => $system);
+    }
+    $messages[] = array('role' => 'user', 'content' => $prompt);
+
+    $oai_payload = array(
+      'model' => $model,
+      'messages' => $messages,
+      'stream' => false,
+    );
+
+    error_log('Kwik AI: Trying OpenAI-compatible /chat/completions for custom provider');
+
+    $oai_response = kwik_ai_tags_post_chat_completion(
+      $endpoint . '/chat/completions',
+      $headers,
+      $oai_payload,
+      $max_tokens
+    );
+
+    // Use the OpenAI-compatible result unless the endpoint clearly isn't there.
+    // A 404/405 means "wrong endpoint" (fall back); other codes (200, 400, 401,
+    // 500…) mean the endpoint exists, so let process_openai_response handle it
+    // rather than masking a real error by retrying the Ollama path.
+    if (!is_wp_error($oai_response)) {
+      $oai_code = wp_remote_retrieve_response_code($oai_response);
+      if ($oai_code !== 404 && $oai_code !== 405) {
+        return kwik_ai_tags_process_openai_response($oai_response);
+      }
+      error_log('Kwik AI: /chat/completions returned ' . $oai_code . '; falling back to /api/generate');
+    } else {
+      error_log('Kwik AI: /chat/completions error: ' . $oai_response->get_error_message() . '; falling back to /api/generate');
+    }
+
+    // Fall back to native Ollama /api/generate.
+    $ollama_payload = [
       'model' => $model,
       'prompt' => $prompt,
       'stream' => false,
     ];
-    
-    error_log('Kwik AI: Payload: ' . json_encode($payload));
-    
-    $response = wp_remote_post(
-      $url,
+    if ($system !== null && $system !== '') {
+      $ollama_payload['system'] = $system;
+    }
+
+    $ollama_response = wp_remote_post(
+      $endpoint . '/api/generate',
       [
-        'body' => wp_json_encode($payload),
+        'body' => wp_json_encode($ollama_payload),
         'headers' => array_merge($headers, array('Content-Type' => 'application/json')),
         'timeout' => 120,
       ]
     );
-    
-    return kwik_ai_tags_process_ollama_response($response, $prompt);
-    
+
+    return kwik_ai_tags_process_ollama_response($ollama_response, $prompt);
+
   } elseif ($provider === 'openrouter' || $provider === 'openai') {
     // OpenRouter/OpenAI /chat/completions endpoint
     $url = $endpoint . '/chat/completions';
-    
+
+    $system_message = ($system !== null && $system !== '')
+      ? $system
+      : 'You are an expert at generating concise, relevant tags for content. Respond ONLY with a comma-separated list of tags.';
+
     // Build messages array
     $messages = array(
       array(
         'role' => 'system',
-        'content' => 'You are an expert at generating concise, relevant tags for content. Respond ONLY with a comma-separated list of tags.',
+        'content' => $system_message,
       ),
       array(
         'role' => 'user',
         'content' => $prompt,
       ),
     );
-    
+
     // Build payload
     $payload = array(
       'model' => $model,
       'messages' => $messages,
       'temperature' => 0.7,
-      'max_tokens' => 100,
     );
-    
+
     error_log('Kwik AI: Payload: ' . json_encode($payload));
-    
-    $response = wp_remote_post(
-      $url,
-      [
-        'body' => wp_json_encode($payload),
-        'headers' => array_merge($headers, array('Content-Type' => 'application/json')),
-        'timeout' => 120,
-      ]
-    );
-    
+
+    $response = kwik_ai_tags_post_chat_completion($url, $headers, $payload, $max_tokens);
+
     return kwik_ai_tags_process_openai_response($response);
   }
-  
+
   return null;
 }
 

@@ -92,6 +92,44 @@ function kwik_ai_tags_enqueue_scripts($hook)
     ]
   ]);
 
+  $fal_js_path = plugin_dir_path(KWIK_AI_PLUGIN_FILE) . 'assets/js/featured-image.js';
+  $fal_js_ver = file_exists($fal_js_path) ? filemtime($fal_js_path) : '3.0';
+
+  wp_enqueue_script(
+    'kwik-ai-featured-image',
+    plugin_dir_url(KWIK_AI_PLUGIN_FILE) . 'assets/js/featured-image.js',
+    ['jquery'],
+    $fal_js_ver,
+    true
+  );
+
+  wp_localize_script('kwik-ai-featured-image', 'kwikAiFeaturedImage', [
+    'ajaxUrl' => admin_url('admin-ajax.php'),
+    'nonce' => wp_create_nonce('kwik_ai_featured_image_ajax'),
+    'postId' => $post_id,
+    'debug' => WP_DEBUG,
+    // How often the browser polls for the queued image, and when to give up.
+    'pollInterval' => 3000,
+    'maxPollMs' => 300000,
+    'strings' => [
+      'generatePrompt' => __('Generate Prompt', KWIK_AI_DOMAIN),
+      'generatingPrompt' => __('Writing prompt…', KWIK_AI_DOMAIN),
+      'generate' => __('Generate Image', KWIK_AI_DOMAIN),
+      'generating' => __('Generating image…', KWIK_AI_DOMAIN),
+      'queued' => __('Queued…', KWIK_AI_DOMAIN),
+      'inProgress' => __('Generating…', KWIK_AI_DOMAIN),
+      'applying' => __('Setting featured image…', KWIK_AI_DOMAIN),
+      'setFeatured' => __('Set as Featured Image', KWIK_AI_DOMAIN),
+      'noPost' => __('No post ID found. Please save the post first.', KWIK_AI_DOMAIN),
+      'noPrompt' => __('Generate or enter a prompt first.', KWIK_AI_DOMAIN),
+      'timeout' => __('Image generation timed out. Please try again.', KWIK_AI_DOMAIN),
+      'error' => __('An error occurred. Please try again.', KWIK_AI_DOMAIN),
+      'success' => __('Featured image set!', KWIK_AI_DOMAIN),
+      'sourceAi' => __('Prompt written by your AI provider. Review and edit it before generating — for example, remove any words an image filter might wrongly flag.', KWIK_AI_DOMAIN),
+      'sourceFallback' => __('Heads up: this is a raw excerpt from the post because the text AI provider did not respond. Check your AI provider connection, or edit the prompt manually.', KWIK_AI_DOMAIN),
+    ]
+  ]);
+
   if (defined('WP_DEBUG') && WP_DEBUG) {
     kwik_ai_log('Kwik AI: Scripts and styles enqueued successfully');
   }

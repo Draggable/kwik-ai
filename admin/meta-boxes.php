@@ -262,3 +262,115 @@ function kwik_ai_description_meta_box_callback($post)
     error_log('Kwik AI: Description meta box HTML rendered');
   }
 }
+
+/**
+ * Add meta box for AI featured image generation (FAL.AI).
+ */
+function kwik_ai_featured_image_add_meta_box()
+{
+  $enabled_post_types = kwik_ai_tags_get_enabled_post_types();
+
+  foreach ($enabled_post_types as $post_type) {
+    // Only offer this where the post type actually supports featured images.
+    if (!post_type_supports($post_type, 'thumbnail')) {
+      continue;
+    }
+
+    add_meta_box(
+      'kwik-ai-featured-image-box',
+      __('AI Featured Image', KWIK_AI_DOMAIN),
+      'kwik_ai_featured_image_meta_box_callback',
+      $post_type,
+      'side',
+      'high'
+    );
+  }
+}
+
+/**
+ * Featured image meta box callback function.
+ */
+function kwik_ai_featured_image_meta_box_callback($post)
+{
+  // Note: This meta box is AJAX-driven; nonce verification happens
+  // in admin/ajax-handlers.php via check_ajax_referer().
+  $has_key = function_exists('kwik_ai_fal_has_api_key') && kwik_ai_fal_has_api_key();
+  ?>
+  <div id="kwik-ai-featured-image-container">
+    <?php if (!$has_key): ?>
+      <div class="notice notice-warning inline" style="margin: 0 0 10px;">
+        <p>
+          <?php
+          printf(
+            /* translators: %s: settings page URL */
+            wp_kses(
+              __('Add a FAL.AI API key in <a href="%s">KWIK AI settings</a> to enable image generation.', KWIK_AI_DOMAIN),
+              array('a' => array('href' => array()))
+            ),
+            esc_url(admin_url('options-general.php?page=kwik-ai-tags-settings'))
+          );
+          ?>
+        </p>
+      </div>
+    <?php endif; ?>
+
+    <p>
+      <label for="kwik-ai-featured-image-guidance">
+        <?php esc_html_e('Optional guidance (style, subject, mood):', KWIK_AI_DOMAIN); ?>
+      </label>
+      <textarea id="kwik-ai-featured-image-guidance" rows="2" style="width: 100%;"
+        placeholder="<?php esc_attr_e('e.g. watercolor style, warm lighting, no people', KWIK_AI_DOMAIN); ?>"></textarea>
+    </p>
+
+    <p>
+      <button type="button" id="kwik-ai-featured-image-prompt-generate" class="button button-secondary" <?php disabled(!$has_key); ?>>
+        <?php esc_html_e('Generate Prompt', KWIK_AI_DOMAIN); ?>
+      </button>
+      <span id="kwik-ai-featured-image-prompt-loading" style="display: none;">
+        <span class="kwik-ai-tags-spinner" style="display: inline-block; vertical-align: middle;"></span>
+        <?php esc_html_e('Writing prompt…', KWIK_AI_DOMAIN); ?>
+      </span>
+    </p>
+
+    <p>
+      <label for="kwik-ai-featured-image-prompt-input">
+        <?php esc_html_e('Image prompt (review and edit before generating):', KWIK_AI_DOMAIN); ?>
+      </label>
+      <textarea id="kwik-ai-featured-image-prompt-input" rows="5" style="width: 100%;"
+        placeholder="<?php esc_attr_e('Click "Generate Prompt", or type your own prompt here.', KWIK_AI_DOMAIN); ?>"></textarea>
+      <span id="kwik-ai-featured-image-prompt-source" class="description" style="display: block;"></span>
+    </p>
+
+    <p>
+      <button type="button" id="kwik-ai-featured-image-generate" class="button button-primary" <?php disabled(!$has_key); ?>>
+        <?php esc_html_e('Generate Image', KWIK_AI_DOMAIN); ?>
+      </button>
+    </p>
+
+    <div id="kwik-ai-featured-image-loading" style="display: none;">
+      <p>
+        <span id="kwik-ai-featured-image-status"><?php esc_html_e('Generating image…', KWIK_AI_DOMAIN); ?></span>
+        <span id="kwik-ai-featured-image-elapsed"></span>
+      </p>
+      <div class="kwik-ai-tags-spinner"></div>
+    </div>
+
+    <div id="kwik-ai-featured-image-preview" style="display: none;">
+      <img id="kwik-ai-featured-image-img" src="" alt="" style="max-width: 100%; height: auto; border: 1px solid #dcdcde; border-radius: 3px;" />
+      <p>
+        <button type="button" id="kwik-ai-featured-image-apply" class="button button-primary">
+          <?php esc_html_e('Set as Featured Image', KWIK_AI_DOMAIN); ?>
+        </button>
+        <button type="button" id="kwik-ai-featured-image-regenerate" class="button button-secondary">
+          <?php esc_html_e('Regenerate', KWIK_AI_DOMAIN); ?>
+        </button>
+      </p>
+      <p class="description"><?php esc_html_e('“Regenerate” creates a new image from the same prompt above. Edit the prompt and click “Generate Image” to change it.', KWIK_AI_DOMAIN); ?></p>
+    </div>
+
+    <div id="kwik-ai-featured-image-error" style="display: none;">
+      <p class="error-message"></p>
+    </div>
+  </div>
+  <?php
+}
