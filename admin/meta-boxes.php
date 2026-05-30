@@ -194,6 +194,25 @@ function kwik_ai_description_meta_box_callback($post)
         <div style="font-size: 13px; line-height: 1.4; white-space: pre-wrap;"><?php echo esc_html($existing_description); ?></div>
       </div>
     <?php endif; ?>
+
+    <div class="kwik-ai-description-controls">
+      <label for="kwik-ai-description-length">
+        <?php esc_html_e('Length', KWIK_AI_DOMAIN); ?>
+        <span id="kwik-ai-description-length-value">35</span>
+        <?php esc_html_e('words', KWIK_AI_DOMAIN); ?>
+      </label>
+      <input type="range" id="kwik-ai-description-length" min="20" max="80" step="5" value="35">
+
+      <label for="kwik-ai-description-tone">
+        <?php esc_html_e('Tone', KWIK_AI_DOMAIN); ?>
+      </label>
+      <select id="kwik-ai-description-tone">
+        <option value="straight"><?php esc_html_e('Straight', KWIK_AI_DOMAIN); ?></option>
+        <option value="technical"><?php esc_html_e('Technical', KWIK_AI_DOMAIN); ?></option>
+        <option value="excerpt"><?php esc_html_e('Excerpt', KWIK_AI_DOMAIN); ?></option>
+        <option value="pithy"><?php esc_html_e('Pithy', KWIK_AI_DOMAIN); ?></option>
+      </select>
+    </div>
     
     <p>
       <button type="button" id="kwik-ai-description-generate" class="button button-secondary">

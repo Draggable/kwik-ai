@@ -196,8 +196,16 @@ function kwik_ai_description_ajax_generate()
     wp_send_json_error(__('Invalid post ID.', KWIK_AI_DOMAIN));
   }
 
+  $max_words = isset($_POST['max_words']) ? absint($_POST['max_words']) : 35;
+  $max_words = max(20, min(80, $max_words));
+
+  $tone = isset($_POST['tone']) ? sanitize_key(wp_unslash($_POST['tone'])) : 'straight';
+  if (!in_array($tone, array('technical', 'straight', 'excerpt', 'pithy'), true)) {
+    $tone = 'straight';
+  }
+
   // Generate an excerpt from the post's title and text content.
-  $excerpt = kwik_ai_excerpt_generate_for_post($post_id);
+  $excerpt = kwik_ai_excerpt_generate_for_post($post_id, $max_words, $tone);
 
   if (defined('WP_DEBUG') && WP_DEBUG) {
     kwik_ai_log('Kwik AI: Generated excerpt: ' . substr((string) $excerpt, 0, 100) . '...');

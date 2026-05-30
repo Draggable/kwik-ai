@@ -31,6 +31,9 @@ jQuery(document).ready(function($) {
     const $descPreview = $('#kwik-ai-description-preview');
     const $descText = $('#kwik-ai-description-text');
     const $descError = $('#kwik-ai-description-error');
+    const $descLength = $('#kwik-ai-description-length');
+    const $descLengthValue = $('#kwik-ai-description-length-value');
+    const $descTone = $('#kwik-ai-description-tone');
     
     debugLog('Elements found', {
         container: $container.length,
@@ -322,7 +325,9 @@ jQuery(document).ready(function($) {
         const ajaxData = {
             action: 'kwik_ai_description_generate',
             nonce: kwikAiDescription.nonce,
-            post_id: kwikAiDescription.postId
+            post_id: kwikAiDescription.postId,
+            max_words: $descLength.length ? $descLength.val() : 35,
+            tone: $descTone.length ? $descTone.val() : 'straight'
         };
         
         debugLog('Description AJAX data', ajaxData);
@@ -358,6 +363,12 @@ jQuery(document).ready(function($) {
                 showDescError(errorMessage);
             }
         });
+    }
+
+    function updateDescriptionLengthLabel() {
+        if ($descLength.length && $descLengthValue.length) {
+            $descLengthValue.text($descLength.val());
+        }
     }
     
     /**
@@ -437,6 +448,9 @@ jQuery(document).ready(function($) {
     }
     
     // Description event handlers
+    $descContainer.on('input change', '#kwik-ai-description-length', updateDescriptionLengthLabel);
+    updateDescriptionLengthLabel();
+
     $descContainer.on('click', '#kwik-ai-description-generate', function(e) {
         e.preventDefault();
         e.stopPropagation();

@@ -189,6 +189,28 @@
   text-align: center;
 }
 
+.kwik-ai-description-controls {
+  margin-bottom: 12px;
+  flex-direction: column;
+}
+
+.kwik-ai-description-controls label {
+  display: block;
+  margin: 8px 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1d2327;
+}
+
+.kwik-ai-description-controls input[type="range"],
+.kwik-ai-description-controls select {
+  width: 100%;
+}
+
+#kwik-ai-description-length-value {
+  font-weight: 700;
+}
+
 #kwik-ai-description-loading {
   text-align: center;
   padding: 20px 0;

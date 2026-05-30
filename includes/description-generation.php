@@ -17,12 +17,26 @@ if (!defined('ABSPATH')) {
  * already powers tag and image-prompt generation.
  *
  * @param int $post_id  The post to summarize.
- * @param int $max_words Maximum length of the excerpt in words.
+ * @param int    $max_words Maximum length of the excerpt in words.
+ * @param string $tone      Excerpt tone: technical, straight, excerpt, or pithy.
  * @return string|false  The excerpt text, or false on failure.
  */
-function kwik_ai_excerpt_generate_for_post(int $post_id, int $max_words = 55)
+function kwik_ai_excerpt_generate_for_post(int $post_id, int $max_words = 35, string $tone = 'straight')
 {
   kwik_ai_log('Kwik AI: Starting excerpt generation for post ' . $post_id);
+
+  $max_words = max(20, min(80, $max_words));
+
+  $tone_instructions = array(
+    'technical' => 'Use a precise, technical tone. Lead with the concrete subject, method, or takeaway. Avoid hype.',
+    'straight'  => 'Use a clear, direct tone. Say what the reader will learn without sounding promotional.',
+    'excerpt'   => 'Use an editorial excerpt style. Tease the central idea and leave a little curiosity without withholding the subject.',
+    'pithy'     => 'Use a pithy, lively hook. Make it concise and compelling so readers want to open the post, but do not exaggerate.',
+  );
+
+  if (!isset($tone_instructions[$tone])) {
+    $tone = 'straight';
+  }
 
   $title = get_the_title($post_id);
   $content = wp_strip_all_tags(get_post_field('post_content', $post_id));
@@ -39,8 +53,8 @@ function kwik_ai_excerpt_generate_for_post(int $post_id, int $max_words = 55)
     $basis = substr($basis, 0, 6000);
   }
 
-  $system = 'You write concise, engaging excerpts for blog posts. Respond with only the excerpt text, no labels, quotes, or extra formatting.';
-  $prompt = 'Write an engaging excerpt of at most ' . $max_words . ' words that summarizes the following post. Write in a natural style and avoid uncommon punctuation such as the em dash. Respond with only the excerpt text.' . "\n\n" . $basis;
+  $system = 'You write concise, creative WordPress excerpts that invite readers into a post. Respond with only the excerpt text, no labels, quotes, or extra formatting.';
+  $prompt = 'Write a fresh excerpt of at most ' . $max_words . ' words for the following post. ' . $tone_instructions[$tone] . ' Do not merely describe that the post exists. Avoid uncommon punctuation such as the em dash. Respond with only the excerpt text.' . "\n\n" . $basis;
 
   $raw_response = kwik_ai_tags_query_ai_text_only($prompt, $system, 300);
   kwik_ai_log('Kwik AI: Excerpt response: ' . substr($raw_response ?: 'NULL', 0, 200));
@@ -54,6 +68,7 @@ function kwik_ai_excerpt_generate_for_post(int $post_id, int $max_words = 55)
   // Strip any leading label the model may add and surrounding quotes.
   $excerpt = preg_replace('/^(Excerpt|Description|Summary)\s*:\s*/i', '', $excerpt);
   $excerpt = trim($excerpt, " \t\n\r\0\x0B\"'");
+  $excerpt = wp_trim_words($excerpt, $max_words, '');
 
   kwik_ai_log('Kwik AI: Cleaned excerpt: ' . substr($excerpt, 0, 100) . '...');
 

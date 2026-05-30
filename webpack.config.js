@@ -36,6 +36,14 @@ module.exports = {
   resolve: {
     extensions: ['.js', '.jsx'],
   },
+  // Do NOT bundle React. WordPress provides React via the `react`/`react-dom`
+  // script handles (declared as deps in blocks-init.php). Bundling our own copy
+  // means rc-slider's hooks run against a React instance with a null dispatcher,
+  // throwing "Cannot read properties of null (reading 'useRef')" in the editor.
+  externals: {
+    react: 'React',
+    'react-dom': 'ReactDOM',
+  },
   optimization: {
     minimize: true,
   },
