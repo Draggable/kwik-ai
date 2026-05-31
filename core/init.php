@@ -36,6 +36,7 @@ function kwik_ai_tags_init()
   add_action('wp_ajax_kwik_ai_description_apply', 'kwik_ai_description_ajax_apply');
   add_action('wp_ajax_kwik_ai_tags_fetch_models', 'kwik_ai_tags_ajax_fetch_models');
   add_action('wp_ajax_kwik_ai_tags_test_connection', 'kwik_ai_tags_ajax_test_connection');
+  add_action('wp_ajax_kwik_ai_fal_refresh_models', 'kwik_ai_fal_ajax_refresh_models');
   add_action('wp_ajax_kwik_ai_featured_image_prompt', 'kwik_ai_featured_image_ajax_prompt');
   add_action('wp_ajax_kwik_ai_featured_image_generate', 'kwik_ai_featured_image_ajax_generate');
   add_action('wp_ajax_kwik_ai_featured_image_status', 'kwik_ai_featured_image_ajax_status');

@@ -40,8 +40,18 @@ function kwik_ai_tags_enqueue_scripts($hook)
     return;
   }
 
+  $plugin_dir = plugin_dir_path(KWIK_AI_PLUGIN_FILE);
   $js_url = plugin_dir_url(KWIK_AI_PLUGIN_FILE) . 'assets/js/admin.js';
   $css_url = plugin_dir_url(KWIK_AI_PLUGIN_FILE) . 'assets/css/admin.css';
+
+  // Use file modification time for cache busting so asset changes (e.g. the
+  // spinner styles) are picked up on upgrade without manually bumping a version
+  // string — a stale cached admin.css is what made the loading spinner render
+  // as a rotating square instead of a circle on existing installs.
+  $js_path = $plugin_dir . 'assets/js/admin.js';
+  $css_path = $plugin_dir . 'assets/css/admin.css';
+  $js_ver = file_exists($js_path) ? filemtime($js_path) : '3.1';
+  $css_ver = file_exists($css_path) ? filemtime($css_path) : '3.1';
 
   if (defined('WP_DEBUG') && WP_DEBUG) {
     kwik_ai_log('Kwik AI: Enqueueing JS from: ' . $js_url);
@@ -52,7 +62,7 @@ function kwik_ai_tags_enqueue_scripts($hook)
     'kwik-ai-tags-admin',
     $js_url,
     ['jquery'],
-    '2.6',
+    $js_ver,
     true
   );
 
@@ -60,7 +70,7 @@ function kwik_ai_tags_enqueue_scripts($hook)
     'kwik-ai-tags-admin',
     $css_url,
     [],
-    '2.6'
+    $css_ver
   );
 
   $post_id = get_the_ID();

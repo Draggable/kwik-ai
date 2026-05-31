@@ -71,6 +71,10 @@ function kwik_ai_tags_enqueue_settings_styles()
       'refresh' => __('Refresh Models', 'kwik-ai-tags'),
       'testing' => __('Testing connection...', 'kwik-ai-tags'),
       'testError' => __('Connection failed. Please check your endpoint URL and API key.', 'kwik-ai-tags'),
+      'falDescription' => __('The FAL.AI text-to-image model used to create featured images.', 'kwik-ai-tags'),
+      /* translators: %d: number of models */
+      'falShowing' => __('Showing %d models from FAL.AI.', 'kwik-ai-tags'),
+      'falError' => __('Could not reach FAL.AI. Please try again.', 'kwik-ai-tags'),
     ]
   ]);
 }
@@ -813,18 +817,11 @@ function kwik_ai_fal_api_key_callback()
  */
 function kwik_ai_fal_model_callback()
 {
-  // A nonce-protected "Refresh" link forces a refetch of the live model list.
-  $force = false;
-  if (isset($_GET['kwik_ai_fal_refresh_models'])) {
-    check_admin_referer('kwik_ai_fal_refresh_models');
-    $force = true;
-  }
-
   $selected = kwik_ai_fal_get_model();
-  $models = kwik_ai_fal_get_available_models($force);
+  $models = kwik_ai_fal_get_available_models(false);
   $is_live = !empty(kwik_ai_fal_fetch_models(false));
 
-  echo '<select name="kwik_ai_fal_model" class="regular-text">';
+  echo '<select name="kwik_ai_fal_model" id="kwik-ai-fal-model-select" class="regular-text">';
 
   // Keep a custom/saved model selectable even if it isn't in the fetched list.
   if (!isset($models[$selected])) {
@@ -836,17 +833,11 @@ function kwik_ai_fal_model_callback()
   }
   echo '</select>';
 
-  $refresh_url = wp_nonce_url(
-    add_query_arg(
-      'kwik_ai_fal_refresh_models',
-      '1',
-      admin_url('options-general.php?page=kwik-ai-tags-settings')
-    ),
-    'kwik_ai_fal_refresh_models'
-  );
-  echo ' <a href="' . esc_url($refresh_url) . '" class="button">' . esc_html__('Refresh Models', 'kwik-ai-tags') . '</a>';
+  // Refresh the live catalog in place via AJAX (no full page reload).
+  echo ' <button type="button" class="button" id="kwik-ai-fal-refresh-models" style="margin-left: 10px;">' . esc_html__('Refresh Models', 'kwik-ai-tags') . '</button>';
+  echo '<span id="kwik-ai-fal-model-loading" style="display: none; margin-left: 10px;">' . esc_html__('Loading...', 'kwik-ai-tags') . '</span>';
 
-  echo '<p class="description">';
+  echo '<p class="description" id="kwik-ai-fal-model-description">';
   echo esc_html__('The FAL.AI text-to-image model used to create featured images.', 'kwik-ai-tags');
   if ($is_live) {
     echo ' ' . sprintf(

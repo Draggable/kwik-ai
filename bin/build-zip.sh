@@ -15,6 +15,11 @@ STAGE="$(mktemp -d)"
 OUT_DIR="$ROOT/dist"
 OUT_ZIP="$OUT_DIR/$SLUG.zip"
 
+# Rebuild the bundled assets (the Gutenberg description block) so the ZIP always
+# ships the freshest compiled JS, not a stale checkout artifact.
+echo "Building assets (npm run build)..."
+( cd "$ROOT" && npm run build )
+
 # Build rsync --exclude args from .distignore (skip comments/blank lines).
 EXCLUDES=()
 while IFS= read -r line; do

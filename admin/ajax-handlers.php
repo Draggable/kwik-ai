@@ -398,6 +398,35 @@ function kwik_ai_tags_ajax_test_connection()
 }
 
 /**
+ * AJAX handler: refresh the FAL.AI text-to-image model list.
+ *
+ * Forces a refetch of FAL's live catalog and returns the model map so the
+ * settings dropdown can be repopulated in place, without a full page reload.
+ */
+function kwik_ai_fal_ajax_refresh_models()
+{
+  check_ajax_referer('kwik_ai_tags_ajax', 'nonce');
+
+  if (!current_user_can('manage_options')) {
+    wp_send_json_error(__('You do not have sufficient permissions.', 'kwik-ai-tags'));
+  }
+
+  $models = kwik_ai_fal_get_available_models(true);
+  $is_live = !empty(kwik_ai_fal_fetch_models(false));
+
+  if (empty($models)) {
+    wp_send_json_error(__('Could not reach FAL.AI. Please try again.', 'kwik-ai-tags'));
+  }
+
+  wp_send_json_success(array(
+    'models' => $models,
+    'selected' => kwik_ai_fal_get_model(),
+    'is_live' => $is_live,
+    'count' => count($models),
+  ));
+}
+
+/**
  * AJAX handler: generate an image prompt from the post for review.
  *
  * Returns the prompt text (without contacting FAL) so the editor can see and

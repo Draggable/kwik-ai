@@ -76,5 +76,43 @@
     c(), i("#kwik-ai-provider-select").on("change", function() {
       c(), s.hide().empty();
     });
+    // FAL.AI "Refresh Models": refetch the live catalog over AJAX and repopulate
+    // the dropdown in place, instead of doing a full nonce-protected page reload.
+    var f = i("#kwik-ai-fal-refresh-models"), F = i("#kwik-ai-fal-model-select"), L = i("#kwik-ai-fal-model-loading"), D = i("#kwik-ai-fal-model-description");
+    f.length && f.on("click", function(e) {
+      e.preventDefault();
+      var t = F.val();
+      f.prop("disabled", !0), L.show(), f.text(kwikAiSettings.strings.loading), i.ajax({
+        url: kwikAiSettings.ajaxUrl,
+        type: "POST",
+        data: {
+          action: "kwik_ai_fal_refresh_models",
+          nonce: kwikAiSettings.nonce
+        },
+        success: function(e) {
+          if (e.success && e.data.models) {
+            var a = e.data.models, n = e.data.selected || t;
+            F.empty(), t && !a[t] && F.append(i("<option>", {
+              value: t,
+              text: t,
+              selected: !0
+            }));
+            i.each(a, function(e, t) {
+              var s = i("<option>", {
+                value: e,
+                text: t
+              });
+              e === n && s.prop("selected", !0), F.append(s);
+            }), D.text(kwikAiSettings.strings.falDescription + " " + kwikAiSettings.strings.falShowing.replace("%d", e.data.count));
+          } else D.text(kwikAiSettings.strings.falDescription + " " + (e.data || kwikAiSettings.strings.falError));
+        },
+        error: function() {
+          D.text(kwikAiSettings.strings.falDescription + " " + kwikAiSettings.strings.falError);
+        },
+        complete: function() {
+          f.prop("disabled", !1), L.hide(), f.text(kwikAiSettings.strings.refresh);
+        }
+      });
+    });
   });
 }(jQuery);
