@@ -8,7 +8,7 @@ Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Auto-tag posts, generate descriptions from images or URLs, create excerpts with controllable tone, and produce AI featured images via FAL.AI. Works with Ollama, OpenRouter, and OpenAI.
+Auto-tag posts, generate descriptions and excerpts, and create AI featured images. Works with Ollama, OpenRouter, OpenAI, and FAL.AI.
 
 == Description ==
 
