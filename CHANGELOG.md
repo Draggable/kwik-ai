@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/kevinchappell/kwik-ai/compare/v1.0.1...v1.0.2) (2026-05-31)
+
+
+### Bug Fixes
+
+* readme short description length ([24dca12](https://github.com/kevinchappell/kwik-ai/commit/24dca125728bce547b4911e7266c8278d490d77d))
+
 ## [1.0.1](https://github.com/kevinchappell/kwik-ai/compare/v1.0.0...v1.0.1) (2026-05-31)
 
 
