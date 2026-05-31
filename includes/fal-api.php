@@ -222,12 +222,12 @@ function kwik_ai_fal_submit_request(string $prompt, array $args = array())
 {
   $api_key = kwik_ai_fal_get_api_key();
   if ($api_key === '') {
-    return new WP_Error('kwik_ai_fal_no_key', __('No FAL.AI API key is configured. Add one in Settings > KWIK AI.', 'kwik-ai-tags'));
+    return new WP_Error('kwik_ai_fal_no_key', __('No FAL.AI API key is configured. Add one in Settings > KWIK AI.', 'kwik-ai'));
   }
 
   $prompt = trim($prompt);
   if ($prompt === '') {
-    return new WP_Error('kwik_ai_fal_no_prompt', __('No prompt was generated for the image.', 'kwik-ai-tags'));
+    return new WP_Error('kwik_ai_fal_no_prompt', __('No prompt was generated for the image.', 'kwik-ai'));
   }
 
   $model = isset($args['model']) && $args['model'] !== '' ? $args['model'] : kwik_ai_fal_get_model();
@@ -264,7 +264,7 @@ function kwik_ai_fal_submit_request(string $prompt, array $args = array())
 
   $data = json_decode($raw, true);
   if (!is_array($data) || empty($data['request_id'])) {
-    return new WP_Error('kwik_ai_fal_bad_response', __('FAL.AI returned an unexpected response when submitting the job.', 'kwik-ai-tags'));
+    return new WP_Error('kwik_ai_fal_bad_response', __('FAL.AI returned an unexpected response when submitting the job.', 'kwik-ai'));
   }
 
   return array(
@@ -289,7 +289,7 @@ function kwik_ai_fal_check_status(string $status_url)
 
   $api_key = kwik_ai_fal_get_api_key();
   if ($api_key === '') {
-    return new WP_Error('kwik_ai_fal_no_key', __('No FAL.AI API key is configured.', 'kwik-ai-tags'));
+    return new WP_Error('kwik_ai_fal_no_key', __('No FAL.AI API key is configured.', 'kwik-ai'));
   }
 
   $response = wp_remote_get($status_url, array(
@@ -310,7 +310,7 @@ function kwik_ai_fal_check_status(string $status_url)
 
   $data = json_decode($raw, true);
   if (!is_array($data) || empty($data['status'])) {
-    return new WP_Error('kwik_ai_fal_bad_response', __('FAL.AI returned an unexpected status response.', 'kwik-ai-tags'));
+    return new WP_Error('kwik_ai_fal_bad_response', __('FAL.AI returned an unexpected status response.', 'kwik-ai'));
   }
 
   return (string) $data['status'];
@@ -331,7 +331,7 @@ function kwik_ai_fal_get_result(string $response_url)
 
   $api_key = kwik_ai_fal_get_api_key();
   if ($api_key === '') {
-    return new WP_Error('kwik_ai_fal_no_key', __('No FAL.AI API key is configured.', 'kwik-ai-tags'));
+    return new WP_Error('kwik_ai_fal_no_key', __('No FAL.AI API key is configured.', 'kwik-ai'));
   }
 
   $response = wp_remote_get($response_url, array(
@@ -352,7 +352,7 @@ function kwik_ai_fal_get_result(string $response_url)
 
   $data = json_decode($raw, true);
   if (!is_array($data) || empty($data['images'][0]['url'])) {
-    return new WP_Error('kwik_ai_fal_no_image', __('FAL.AI did not return an image. Try regenerating.', 'kwik-ai-tags'));
+    return new WP_Error('kwik_ai_fal_no_image', __('FAL.AI did not return an image. Try regenerating.', 'kwik-ai'));
   }
 
   return (string) $data['images'][0]['url'];
@@ -372,7 +372,7 @@ function kwik_ai_fal_validate_queue_url(string $url)
 {
   $host = wp_parse_url($url, PHP_URL_HOST);
   if ($host !== KWIK_AI_FAL_QUEUE_HOST) {
-    return new WP_Error('kwik_ai_fal_bad_url', __('Refusing to contact an unexpected FAL.AI URL.', 'kwik-ai-tags'));
+    return new WP_Error('kwik_ai_fal_bad_url', __('Refusing to contact an unexpected FAL.AI URL.', 'kwik-ai'));
   }
   return true;
 }
@@ -404,11 +404,11 @@ function kwik_ai_fal_extract_error_message(string $raw, int $code): string
   }
 
   if ($code === 401 || $code === 403) {
-    return __('FAL.AI rejected the API key. Check your key in Settings > KWIK AI.', 'kwik-ai-tags');
+    return __('FAL.AI rejected the API key. Check your key in Settings > KWIK AI.', 'kwik-ai');
   }
 
   /* translators: %d: HTTP status code */
-  return sprintf(__('FAL.AI request failed (HTTP %d).', 'kwik-ai-tags'), $code);
+  return sprintf(__('FAL.AI request failed (HTTP %d).', 'kwik-ai'), $code);
 }
 
 /**
@@ -422,7 +422,7 @@ function kwik_ai_fal_extract_error_message(string $raw, int $code): string
 function kwik_ai_fal_test_connection()
 {
   if (!kwik_ai_fal_has_api_key()) {
-    return __('No FAL.AI API key configured.', 'kwik-ai-tags');
+    return __('No FAL.AI API key configured.', 'kwik-ai');
   }
 
   return true;

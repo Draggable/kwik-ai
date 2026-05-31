@@ -229,7 +229,7 @@ function kwik_ai_featured_image_submit(int $post_id, string $prompt = '')
   }
 
   if (trim($prompt) === '') {
-    return new WP_Error('kwik_ai_fal_no_prompt', __('Could not build an image prompt. Add a title or content to the post, or enter a prompt.', 'kwik-ai-tags'));
+    return new WP_Error('kwik_ai_fal_no_prompt', __('Could not build an image prompt. Add a title or content to the post, or enter a prompt.', 'kwik-ai'));
   }
 
   $submission = kwik_ai_fal_submit_request($prompt);
@@ -280,7 +280,7 @@ function kwik_ai_featured_image_set_as_thumbnail(int $post_id, string $image_url
   // Only fetch images from FAL's media hosts.
   $host = wp_parse_url($image_url, PHP_URL_HOST);
   if (!is_string($host) || !preg_match('/(^|\.)fal\.media$/', $host)) {
-    return new WP_Error('kwik_ai_fal_bad_image_host', __('Refusing to download an image from an unexpected host.', 'kwik-ai-tags'));
+    return new WP_Error('kwik_ai_fal_bad_image_host', __('Refusing to download an image from an unexpected host.', 'kwik-ai'));
   }
 
   require_once ABSPATH . 'wp-admin/includes/media.php';
@@ -289,7 +289,7 @@ function kwik_ai_featured_image_set_as_thumbnail(int $post_id, string $image_url
 
   $description = sprintf(
     /* translators: %s: post title */
-    __('AI-generated featured image for "%s"', 'kwik-ai-tags'),
+    __('AI-generated featured image for "%s"', 'kwik-ai'),
     get_the_title($post_id)
   );
 

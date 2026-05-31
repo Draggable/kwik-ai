@@ -61,7 +61,7 @@ function kwik_ai_tags_get_api_endpoint(): string
 {
   $provider = kwik_ai_tags_get_ai_provider();
   $endpoint = get_option('kwik_ai_api_endpoint', '');
-  
+
   // Set default endpoint based on provider
   if ($provider === 'openrouter' && empty($endpoint)) {
     $endpoint = 'https://openrouter.ai/api/v1';
@@ -70,7 +70,7 @@ function kwik_ai_tags_get_api_endpoint(): string
   } elseif ($endpoint === '') {
     $endpoint = 'http://localhost:11434';
   }
-  
+
   return rtrim($endpoint, '/');
 }
 
@@ -83,7 +83,7 @@ function kwik_ai_tags_get_api_endpoint(): string
 function kwik_ai_tags_get_api_key(): string
 {
   $provider = kwik_ai_tags_get_ai_provider();
-  
+
   if ($provider === 'openrouter') {
     // Use secure credential retrieval if available
     if (function_exists('kwik_ai_retrieve_credential')) {
@@ -97,7 +97,7 @@ function kwik_ai_tags_get_api_key(): string
     }
     return get_option('kwik_ai_openai_api_key', '');
   }
-  
+
   return '';
 }
 
@@ -112,11 +112,11 @@ function kwik_ai_tags_get_api_headers(): array
   $headers = array(
     'Content-Type' => 'application/json',
   );
-  
+
   if ($provider === 'openrouter') {
     $api_key = kwik_ai_tags_get_api_key();
     $endpoint = get_option('kwik_ai_api_endpoint', 'https://openrouter.ai/api/v1');
-    
+
     if (!empty($api_key)) {
       $headers['Authorization'] = 'Bearer ' . $api_key;
       $headers['HTTP-Referer'] = home_url();
@@ -124,7 +124,7 @@ function kwik_ai_tags_get_api_headers(): array
     }
   } elseif ($provider === 'openai') {
     $api_key = kwik_ai_tags_get_api_key();
-    
+
     if (!empty($api_key)) {
       $headers['Authorization'] = 'Bearer ' . $api_key;
     }
@@ -265,21 +265,21 @@ function kwik_ai_tags_query_ai(string $prompt, array $images): ?string
 
   // Build payload based on provider
   $payload = array();
-  
+
   if ($provider === 'custom') {
     // Custom /api/generate endpoint
     $url = $endpoint . '/api/generate';
-    
+
     $payload = [
       'model' => $model,
       'prompt' => $prompt,
       'images' => $images,
       'stream' => false,
     ];
-    
+
     // Log payload without images (too large)
     kwik_ai_log('Kwik AI: Payload (without images): ' . json_encode(array_merge($payload, ['images' => '[' . count($images) . ' images]'])));
-    
+
     $response = wp_remote_post(
       $url,
       [
@@ -288,25 +288,25 @@ function kwik_ai_tags_query_ai(string $prompt, array $images): ?string
         'timeout' => 120,
       ]
     );
-    
+
     return kwik_ai_tags_process_ollama_response($response, $prompt);
-    
+
   } elseif ($provider === 'openrouter' || $provider === 'openai') {
     // OpenRouter/OpenAI /chat/completions endpoint
     $url = $endpoint . '/chat/completions';
-    
+
     // Build messages array
     $messages = array();
-    
+
     // System message
     $messages[] = array(
       'role' => 'system',
       'content' => 'You are an expert at generating concise, relevant tags for content. Respond ONLY with a comma-separated list of tags.',
     );
-    
+
     // User message - build content based on whether we have images
     $user_content = array();
-    
+
     if (!empty($images)) {
       // Add image data
       foreach ($images as $image) {
@@ -318,18 +318,18 @@ function kwik_ai_tags_query_ai(string $prompt, array $images): ?string
         );
       }
     }
-    
+
     // Add text prompt
     $user_content[] = array(
       'type' => 'text',
       'text' => $prompt,
     );
-    
+
     $messages[] = array(
       'role' => 'user',
       'content' => $user_content,
     );
-    
+
     // Build payload (token limit added by the helper, which handles the
     // max_tokens vs max_completion_tokens difference between models).
     $payload = array(
@@ -433,13 +433,13 @@ function kwik_ai_tags_process_openai_response($response)
   if ($response_code !== 200) {
     $body = wp_remote_retrieve_body($response);
     kwik_ai_log('Kwik AI: HTTP error: ' . $response_code);
-    
+
     // Try to parse error message
     $error_data = json_decode($body, true);
     if (isset($error_data['error']['message'])) {
       kwik_ai_log('Kwik AI: Error message: ' . $error_data['error']['message']);
     }
-    
+
     return null;
   }
 
@@ -633,7 +633,7 @@ function kwik_ai_tags_parse_tags(string $raw_response): array
 function kwik_ai_tags_test_ai_connection()
 {
   $provider = kwik_ai_tags_get_ai_provider();
-  
+
   if ($provider === 'custom') {
     return kwik_ai_tags_test_ollama_connection();
   } elseif ($provider === 'openrouter') {
@@ -641,7 +641,7 @@ function kwik_ai_tags_test_ai_connection()
   } elseif ($provider === 'openai') {
     return kwik_ai_tags_test_openai_connection();
   }
-  
+
   return 'Unknown provider';
 }
 
@@ -661,7 +661,7 @@ function kwik_ai_tags_test_ollama_connection()
   $models = kwik_ai_tags_fetch_models_live('custom', $config['url'], $config['api_key']);
 
   if (!is_array($models) || empty($models)) {
-    return __('Could not connect to the AI provider. Please check the endpoint URL and API key.', 'kwik-ai-tags');
+    return __('Could not connect to the AI provider. Please check the endpoint URL and API key.', 'kwik-ai');
   }
 
   // Check if the selected model is available.
@@ -676,7 +676,7 @@ function kwik_ai_tags_test_ollama_connection()
   if (!$has_model) {
     return sprintf(
       /* translators: %s: model name */
-      __('Connected, but the "%s" model was not found. Please select a different model.', 'kwik-ai-tags'),
+      __('Connected, but the "%s" model was not found. Please select a different model.', 'kwik-ai'),
       $selected_model
     );
   }
@@ -694,13 +694,13 @@ function kwik_ai_tags_test_openrouter_connection()
   $api_key = kwik_ai_tags_get_api_key();
   $endpoint = get_option('kwik_ai_api_endpoint', 'https://openrouter.ai/api/v1');
   $selected_model = kwik_ai_tags_get_ai_model();
-  
+
   if (empty($api_key)) {
     return 'No API key configured';
   }
-  
+
   $url = $endpoint . '/models';
-  
+
   $headers = array(
     'Content-Type' => 'application/json',
     'Authorization' => 'Bearer ' . $api_key,
@@ -720,17 +720,17 @@ function kwik_ai_tags_test_openrouter_connection()
   $response_code = wp_remote_retrieve_response_code($response);
   if ($response_code !== 200) {
     /* translators: %d: HTTP response status code */
-    return sprintf(__('HTTP %d', 'kwik-ai-tags'), $response_code);
+    return sprintf(__('HTTP %d', 'kwik-ai'), $response_code);
   }
 
   // Check if model is available
   $body = wp_remote_retrieve_body($response);
   $data = json_decode($body, true);
-  
+
   if (!isset($data['data'])) {
     return 'Invalid response from OpenRouter';
   }
-  
+
   $has_model = false;
   foreach ($data['data'] as $model) {
     if (isset($model['id']) && strpos($model['id'], $selected_model) !== false) {
@@ -738,12 +738,12 @@ function kwik_ai_tags_test_openrouter_connection()
       break;
     }
   }
-  
+
   if (!$has_model) {
     /* translators: %s: AI model name */
-    return sprintf(__('Connected, but "%s" model not found. Please check the model name.', 'kwik-ai-tags'), $selected_model);
+    return sprintf(__('Connected, but "%s" model not found. Please check the model name.', 'kwik-ai'), $selected_model);
   }
-  
+
   return true;
 }
 
@@ -757,13 +757,13 @@ function kwik_ai_tags_test_openai_connection()
   $api_key = kwik_ai_tags_get_api_key();
   $endpoint = get_option('kwik_ai_api_endpoint', 'https://api.openai.com/v1');
   $selected_model = kwik_ai_tags_get_ai_model();
-  
+
   if (empty($api_key)) {
     return 'No API key configured';
   }
-  
+
   $url = $endpoint . '/models';
-  
+
   $headers = array(
     'Content-Type' => 'application/json',
     'Authorization' => 'Bearer ' . $api_key,
@@ -781,17 +781,17 @@ function kwik_ai_tags_test_openai_connection()
   $response_code = wp_remote_retrieve_response_code($response);
   if ($response_code !== 200) {
     /* translators: %d: HTTP response status code */
-    return sprintf(__('HTTP %d', 'kwik-ai-tags'), $response_code);
+    return sprintf(__('HTTP %d', 'kwik-ai'), $response_code);
   }
 
   // Check if model is available
   $body = wp_remote_retrieve_body($response);
   $data = json_decode($body, true);
-  
+
   if (!isset($data['data'])) {
     return 'Invalid response from OpenAI';
   }
-  
+
   $has_model = false;
   foreach ($data['data'] as $model) {
     if (isset($model['id']) && $model['id'] === $selected_model) {
@@ -799,12 +799,12 @@ function kwik_ai_tags_test_openai_connection()
       break;
     }
   }
-  
+
   if (!$has_model) {
     /* translators: %s: AI model name */
-    return sprintf(__('Connected, but "%s" model not found. Please check the model name.', 'kwik-ai-tags'), $selected_model);
+    return sprintf(__('Connected, but "%s" model not found. Please check the model name.', 'kwik-ai'), $selected_model);
   }
-  
+
   return true;
 }
 

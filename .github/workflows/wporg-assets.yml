@@ -25,7 +25,7 @@ jobs:
         env:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
-          SLUG: kwik-ai-tags
+          SLUG: kwik-ai
           ASSETS_DIR: .wordpress-org/assets
           # Push runs to main usually include code changes too; only ever sync
           # readme + assets and ignore the rest.

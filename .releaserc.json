@@ -34,8 +34,8 @@
       {
         "assets": [
           {
-            "path": "dist/kwik-ai-tags.zip",
-            "label": "kwik-ai-tags ${nextRelease.version} (plugin ZIP)"
+            "path": "dist/kwik-ai.zip",
+            "label": "kwik-ai ${nextRelease.version} (plugin ZIP)"
           }
         ]
       }

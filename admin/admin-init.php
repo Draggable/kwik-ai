@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 function kwik_ai_tags_enqueue_scripts($hook)
 {
   $enabled_post_types = kwik_ai_tags_get_enabled_post_types();
-  
+
   // Debug logging
   if (defined('WP_DEBUG') && WP_DEBUG) {
     kwik_ai_log('Kwik AI: Hook = ' . $hook);
@@ -59,7 +59,7 @@ function kwik_ai_tags_enqueue_scripts($hook)
   }
 
   wp_enqueue_script(
-    'kwik-ai-tags-admin',
+    'kwik-ai-admin',
     $js_url,
     ['jquery'],
     $js_ver,
@@ -67,7 +67,7 @@ function kwik_ai_tags_enqueue_scripts($hook)
   );
 
   wp_enqueue_style(
-    'kwik-ai-tags-admin',
+    'kwik-ai-admin',
     $css_url,
     [],
     $css_ver
@@ -78,27 +78,27 @@ function kwik_ai_tags_enqueue_scripts($hook)
     kwik_ai_log('Kwik AI: Post ID = ' . $post_id);
   }
 
-  wp_localize_script('kwik-ai-tags-admin', 'kwikAiTags', [
+  wp_localize_script('kwik-ai-admin', 'kwikAiTags', [
     'ajaxUrl' => admin_url('admin-ajax.php'),
     'nonce' => wp_create_nonce('kwik_ai_tags_ajax'),
     'postId' => $post_id,
     'debug' => WP_DEBUG,
     'strings' => [
-      'error' => __('An error occurred. Please try again.', 'kwik-ai-tags'),
-      'noContent' => __('No images or insufficient text found. Please add images or write at least 50 words.', 'kwik-ai-tags'),
-      'success' => __('Tags applied successfully!', 'kwik-ai-tags'),
+      'error' => __('An error occurred. Please try again.', 'kwik-ai'),
+      'noContent' => __('No images or insufficient text found. Please add images or write at least 50 words.', 'kwik-ai'),
+      'success' => __('Tags applied successfully!', 'kwik-ai'),
     ]
   ]);
 
-  wp_localize_script('kwik-ai-tags-admin', 'kwikAiDescription', [
+  wp_localize_script('kwik-ai-admin', 'kwikAiDescription', [
     'ajaxUrl' => admin_url('admin-ajax.php'),
     'nonce' => wp_create_nonce('kwik_ai_description_ajax'),
     'postId' => $post_id,
     'debug' => WP_DEBUG,
     'strings' => [
-      'error' => __('An error occurred. Please try again.', 'kwik-ai-tags'),
-      'noContent' => __('No images found. Please add images to generate a description.', 'kwik-ai-tags'),
-      'success' => __('Description applied successfully!', 'kwik-ai-tags'),
+      'error' => __('An error occurred. Please try again.', 'kwik-ai'),
+      'noContent' => __('No images found. Please add images to generate a description.', 'kwik-ai'),
+      'success' => __('Description applied successfully!', 'kwik-ai'),
     ]
   ]);
 
@@ -122,21 +122,21 @@ function kwik_ai_tags_enqueue_scripts($hook)
     'pollInterval' => 3000,
     'maxPollMs' => 300000,
     'strings' => [
-      'generatePrompt' => __('Generate Prompt', 'kwik-ai-tags'),
-      'generatingPrompt' => __('Writing prompt…', 'kwik-ai-tags'),
-      'generate' => __('Generate Image', 'kwik-ai-tags'),
-      'generating' => __('Generating image…', 'kwik-ai-tags'),
-      'queued' => __('Queued…', 'kwik-ai-tags'),
-      'inProgress' => __('Generating…', 'kwik-ai-tags'),
-      'applying' => __('Setting featured image…', 'kwik-ai-tags'),
-      'setFeatured' => __('Set as Featured Image', 'kwik-ai-tags'),
-      'noPost' => __('No post ID found. Please save the post first.', 'kwik-ai-tags'),
-      'noPrompt' => __('Generate or enter a prompt first.', 'kwik-ai-tags'),
-      'timeout' => __('Image generation timed out. Please try again.', 'kwik-ai-tags'),
-      'error' => __('An error occurred. Please try again.', 'kwik-ai-tags'),
-      'success' => __('Featured image set!', 'kwik-ai-tags'),
-      'sourceAi' => __('Prompt written by your AI provider. Review and edit it before generating — for example, remove any words an image filter might wrongly flag.', 'kwik-ai-tags'),
-      'sourceFallback' => __('Heads up: this is a raw excerpt from the post because the text AI provider did not respond. Check your AI provider connection, or edit the prompt manually.', 'kwik-ai-tags'),
+      'generatePrompt' => __('Generate Prompt', 'kwik-ai'),
+      'generatingPrompt' => __('Writing prompt…', 'kwik-ai'),
+      'generate' => __('Generate Image', 'kwik-ai'),
+      'generating' => __('Generating image…', 'kwik-ai'),
+      'queued' => __('Queued…', 'kwik-ai'),
+      'inProgress' => __('Generating…', 'kwik-ai'),
+      'applying' => __('Setting featured image…', 'kwik-ai'),
+      'setFeatured' => __('Set as Featured Image', 'kwik-ai'),
+      'noPost' => __('No post ID found. Please save the post first.', 'kwik-ai'),
+      'noPrompt' => __('Generate or enter a prompt first.', 'kwik-ai'),
+      'timeout' => __('Image generation timed out. Please try again.', 'kwik-ai'),
+      'error' => __('An error occurred. Please try again.', 'kwik-ai'),
+      'success' => __('Featured image set!', 'kwik-ai'),
+      'sourceAi' => __('Prompt written by your AI provider. Review and edit it before generating — for example, remove any words an image filter might wrongly flag.', 'kwik-ai'),
+      'sourceFallback' => __('Heads up: this is a raw excerpt from the post because the text AI provider did not respond. Check your AI provider connection, or edit the prompt manually.', 'kwik-ai'),
     ]
   ]);
 

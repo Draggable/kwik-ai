@@ -2,14 +2,14 @@
 #
 # Build a clean, WordPress.org-ready plugin ZIP.
 #
-# Produces dist/kwik-ai-tags.zip containing a single top-level "kwik-ai-tags/"
+# Produces dist/kwik-ai.zip containing a single top-level "kwik-ai/"
 # folder with only the files that should ship (everything in .distignore is
 # excluded). Requires: rsync, zip.
 #
 # Usage: bash bin/build-zip.sh
 set -euo pipefail
 
-SLUG="kwik-ai-tags"
+SLUG="kwik-ai"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 STAGE="$(mktemp -d)"
 OUT_DIR="$ROOT/dist"

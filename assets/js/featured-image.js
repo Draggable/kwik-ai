@@ -5,7 +5,7 @@ jQuery(function(e) {
     if (i.length) {
       var r = e("#kwik-ai-featured-image-guidance"), o = e("#kwik-ai-featured-image-prompt-generate"), n = e("#kwik-ai-featured-image-prompt-loading"), d = e("#kwik-ai-featured-image-prompt-input"), u = e("#kwik-ai-featured-image-prompt-source"), s = e("#kwik-ai-featured-image-generate"), c = e("#kwik-ai-featured-image-regenerate"), p = e("#kwik-ai-featured-image-apply"), l = e("#kwik-ai-featured-image-loading"), f = e("#kwik-ai-featured-image-status"), m = e("#kwik-ai-featured-image-elapsed"), g = e("#kwik-ai-featured-image-preview"), k = e("#kwik-ai-featured-image-img"), w = e("#kwik-ai-featured-image-error"), v = null, x = null, _ = null, b = 0;
       i.on("click", "#kwik-ai-featured-image-prompt-generate", function(i) {
-        i.preventDefault(), t.postId ? (w.hide(), u.text(""), o.prop("disabled", !0), n.show(), 
+        i.preventDefault(), t.postId ? (w.hide(), u.text(""), o.prop("disabled", !0), n.show(),
         e.ajax({
           url: t.ajaxUrl,
           type: "POST",
@@ -38,7 +38,7 @@ jQuery(function(e) {
       }), i.on("click", "#kwik-ai-featured-image-regenerate", function(e) {
         e.preventDefault(), P();
       }), i.on("click", "#kwik-ai-featured-image-apply", function(r) {
-        r.preventDefault(), v && (p.prop("disabled", !0).text(a.applying || "Setting featured image…"), 
+        r.preventDefault(), v && (p.prop("disabled", !0).text(a.applying || "Setting featured image…"),
         e.ajax({
           url: t.ajaxUrl,
           type: "POST",
@@ -60,12 +60,12 @@ jQuery(function(e) {
                   I("Could not sync featured image to editor", e);
                 }
               }
-            }(t.data.attachment_id), r = t.data && t.data.message || a.success, o = e('<div class="kwik-ai-tags-success"></div>').text(r), 
+            }(t.data.attachment_id), r = t.data && t.data.message || a.success, o = e('<div class="kwik-ai-success"></div>').text(r),
             i.prepend(o), setTimeout(function() {
               o.fadeOut(function() {
                 o.remove();
               });
-            }, 3e3)) : (p.prop("disabled", !1).text(a.setFeatured || "Set as Featured Image"), 
+            }, 3e3)) : (p.prop("disabled", !1).text(a.setFeatured || "Set as Featured Image"),
             y(t && t.data || a.error));
           },
           error: function(e, t) {
@@ -82,7 +82,7 @@ jQuery(function(e) {
     x && (clearTimeout(x), x = null), _ && (clearInterval(_), _ = null);
   }
   function y(e) {
-    h(), l.hide(), s.prop("disabled", !1).text(a.generate || "Generate Image"), c.prop("disabled", !1), 
+    h(), l.hide(), s.prop("disabled", !1).text(a.generate || "Generate Image"), c.prop("disabled", !1),
     w.find(".error-message").text(e || a.error), w.show();
   }
   function S(e, t) {
@@ -107,8 +107,8 @@ jQuery(function(e) {
       if (!i) {
         return y(a.noPrompt), void d.focus();
       }
-      v = null, w.hide(), g.hide(), l.show(), f.text(a.generating || "Generating image…"), 
-      s.prop("disabled", !0).text(a.generating || "Generating…"), c.prop("disabled", !0), 
+      v = null, w.hide(), g.hide(), l.show(), f.text(a.generating || "Generating image…"),
+      s.prop("disabled", !0).text(a.generating || "Generating…"), c.prop("disabled", !0),
       b = Date.now(), m.text("0s"), _ = setInterval(function() {
         var e = Math.round((Date.now() - b) / 1e3);
         m.text(e + "s");
@@ -123,7 +123,7 @@ jQuery(function(e) {
         },
         timeout: 6e4,
         success: function(e) {
-          e && e.success && e.data && e.data.request_id ? (I("Job submitted", v = e.data.request_id), 
+          e && e.success && e.data && e.data.request_id ? (I("Job submitted", v = e.data.request_id),
           F()) : y(e && e.data || a.error);
         },
         error: function(e, t) {
@@ -151,8 +151,8 @@ jQuery(function(e) {
         var t;
         if (e && e.success && e.data) {
           if ("completed" === e.data.status) {
-            I("Job completed"), t = e.data.image_url, h(), l.hide(), s.prop("disabled", !1).text(a.generate || "Generate Image"), 
-            c.prop("disabled", !1), k.attr("src", t), p.prop("disabled", !1).text(a.setFeatured || "Set as Featured Image"), 
+            I("Job completed"), t = e.data.image_url, h(), l.hide(), s.prop("disabled", !1).text(a.generate || "Generate Image"),
+            c.prop("disabled", !1), k.attr("src", t), p.prop("disabled", !1).text(a.setFeatured || "Set as Featured Image"),
             g.show(), w.hide();
           } else {
             var i = "IN_PROGRESS" === e.data.state ? a.inProgress || "Generating…" : a.queued || "Queued…";

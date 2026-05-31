@@ -1,55 +1,55 @@
 /* KWIK AI Tags Settings Page Styles */
 
-.kwik-ai-tags-settings .card {
+.kwik-ai-settings .card {
   max-width: none;
   margin-bottom: 20px;
 }
 
-.kwik-ai-tags-settings .card h2 {
+.kwik-ai-settings .card h2 {
   margin-top: 0;
 }
 
-.kwik-ai-tags-settings .card ul {
+.kwik-ai-settings .card ul {
   margin-left: 20px;
 }
 
-.kwik-ai-tags-settings .card ul li {
+.kwik-ai-settings .card ul li {
   margin-bottom: 5px;
 }
 
-.kwik-ai-tags-settings fieldset {
+.kwik-ai-settings fieldset {
   border: none;
   padding: 0;
   margin: 0;
 }
 
-.kwik-ai-tags-settings fieldset label {
+.kwik-ai-settings fieldset label {
   display: block;
   margin-bottom: 8px;
   padding: 4px 0;
 }
 
-.kwik-ai-tags-settings fieldset label input[type="checkbox"] {
+.kwik-ai-settings fieldset label input[type="checkbox"] {
   margin-right: 8px;
 }
 
-.kwik-ai-tags-settings .description {
+.kwik-ai-settings .description {
   margin-top: 10px;
   font-style: italic;
   color: #666;
 }
 
-.kwik-ai-tags-status-connected {
+.kwik-ai-status-connected {
   color: #007cba;
   font-weight: bold;
 }
 
-.kwik-ai-tags-status-error {
+.kwik-ai-status-error {
   color: #d63638;
   font-weight: bold;
 }
 
-.kwik-ai-tags-status-icon {
+.kwik-ai-status-icon {
   margin-right: 4px;
 }
 

@@ -2,33 +2,33 @@
  * KWIK AI Tags - Admin Styles
  */
 
-#kwik-ai-tags-container {
+#kwik-ai-container {
   padding: 5px 0;
 }
 
-#kwik-ai-tags-container .button {
+#kwik-ai-container .button {
   width: 100%;
   margin-bottom: 10px;
   text-align: center;
 }
 
-#kwik-ai-tags-loading {
+#kwik-ai-loading {
   text-align: center;
   padding: 20px 0;
 }
 
-.kwik-ai-tags-spinner {
+.kwik-ai-spinner {
   display: inline-block;
   width: 20px;
   height: 20px;
   border: 2px solid #f3f3f3;
   border-top: 2px solid #0073aa;
   border-radius: 50%;
-  animation: kwik-ai-tags-spin 1s linear infinite;
+  animation: kwik-ai-spin 1s linear infinite;
   margin: 0 auto;
 }
 
-@keyframes kwik-ai-tags-spin {
+@keyframes kwik-ai-spin {
   0% {
     transform: rotate(0deg);
   }
@@ -38,14 +38,14 @@
   }
 }
 
-#kwik-ai-tags-preview h4 {
+#kwik-ai-preview h4 {
   margin: 10px 0 8px 0;
   font-size: 13px;
   font-weight: 600;
   color: #1d2327;
 }
 
-#kwik-ai-tags-list {
+#kwik-ai-list {
   margin-bottom: 15px;
   max-height: 200px;
   overflow-y: auto;
@@ -93,18 +93,18 @@
   color: #fff;
 }
 
-#kwik-ai-tags-preview .button {
+#kwik-ai-preview .button {
   width: 48%;
   display: inline-block;
   margin-right: 2%;
   margin-bottom: 5px;
 }
 
-#kwik-ai-tags-preview .button:last-child {
+#kwik-ai-preview .button:last-child {
   margin-right: 0;
 }
 
-#kwik-ai-tags-error {
+#kwik-ai-error {
   padding: 8px;
   background: #fcf2f2;
   border: 1px solid #dba617;
@@ -114,13 +114,13 @@
   margin-bottom: 10px;
 }
 
-#kwik-ai-tags-error .error-message {
+#kwik-ai-error .error-message {
   margin: 0;
   color: #1d2327;
   font-size: 13px;
 }
 
-.kwik-ai-tags-success {
+.kwik-ai-success {
   padding: 8px;
   background: #f0f6fc;
   border: 1px solid #4f94d4;
@@ -133,7 +133,7 @@
 }
 
 /* Meta box title icon */
-#kwik-ai-tags-preview .hndle::before {
+#kwik-ai-preview .hndle::before {
   content: "\f473";
   font-family: dashicons;
   color: #0073aa;
@@ -142,7 +142,7 @@
 
 /* Responsive adjustments */
 @media (max-width: 782px) {
-  #kwik-ai-tags-preview .button {
+  #kwik-ai-preview .button {
     width: 100%;
     margin-right: 0;
     margin-bottom: 8px;
@@ -170,7 +170,7 @@
 }
 
 /* Debug info styling */
-#kwik-ai-tags-debug {
+#kwik-ai-debug {
   background: #f9f9f9;
   border: 1px solid #e1e1e1;
   padding: 8px;
@@ -290,7 +290,7 @@
   outline-offset: 2px;
 }
 
-#kwik-ai-tags-preview-box {
+#kwik-ai-preview-box {
 
   .handle-order-higher,
   .handle-order-lower {

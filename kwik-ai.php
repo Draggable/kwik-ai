@@ -8,7 +8,7 @@
  * Author URI: https://draggable.io
  * Requires at least: 5.6
  * Requires PHP: 7.4
- * Text Domain: kwik-ai-tags
+ * Text Domain: kwik-ai
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  *

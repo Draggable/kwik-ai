@@ -31,7 +31,7 @@ jobs:
         env:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
-          SLUG: kwik-ai-tags
+          SLUG: kwik-ai
           ASSETS_DIR: .wordpress-org/assets
           # For manual runs, fall back to the typed version; on tag pushes the
           # action uses the tag name automatically.

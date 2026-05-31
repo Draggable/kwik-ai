@@ -54,7 +54,7 @@ function kwik_ai_description_block_editor_assets()
   if (defined('WP_DEBUG') && WP_DEBUG) {
     kwik_ai_log('KWIK AI: kwik_ai_description_block_editor_assets() called');
   }
-  
+
   // The enqueue_block_editor_assets hook only fires in admin, so no need to check is_admin()
   if (defined('WP_DEBUG') && WP_DEBUG) {
     kwik_ai_log('KWIK AI: Enqueueing block assets');
@@ -93,14 +93,14 @@ function kwik_ai_description_block_editor_assets()
     'nonce' => wp_create_nonce('kwik_ai_description_ajax'),
     'enabledPostTypes' => kwik_ai_tags_get_enabled_post_types(),
     'strings' => array(
-      'title' => __('AI Description', 'kwik-ai-tags'),
-      'description' => __('Generate an AI-powered description based on post images or URLs', 'kwik-ai-tags'),
-      'generateButton' => __('Generate Description', 'kwik-ai-tags'),
-      'regenerateButton' => __('Regenerate', 'kwik-ai-tags'),
-      'generating' => __('Generating...', 'kwik-ai-tags'),
-      'placeholder' => __('Click "Generate Description" to create an AI-powered description based on the images in this post or content from URLs.', 'kwik-ai-tags'),
-      'error' => __('Failed to generate description. Please ensure your AI provider is reachable and try again.', 'kwik-ai-tags'),
-      'noImages' => __('No images found. Please add images to the post or provide URLs to generate a description.', 'kwik-ai-tags'),
+      'title' => __('AI Description', 'kwik-ai'),
+      'description' => __('Generate an AI-powered description based on post images or URLs', 'kwik-ai'),
+      'generateButton' => __('Generate Description', 'kwik-ai'),
+      'regenerateButton' => __('Regenerate', 'kwik-ai'),
+      'generating' => __('Generating...', 'kwik-ai'),
+      'placeholder' => __('Click "Generate Description" to create an AI-powered description based on the images in this post or content from URLs.', 'kwik-ai'),
+      'error' => __('Failed to generate description. Please ensure your AI provider is reachable and try again.', 'kwik-ai'),
+      'noImages' => __('No images found. Please add images to the post or provide URLs to generate a description.', 'kwik-ai'),
     ),
   ));
 

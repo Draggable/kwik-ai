@@ -3,25 +3,25 @@
  */
 jQuery(document).ready(function($) {
     'use strict';
-    
+
     // Debug logging function
     function debugLog(message, data) {
         if (kwikAiTags.debug) {
             console.log('KWIK AI Tags: ' + message, data || '');
         }
     }
-    
+
     debugLog('Script loaded', kwikAiTags);
-    
-    const $container = $('#kwik-ai-tags-container');
-    const $generateBtn = $('#kwik-ai-tags-generate');
-    const $regenerateBtn = $('#kwik-ai-tags-regenerate');
-    const $applyBtn = $('#kwik-ai-tags-apply');
-    const $loading = $('#kwik-ai-tags-loading');
-    const $preview = $('#kwik-ai-tags-preview');
-    const $tagsList = $('#kwik-ai-tags-list');
-    const $error = $('#kwik-ai-tags-error');
-    
+
+    const $container = $('#kwik-ai-container');
+    const $generateBtn = $('#kwik-ai-generate');
+    const $regenerateBtn = $('#kwik-ai-regenerate');
+    const $applyBtn = $('#kwik-ai-apply');
+    const $loading = $('#kwik-ai-loading');
+    const $preview = $('#kwik-ai-preview');
+    const $tagsList = $('#kwik-ai-list');
+    const $error = $('#kwik-ai-error');
+
     // Description elements
     const $descContainer = $('#kwik-ai-description-container');
     const $descGenerateBtn = $('#kwik-ai-description-generate');
@@ -34,16 +34,16 @@ jQuery(document).ready(function($) {
     const $descLength = $('#kwik-ai-description-length');
     const $descLengthValue = $('#kwik-ai-description-length-value');
     const $descTone = $('#kwik-ai-description-tone');
-    
+
     debugLog('Elements found', {
         container: $container.length,
         generateBtn: $generateBtn.length,
         loading: $loading.length,
         preview: $preview.length
     });
-    
+
     let currentTags = [];
-    
+
     /**
      * Show loading state
      */
@@ -55,7 +55,7 @@ jQuery(document).ready(function($) {
         $preview.hide();
         $error.hide();
     }
-    
+
     /**
      * Hide loading state
      */
@@ -65,7 +65,7 @@ jQuery(document).ready(function($) {
         $regenerateBtn.prop('disabled', false);
         $loading.hide();
     }
-    
+
     /**
      * Show error message
      */
@@ -76,7 +76,7 @@ jQuery(document).ready(function($) {
         $error.show();
         $preview.hide();
     }
-    
+
     /**
      * Display tags in the preview
      */
@@ -84,27 +84,27 @@ jQuery(document).ready(function($) {
         debugLog('Displaying tags', tags);
         currentTags = tags;
         $tagsList.empty();
-        
+
         tags.forEach(function(tag, index) {
             const $tagItem = $('<div class="kwik-ai-tag-item"></div>');
             const $tagSpan = $('<span class="kwik-ai-tag"></span>').text(tag);
             const $removeBtn = $('<button type="button" class="kwik-ai-tag-remove" title="Remove tag">×</button>');
-            
+
             $removeBtn.on('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 removeTag(index);
             });
-            
+
             $tagItem.append($tagSpan).append($removeBtn);
             $tagsList.append($tagItem);
         });
-        
+
         hideLoading();
         $preview.show();
         $error.hide();
     }
-    
+
     /**
      * Remove a tag from the preview
      */
@@ -113,34 +113,34 @@ jQuery(document).ready(function($) {
         currentTags.splice(index, 1);
         displayTags(currentTags);
     }
-    
+
     /**
      * Generate tags via AJAX
      */
     function generateTags(e) {
         debugLog('Starting tag generation');
-        
+
         // Prevent default if this is triggered by a button
         if (e) {
             e.preventDefault();
             e.stopPropagation();
         }
-        
+
         if (!kwikAiTags.postId) {
             showError('No post ID found. Please save the post first.');
             return;
         }
-        
+
         showLoading();
-        
+
         const ajaxData = {
             action: 'kwik_ai_tags_generate',
             nonce: kwikAiTags.nonce,
             post_id: kwikAiTags.postId
         };
-        
+
         debugLog('AJAX data', ajaxData);
-        
+
         $.ajax({
             url: kwikAiTags.ajaxUrl,
             type: 'POST',
@@ -157,7 +157,7 @@ jQuery(document).ready(function($) {
             error: function(xhr, status, error) {
                 debugLog('AJAX error', {xhr: xhr, status: status, error: error});
                 let errorMessage = kwikAiTags.strings.error;
-                
+
                 if (status === 'timeout') {
                     errorMessage = 'Request timed out. Ollama might be processing - try again.';
                 } else if (xhr.responseText) {
@@ -168,31 +168,31 @@ jQuery(document).ready(function($) {
                         errorMessage = 'Server error: ' + xhr.status;
                     }
                 }
-                
+
                 showError(errorMessage);
             }
         });
     }
-    
+
     /**
      * Apply tags to the post
      */
     function applyTags(e) {
         debugLog('Applying tags', currentTags);
-        
+
         // Prevent default if this is triggered by a button
         if (e) {
             e.preventDefault();
             e.stopPropagation();
         }
-        
+
         if (currentTags.length === 0) {
             showError('No tags to apply.');
             return;
         }
-        
+
         $applyBtn.prop('disabled', true).text('Applying...');
-        
+
         $.ajax({
             url: kwikAiTags.ajaxUrl,
             type: 'POST',
@@ -206,20 +206,20 @@ jQuery(document).ready(function($) {
                 debugLog('Apply success', response);
                 if (response.success) {
                     // Show success message briefly
-                    const $success = $('<div class="kwik-ai-tags-success"></div>').text(response.data);
+                    const $success = $('<div class="kwik-ai-success"></div>').text(response.data);
                     $container.prepend($success);
-                    
+
                     setTimeout(function() {
                         $success.fadeOut(function() {
                             $success.remove();
                         });
                     }, 3000);
-                    
+
                     // Refresh the WordPress tags meta box if it exists
                     if (typeof tagBox !== 'undefined') {
                         tagBox.get('post_tag');
                     }
-                    
+
                 } else {
                     showError(response.data || kwikAiTags.strings.error);
                 }
@@ -233,31 +233,31 @@ jQuery(document).ready(function($) {
             }
         });
     }
-    
+
     // Event handlers - use event delegation and prevent default
-    $container.on('click', '#kwik-ai-tags-generate', function(e) {
+    $container.on('click', '#kwik-ai-generate', function(e) {
         e.preventDefault();
         e.stopPropagation();
         generateTags();
     });
-    
-    $container.on('click', '#kwik-ai-tags-regenerate', function(e) {
+
+    $container.on('click', '#kwik-ai-regenerate', function(e) {
         e.preventDefault();
         e.stopPropagation();
         generateTags();
     });
-    
-    $container.on('click', '#kwik-ai-tags-apply', function(e) {
+
+    $container.on('click', '#kwik-ai-apply', function(e) {
         e.preventDefault();
         e.stopPropagation();
         applyTags();
     });
-    
+
     debugLog('Event handlers attached');
-    
+
     // Description-specific functions
     let currentDescription = '';
-    
+
     /**
      * Show description loading state
      */
@@ -269,7 +269,7 @@ jQuery(document).ready(function($) {
         $descPreview.hide();
         $descError.hide();
     }
-    
+
     /**
      * Hide description loading state
      */
@@ -279,7 +279,7 @@ jQuery(document).ready(function($) {
         $descRegenerateBtn.prop('disabled', false);
         $descLoading.hide();
     }
-    
+
     /**
      * Show description error message
      */
@@ -290,7 +290,7 @@ jQuery(document).ready(function($) {
         $descError.show();
         $descPreview.hide();
     }
-    
+
     /**
      * Display description in the preview
      */
@@ -302,26 +302,26 @@ jQuery(document).ready(function($) {
         $descPreview.show();
         $descError.hide();
     }
-    
+
     /**
      * Generate description via AJAX
      */
     function generateDescription(e) {
         debugLog('Starting description generation');
-        
+
         // Prevent default if this is triggered by a button
         if (e) {
             e.preventDefault();
             e.stopPropagation();
         }
-        
+
         if (!kwikAiDescription.postId) {
             showDescError('No post ID found. Please save the post first.');
             return;
         }
-        
+
         showDescLoading();
-        
+
         const ajaxData = {
             action: 'kwik_ai_description_generate',
             nonce: kwikAiDescription.nonce,
@@ -329,9 +329,9 @@ jQuery(document).ready(function($) {
             max_words: $descLength.length ? $descLength.val() : 35,
             tone: $descTone.length ? $descTone.val() : 'straight'
         };
-        
+
         debugLog('Description AJAX data', ajaxData);
-        
+
         $.ajax({
             url: kwikAiDescription.ajaxUrl,
             type: 'POST',
@@ -348,7 +348,7 @@ jQuery(document).ready(function($) {
             error: function(xhr, status, error) {
                 debugLog('Description AJAX error', {xhr: xhr, status: status, error: error});
                 let errorMessage = kwikAiDescription.strings.error;
-                
+
                 if (status === 'timeout') {
                     errorMessage = 'Request timed out. Ollama might be processing - try again.';
                 } else if (xhr.responseText) {
@@ -359,7 +359,7 @@ jQuery(document).ready(function($) {
                         errorMessage = 'Server error: ' + xhr.status;
                     }
                 }
-                
+
                 showDescError(errorMessage);
             }
         });
@@ -370,7 +370,7 @@ jQuery(document).ready(function($) {
             $descLengthValue.text($descLength.val());
         }
     }
-    
+
     /**
      * Apply the generated excerpt to the post.
      */
@@ -389,26 +389,26 @@ jQuery(document).ready(function($) {
             debugLog('No excerpt field found');
         }
     }
-    
+
     /**
      * Apply description to the post
      */
     function applyDescription(e) {
         debugLog('Applying description', currentDescription.substring(0, 100) + '...');
-        
+
         // Prevent default if this is triggered by a button
         if (e) {
             e.preventDefault();
             e.stopPropagation();
         }
-        
+
         if (currentDescription.length === 0) {
             showDescError('No description to apply.');
             return;
         }
-        
+
         $descApplyBtn.prop('disabled', true).text('Applying...');
-        
+
         $.ajax({
             url: kwikAiDescription.ajaxUrl,
             type: 'POST',
@@ -423,11 +423,11 @@ jQuery(document).ready(function($) {
                 if (response.success) {
                     // Apply the generated excerpt to the post
                     applyExcerptToEditor(currentDescription);
-                    
+
                     // Show success message briefly
-                    const $success = $('<div class="kwik-ai-tags-success"></div>').text(response.data);
+                    const $success = $('<div class="kwik-ai-success"></div>').text(response.data);
                     $descContainer.prepend($success);
-                    
+
                     setTimeout(function() {
                         $success.fadeOut(function() {
                             $success.remove();
@@ -446,7 +446,7 @@ jQuery(document).ready(function($) {
             }
         });
     }
-    
+
     // Description event handlers
     $descContainer.on('input change', '#kwik-ai-description-length', updateDescriptionLengthLabel);
     updateDescriptionLengthLabel();
@@ -456,13 +456,13 @@ jQuery(document).ready(function($) {
         e.stopPropagation();
         generateDescription();
     });
-    
+
     $descContainer.on('click', '#kwik-ai-description-regenerate', function(e) {
         e.preventDefault();
         e.stopPropagation();
         generateDescription();
     });
-    
+
     $descContainer.on('click', '#kwik-ai-description-apply', function(e) {
         e.preventDefault();
         e.stopPropagation();
