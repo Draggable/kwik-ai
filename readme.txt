@@ -1,6 +1,6 @@
 === Kwik AI ===
 Contributors: draggable, kevinchappell
-Tags: ai, tags, content, image generation, openai, ollama, features image, description
+Tags: ai, tags, featured image, openai, ollama
 Requires at least: 5.6
 Tested up to: 7.0
 Requires PHP: 7.4
