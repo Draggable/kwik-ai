@@ -1,0 +1,15 @@
+# Git hooks managed by lefthook.  Install with: npx lefthook install
+# (runs automatically via the package.json "prepare" script after npm install).
+
+commit-msg:
+  commands:
+    commitlint:
+      # {1} is the path to the commit message file passed by git.
+      # Skip the release commits semantic-release creates ("chore(release): …"),
+      # whose multi-line release notes would otherwise trip commitlint rules.
+      run: |
+        if head -n1 "{1}" | grep -qE '^chore\(release\):'; then
+          echo "lefthook: skipping commitlint for release commit"
+          exit 0
+        fi
+        npx --no-install commitlint --edit "{1}"

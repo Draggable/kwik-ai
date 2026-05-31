@@ -18,6 +18,9 @@ webpack.config.js
 .babelrc
 phpcs.xml
 phpunit.xml
+.releaserc.json
+commitlint.config.js
+lefthook.yml
 
 # Source / build artifacts (only the bundled assets/js is shipped)
 assets/src
