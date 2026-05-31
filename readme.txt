@@ -60,6 +60,11 @@ Any vision-capable model: for example `gemma3:27b` or `llava:13b` on Ollama, `op
 
 Yes. In settings you can set a dedicated Text Model for text-only generation (image prompts and URL-based descriptions) when your main model is vision-only.
 
+== Screenshots ==
+
+1. Kwik AI settings: configure your provider, models, and API keys.
+2. Generating AI tags and a description for a post in the editor.
+
 == Changelog ==
 
 = 3.1 =

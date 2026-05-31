@@ -40,5 +40,8 @@ jobs:
 
       - name: Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Use a PAT when present so the version tag this pushes triggers the
+          # WP.org Deploy workflow (tags pushed by GITHUB_TOKEN do not start
+          # other workflows). Falls back to GITHUB_TOKEN if GH_PAT is unset.
+          GITHUB_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         run: npx semantic-release

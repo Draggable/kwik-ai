@@ -1,0 +1,32 @@
+name: WP.org Assets
+
+# Sync only the WordPress.org page assets (banner, icon, screenshots) and
+# readme.txt to SVN trunk. Runs whenever those files change on main, so you can
+# update the plugin's listing without cutting a new release.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'readme.txt'
+      - '.wordpress-org/**'
+  workflow_dispatch:
+
+jobs:
+  assets:
+    name: Push assets/readme to SVN
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update WordPress.org assets and readme
+        uses: 10up/action-wordpress-plugin-asset-update@stable
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: kwik-ai-tags
+          ASSETS_DIR: .wordpress-org/assets
+          # Push runs to main usually include code changes too; only ever sync
+          # readme + assets and ignore the rest.
+          IGNORE_OTHER_FILES: true

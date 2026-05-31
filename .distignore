@@ -26,6 +26,13 @@ lefthook.yml
 assets/src
 dist
 
+# WordPress.org repository assets (banner/icon/screenshots live in SVN assets/, never shipped)
+.wordpress-org
+kwik-ai-header.png
+kwik-ai-icon.png
+Screenshot From 2026-05-30 22-21-37.png
+Screenshot From 2026-05-30 22-23-07.png
+
 # Tests & dev scripts
 tests
 test-web-scraping.php

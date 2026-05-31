@@ -1,0 +1,38 @@
+name: WP.org Deploy
+
+# Full plugin deploy to the WordPress.org SVN repo: publishes the code to
+# trunk, creates tags/<version>, and syncs the page assets.
+#
+# Triggers on the version tags that semantic-release creates (v*). NOTE: tags
+# pushed by the default GITHUB_TOKEN do NOT start other workflows, so for this
+# to fire automatically the Release workflow must push with a PAT (secret
+# GH_PAT). Without a PAT, run this manually from the Actions tab
+# (workflow_dispatch) after a release.
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy (e.g. 3.1.0). Defaults to the triggering tag.'
+        required: false
+
+jobs:
+  deploy:
+    name: Deploy to WordPress.org
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to WordPress.org
+        uses: 10up/action-wordpress-plugin-deploy@stable
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: kwik-ai-tags
+          ASSETS_DIR: .wordpress-org/assets
+          # For manual runs, fall back to the typed version; on tag pushes the
+          # action uses the tag name automatically.
+          VERSION: ${{ github.event.inputs.version }}
