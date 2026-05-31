@@ -20,6 +20,7 @@ if (!defined('ABSPATH')) {
 function kwik_ai_log(string $message): void
 {
   if (defined('WP_DEBUG') && WP_DEBUG) {
+    // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Gated by WP_DEBUG; intentional diagnostic logging.
     error_log($message);
   }
 }

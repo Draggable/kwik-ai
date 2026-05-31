@@ -4,6 +4,7 @@ vendor/
 
 # Build output
 *.js.LICENSE.txt
+dist/
 
 # IDE
 .idea/

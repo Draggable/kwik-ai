@@ -20,8 +20,8 @@ if (file_exists(dirname(__DIR__) . '/includes/security-utilities.php')) {
 function kwik_ai_tags_add_admin_menu()
 {
   $settings_hook = add_options_page(
-    __('KWIK AI Settings', KWIK_AI_DOMAIN),
-    __('KWIK AI', KWIK_AI_DOMAIN),
+    __('KWIK AI Settings', 'kwik-ai-tags'),
+    __('KWIK AI', 'kwik-ai-tags'),
     'manage_options',
     'kwik-ai-tags-settings',
     'kwik_ai_tags_settings_page'
@@ -65,12 +65,12 @@ function kwik_ai_tags_enqueue_settings_styles()
     'ajaxUrl' => admin_url('admin-ajax.php'),
     'nonce' => wp_create_nonce('kwik_ai_tags_ajax'),
     'strings' => [
-      'loading' => __('Loading...', KWIK_AI_DOMAIN),
-      'error' => __('Failed to fetch models. Please check your connection.', KWIK_AI_DOMAIN),
-      'vision' => __('(Vision)', KWIK_AI_DOMAIN),
-      'refresh' => __('Refresh Models', KWIK_AI_DOMAIN),
-      'testing' => __('Testing connection...', KWIK_AI_DOMAIN),
-      'testError' => __('Connection failed. Please check your endpoint URL and API key.', KWIK_AI_DOMAIN),
+      'loading' => __('Loading...', 'kwik-ai-tags'),
+      'error' => __('Failed to fetch models. Please check your connection.', 'kwik-ai-tags'),
+      'vision' => __('(Vision)', 'kwik-ai-tags'),
+      'refresh' => __('Refresh Models', 'kwik-ai-tags'),
+      'testing' => __('Testing connection...', 'kwik-ai-tags'),
+      'testError' => __('Connection failed. Please check your endpoint URL and API key.', 'kwik-ai-tags'),
     ]
   ]);
 }
@@ -214,35 +214,35 @@ function kwik_ai_tags_settings_init()
 
   add_settings_section(
     'kwik_ai_tags_main_section',
-    __('Post Type Settings', KWIK_AI_DOMAIN),
+    __('Post Type Settings', 'kwik-ai-tags'),
     'kwik_ai_tags_settings_section_callback',
     'kwik_ai_tags_settings'
   );
 
   add_settings_section(
     'kwik_ai_tags_provider_section',
-    __('AI Provider Settings', KWIK_AI_DOMAIN),
+    __('AI Provider Settings', 'kwik-ai-tags'),
     'kwik_ai_tags_provider_section_callback',
     'kwik_ai_tags_settings'
   );
 
   add_settings_section(
     'kwik_ai_tags_auth_section',
-    __('Authentication', KWIK_AI_DOMAIN),
+    __('Authentication', 'kwik-ai-tags'),
     'kwik_ai_tags_auth_section_callback',
     'kwik_ai_tags_settings'
   );
 
   add_settings_section(
     'kwik_ai_tags_fal_section',
-    __('FAL.AI Image Generation', KWIK_AI_DOMAIN),
+    __('FAL.AI Image Generation', 'kwik-ai-tags'),
     'kwik_ai_tags_fal_section_callback',
     'kwik_ai_tags_settings'
   );
 
   add_settings_field(
     'kwik_ai_tags_enabled_post_types',
-    __('Enabled Post Types', KWIK_AI_DOMAIN),
+    __('Enabled Post Types', 'kwik-ai-tags'),
     'kwik_ai_tags_enabled_post_types_callback',
     'kwik_ai_tags_settings',
     'kwik_ai_tags_main_section'
@@ -250,7 +250,7 @@ function kwik_ai_tags_settings_init()
 
   add_settings_field(
     'kwik_ai_ai_provider',
-    __('AI Provider', KWIK_AI_DOMAIN),
+    __('AI Provider', 'kwik-ai-tags'),
     'kwik_ai_ai_provider_callback',
     'kwik_ai_tags_settings',
     'kwik_ai_tags_provider_section'
@@ -258,7 +258,7 @@ function kwik_ai_tags_settings_init()
 
   add_settings_field(
     'kwik_ai_api_endpoint',
-    __('API Endpoint', KWIK_AI_DOMAIN),
+    __('API Endpoint', 'kwik-ai-tags'),
     'kwik_ai_api_endpoint_callback',
     'kwik_ai_tags_settings',
     'kwik_ai_tags_provider_section'
@@ -266,7 +266,7 @@ function kwik_ai_tags_settings_init()
 
   add_settings_field(
     'kwik_ai_model',
-    __('Model', KWIK_AI_DOMAIN),
+    __('Model', 'kwik-ai-tags'),
     'kwik_ai_model_callback',
     'kwik_ai_tags_settings',
     'kwik_ai_tags_provider_section'
@@ -274,7 +274,7 @@ function kwik_ai_tags_settings_init()
 
   add_settings_field(
     'kwik_ai_text_model',
-    __('Text Model', KWIK_AI_DOMAIN),
+    __('Text Model', 'kwik-ai-tags'),
     'kwik_ai_text_model_callback',
     'kwik_ai_tags_settings',
     'kwik_ai_tags_provider_section'
@@ -282,7 +282,7 @@ function kwik_ai_tags_settings_init()
 
   add_settings_field(
     'kwik_ai_custom_api_key',
-    __('Custom API Key', KWIK_AI_DOMAIN),
+    __('Custom API Key', 'kwik-ai-tags'),
     'kwik_ai_custom_api_key_callback',
     'kwik_ai_tags_settings',
     'kwik_ai_tags_auth_section'
@@ -290,7 +290,7 @@ function kwik_ai_tags_settings_init()
 
   add_settings_field(
     'kwik_ai_openrouter_api_key',
-    __('OpenRouter API Key', KWIK_AI_DOMAIN),
+    __('OpenRouter API Key', 'kwik-ai-tags'),
     'kwik_ai_openrouter_api_key_callback',
     'kwik_ai_tags_settings',
     'kwik_ai_tags_auth_section'
@@ -298,7 +298,7 @@ function kwik_ai_tags_settings_init()
 
   add_settings_field(
     'kwik_ai_openai_api_key',
-    __('OpenAI API Key', KWIK_AI_DOMAIN),
+    __('OpenAI API Key', 'kwik-ai-tags'),
     'kwik_ai_openai_api_key_callback',
     'kwik_ai_tags_settings',
     'kwik_ai_tags_auth_section'
@@ -306,7 +306,7 @@ function kwik_ai_tags_settings_init()
 
   add_settings_field(
     'kwik_ai_fal_api_key',
-    __('FAL.AI API Key', KWIK_AI_DOMAIN),
+    __('FAL.AI API Key', 'kwik-ai-tags'),
     'kwik_ai_fal_api_key_callback',
     'kwik_ai_tags_settings',
     'kwik_ai_tags_fal_section'
@@ -314,7 +314,7 @@ function kwik_ai_tags_settings_init()
 
   add_settings_field(
     'kwik_ai_fal_model',
-    __('Image Model', KWIK_AI_DOMAIN),
+    __('Image Model', 'kwik-ai-tags'),
     'kwik_ai_fal_model_callback',
     'kwik_ai_tags_settings',
     'kwik_ai_tags_fal_section'
@@ -322,7 +322,7 @@ function kwik_ai_tags_settings_init()
 
   add_settings_field(
     'kwik_ai_fal_image_size',
-    __('Image Size', KWIK_AI_DOMAIN),
+    __('Image Size', 'kwik-ai-tags'),
     'kwik_ai_fal_image_size_callback',
     'kwik_ai_tags_settings',
     'kwik_ai_tags_fal_section'
@@ -452,7 +452,7 @@ function kwik_ai_tags_sanitize_fal_image_size($input)
  */
 function kwik_ai_tags_settings_section_callback()
 {
-  echo '<p>' . esc_html__('Choose which post types should have AI tag and description generation enabled.', KWIK_AI_DOMAIN) . '</p>';
+  echo '<p>' . esc_html__('Choose which post types should have AI tag and description generation enabled.', 'kwik-ai-tags') . '</p>';
 }
 
 /**
@@ -525,7 +525,7 @@ function kwik_ai_tags_enabled_post_types_callback()
     );
   }
   echo '</div>';
-  echo '<p class="description">' . esc_html__('Select the post types where AI tag and description generation should be enabled. Custom post types added by other plugins or your theme are included here.', KWIK_AI_DOMAIN) . '</p>';
+  echo '<p class="description">' . esc_html__('Select the post types where AI tag and description generation should be enabled. Custom post types added by other plugins or your theme are included here.', 'kwik-ai-tags') . '</p>';
 }
 
 /**
@@ -533,7 +533,7 @@ function kwik_ai_tags_enabled_post_types_callback()
  */
 function kwik_ai_tags_provider_section_callback()
 {
-  echo '<p>' . esc_html__('Select your AI provider and configure the connection details.', KWIK_AI_DOMAIN) . '</p>';
+  echo '<p>' . esc_html__('Select your AI provider and configure the connection details.', 'kwik-ai-tags') . '</p>';
 }
 
 /**
@@ -543,14 +543,14 @@ function kwik_ai_tags_auth_section_callback()
 {
   $has_encryption = function_exists('kwik_ai_has_encryption') && kwik_ai_has_encryption();
   
-  echo '<p>' . esc_html__('Enter credentials for your AI provider.', KWIK_AI_DOMAIN) . '</p>';
+  echo '<p>' . esc_html__('Enter credentials for your AI provider.', 'kwik-ai-tags') . '</p>';
   
   if ($has_encryption) {
     echo '<div class="notice notice-success inline" style="margin: 5px 0 0;"><p>' . 
-      esc_html__('Credentials will be encrypted before storage.', KWIK_AI_DOMAIN) . '</p></div>';
+      esc_html__('Credentials will be encrypted before storage.', 'kwik-ai-tags') . '</p></div>';
   } else {
     echo '<div class="notice notice-warning inline" style="margin: 5px 0 0;"><p>' . 
-      esc_html__('Credentials are stored without encryption. Ensure your database is properly secured.', KWIK_AI_DOMAIN) . '</p></div>';
+      esc_html__('Credentials are stored without encryption. Ensure your database is properly secured.', 'kwik-ai-tags') . '</p></div>';
   }
 }
 
@@ -575,7 +575,7 @@ function kwik_ai_ai_provider_callback()
   
   echo '</select>';
   echo '<p class="description">';
-  echo esc_html__('Custom requires a configured endpoint URL. OpenRouter and OpenAI require API keys.');
+  echo esc_html__('Custom requires a configured endpoint URL. OpenRouter and OpenAI require API keys.', 'kwik-ai-tags');
   echo '</p>';
 }
 
@@ -599,7 +599,7 @@ function kwik_ai_api_endpoint_callback()
     esc_attr($endpoint)
   );
   echo '<p class="description">';
-  echo esc_html__('For Custom: your API server URL (e.g., http://localhost:11434).');
+  echo esc_html__('For Custom: your API server URL (e.g., http://localhost:11434).', 'kwik-ai-tags');
   echo ' <strong>OpenRouter:</strong> https://openrouter.ai/api/v1';
   echo ' <strong>OpenAI:</strong> https://api.openai.com/v1';
   echo '</p>';
@@ -639,22 +639,22 @@ function kwik_ai_model_callback()
   echo '<select name="kwik_ai_model" id="kwik-ai-model-select" class="regular-text">';
   foreach ($models as $model) {
     $has_vision = !empty($model['has_vision']);
-    $vision_indicator = $has_vision ? ' ' . __('(Vision)', KWIK_AI_DOMAIN) : '';
+    $vision_indicator = $has_vision ? ' ' . __('(Vision)', 'kwik-ai-tags') : '';
     $vision_class = $has_vision ? 'vision-model' : '';
 
     echo '<option value="' . esc_attr($model['name']) . '" ' . selected($selected_model, $model['name'], false) . ' class="' . esc_attr($vision_class) . '">' . esc_html($model['name'] . $vision_indicator) . '</option>';
   }
   echo '</select>';
 
-  echo '<button type="button" class="button" id="kwik-ai-refresh-models" style="margin-left: 10px;">' . esc_html__('Refresh Models', KWIK_AI_DOMAIN) . '</button>';
-  echo '<button type="button" class="button" id="kwik-ai-test-connection" style="margin-left: 6px;">' . esc_html__('Test Connection', KWIK_AI_DOMAIN) . '</button>';
-  echo '<span id="kwik-ai-model-loading" style="display: none; margin-left: 10px;">' . esc_html__('Loading...', KWIK_AI_DOMAIN) . '</span>';
+  echo '<button type="button" class="button" id="kwik-ai-refresh-models" style="margin-left: 10px;">' . esc_html__('Refresh Models', 'kwik-ai-tags') . '</button>';
+  echo '<button type="button" class="button" id="kwik-ai-test-connection" style="margin-left: 6px;">' . esc_html__('Test Connection', 'kwik-ai-tags') . '</button>';
+  echo '<span id="kwik-ai-model-loading" style="display: none; margin-left: 10px;">' . esc_html__('Loading...', 'kwik-ai-tags') . '</span>';
 
   echo '<div id="kwik-ai-connection-result" class="kwik-ai-connection-result" style="display: none; margin-top: 10px;"></div>';
 
   echo '<p class="description">';
-  echo esc_html__('Select the model to use for AI tag and description generation. Use "Refresh Models" to load the list from your provider, or "Test Connection" to verify your endpoint and API key without saving.', KWIK_AI_DOMAIN);
-  echo ' <strong>' . esc_html__('Models marked with "(Vision)" support image analysis.', KWIK_AI_DOMAIN) . '</strong>';
+  echo esc_html__('Select the model to use for AI tag and description generation. Use "Refresh Models" to load the list from your provider, or "Test Connection" to verify your endpoint and API key without saving.', 'kwik-ai-tags');
+  echo ' <strong>' . esc_html__('Models marked with "(Vision)" support image analysis.', 'kwik-ai-tags') . '</strong>';
   echo '</p>';
 
   echo '</div>';
@@ -677,7 +677,7 @@ function kwik_ai_text_model_callback()
   }
 
   echo '<select name="kwik_ai_text_model" id="kwik-ai-text-model-select" class="regular-text">';
-  echo '<option value="" ' . selected($selected, '', false) . '>' . esc_html__('Use the main Model (above)', KWIK_AI_DOMAIN) . '</option>';
+  echo '<option value="" ' . selected($selected, '', false) . '>' . esc_html__('Use the main Model (above)', 'kwik-ai-tags') . '</option>';
 
   // Keep the saved text model selectable even if it isn't in the fetched list.
   $has_selected = false;
@@ -693,13 +693,13 @@ function kwik_ai_text_model_callback()
 
   foreach ($models as $model) {
     $has_vision = !empty($model['has_vision']);
-    $vision_indicator = $has_vision ? ' ' . __('(Vision)', KWIK_AI_DOMAIN) : '';
+    $vision_indicator = $has_vision ? ' ' . __('(Vision)', 'kwik-ai-tags') : '';
     echo '<option value="' . esc_attr($model['name']) . '" ' . selected($selected, $model['name'], false) . '>' . esc_html($model['name'] . $vision_indicator) . '</option>';
   }
   echo '</select>';
 
   echo '<p class="description">';
-  echo esc_html__('Model used for text-only generation: featured-image prompts and URL-based descriptions. Leave on "Use the main Model" to reuse the model above. Choose a text/chat model here if your main Model is a vision model that cannot handle plain text.', KWIK_AI_DOMAIN);
+  echo esc_html__('Model used for text-only generation: featured-image prompts and URL-based descriptions. Leave on "Use the main Model" to reuse the model above. Choose a text/chat model here if your main Model is a vision model that cannot handle plain text.', 'kwik-ai-tags');
   echo '</p>';
 }
 
@@ -719,7 +719,7 @@ function kwik_ai_custom_api_key_callback()
     '<input type="password" name="kwik_ai_custom_api_key" value="%s" class="regular-text" id="kwik-ai-custom-api-key" />',
     esc_attr($api_key)
   );
-  echo '<p class="description">' . esc_html__('Enter the API key for your custom provider endpoint (leave blank if no authentication is required)', KWIK_AI_DOMAIN) . '</p>';
+  echo '<p class="description">' . esc_html__('Enter the API key for your custom provider endpoint (leave blank if no authentication is required)', 'kwik-ai-tags') . '</p>';
 }
 
 /**
@@ -739,7 +739,7 @@ function kwik_ai_openrouter_api_key_callback()
     esc_attr($api_key)
   );
   echo '<p class="description">';
-  echo esc_html__('Get your API key from ');
+  echo esc_html__('Get your API key from ', 'kwik-ai-tags');
   echo '<a href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter</a>.';
   echo '</p>';
 }
@@ -761,7 +761,7 @@ function kwik_ai_openai_api_key_callback()
     esc_attr($api_key)
   );
   echo '<p class="description">';
-  echo esc_html__('Get your API key from ');
+  echo esc_html__('Get your API key from ', 'kwik-ai-tags');
   echo '<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI</a>.';
   echo '</p>';
 }
@@ -771,14 +771,14 @@ function kwik_ai_openai_api_key_callback()
  */
 function kwik_ai_tags_fal_section_callback()
 {
-  echo '<p>' . esc_html__('Generate featured images from your post content using FAL.AI. The post is scanned, an image prompt is crafted with your selected AI provider above, and the image is created by the FAL model below.', KWIK_AI_DOMAIN) . '</p>';
+  echo '<p>' . esc_html__('Generate featured images from your post content using FAL.AI. The post is scanned, an image prompt is crafted with your selected AI provider above, and the image is created by the FAL model below.', 'kwik-ai-tags') . '</p>';
 
   $configured = function_exists('kwik_ai_fal_has_api_key') && kwik_ai_fal_has_api_key();
-  echo '<p><strong>' . esc_html__('FAL.AI Status:', KWIK_AI_DOMAIN) . '</strong> ';
+  echo '<p><strong>' . esc_html__('FAL.AI Status:', 'kwik-ai-tags') . '</strong> ';
   if ($configured) {
-    echo '<span class="kwik-ai-tags-status-connected"><span class="kwik-ai-tags-status-icon">✓</span>' . esc_html__('API key configured', KWIK_AI_DOMAIN) . '</span>';
+    echo '<span class="kwik-ai-tags-status-connected"><span class="kwik-ai-tags-status-icon">✓</span>' . esc_html__('API key configured', 'kwik-ai-tags') . '</span>';
   } else {
-    echo '<span class="kwik-ai-tags-status-error"><span class="kwik-ai-tags-status-icon">✗</span>' . esc_html__('No API key configured', KWIK_AI_DOMAIN) . '</span>';
+    echo '<span class="kwik-ai-tags-status-error"><span class="kwik-ai-tags-status-icon">✗</span>' . esc_html__('No API key configured', 'kwik-ai-tags') . '</span>';
   }
   echo '</p>';
 }
@@ -799,7 +799,7 @@ function kwik_ai_fal_api_key_callback()
     esc_attr($api_key)
   );
   echo '<p class="description">';
-  echo esc_html__('Get your API key from ');
+  echo esc_html__('Get your API key from ', 'kwik-ai-tags');
   echo '<a href="https://fal.ai/dashboard/keys" target="_blank" rel="noopener">FAL.AI</a>.';
   echo '</p>';
 }
@@ -844,18 +844,18 @@ function kwik_ai_fal_model_callback()
     ),
     'kwik_ai_fal_refresh_models'
   );
-  echo ' <a href="' . esc_url($refresh_url) . '" class="button">' . esc_html__('Refresh Models', KWIK_AI_DOMAIN) . '</a>';
+  echo ' <a href="' . esc_url($refresh_url) . '" class="button">' . esc_html__('Refresh Models', 'kwik-ai-tags') . '</a>';
 
   echo '<p class="description">';
-  echo esc_html__('The FAL.AI text-to-image model used to create featured images.', KWIK_AI_DOMAIN);
+  echo esc_html__('The FAL.AI text-to-image model used to create featured images.', 'kwik-ai-tags');
   if ($is_live) {
     echo ' ' . sprintf(
       /* translators: %d: number of models */
-      esc_html__('Showing %d models from FAL.AI.', KWIK_AI_DOMAIN),
+      esc_html__('Showing %d models from FAL.AI.', 'kwik-ai-tags'),
       count($models)
     );
   } else {
-    echo ' ' . esc_html__('Showing a built-in list (could not reach FAL.AI). Click "Refresh Models" to try again.', KWIK_AI_DOMAIN);
+    echo ' ' . esc_html__('Showing a built-in list (could not reach FAL.AI). Click "Refresh Models" to try again.', 'kwik-ai-tags');
   }
   echo '</p>';
 }
@@ -873,7 +873,7 @@ function kwik_ai_fal_image_size_callback()
     echo '<option value="' . esc_attr($value) . '" ' . selected($selected, $value, false) . '>' . esc_html($label) . '</option>';
   }
   echo '</select>';
-  echo '<p class="description">' . esc_html__('Aspect ratio for generated featured images. Landscape works best for most themes.', KWIK_AI_DOMAIN) . '</p>';
+  echo '<p class="description">' . esc_html__('Aspect ratio for generated featured images. Landscape works best for most themes.', 'kwik-ai-tags') . '</p>';
 }
 
 /**
@@ -1103,7 +1103,7 @@ function kwik_ai_tags_test_provider_connection()
 function kwik_ai_tags_settings_page()
 {
   if (!current_user_can('manage_options')) {
-    wp_die(esc_html__('You do not have sufficient permissions to access this page.', KWIK_AI_DOMAIN));
+    wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'kwik-ai-tags'));
   }
   
   ?>
@@ -1111,19 +1111,19 @@ function kwik_ai_tags_settings_page()
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
     
     <div class="card">
-      <h2><?php esc_html_e('Plugin Information', KWIK_AI_DOMAIN); ?></h2>
-      <p><?php esc_html_e('KWIK AI automatically generates relevant tags and descriptions for your content using AI image analysis.', KWIK_AI_DOMAIN); ?></p>
+      <h2><?php esc_html_e('Plugin Information', 'kwik-ai-tags'); ?></h2>
+      <p><?php esc_html_e('KWIK AI automatically generates relevant tags and descriptions for your content using AI image analysis.', 'kwik-ai-tags'); ?></p>
       
-      <h3><?php esc_html_e('Requirements', KWIK_AI_DOMAIN); ?></h3>
+      <h3><?php esc_html_e('Requirements', 'kwik-ai-tags'); ?></h3>
       <ul>
-        <li><?php esc_html_e('AI provider configured (Custom, OpenRouter, or OpenAI)', KWIK_AI_DOMAIN); ?></li>
-        <li><?php esc_html_e('Vision-capable model for image analysis (e.g., gemma3:27b, llava:13b, gpt-4o)', KWIK_AI_DOMAIN); ?></li>
-        <li><?php esc_html_e('Posts with images or at least 50 words of text content', KWIK_AI_DOMAIN); ?></li>
+        <li><?php esc_html_e('AI provider configured (Custom, OpenRouter, or OpenAI)', 'kwik-ai-tags'); ?></li>
+        <li><?php esc_html_e('Vision-capable model for image analysis (e.g., gemma3:27b, llava:13b, gpt-4o)', 'kwik-ai-tags'); ?></li>
+        <li><?php esc_html_e('Posts with images or at least 50 words of text content', 'kwik-ai-tags'); ?></li>
       </ul>
       
-      <h3><?php esc_html_e('Current Status', KWIK_AI_DOMAIN); ?></h3>
+      <h3><?php esc_html_e('Current Status', 'kwik-ai-tags'); ?></h3>
       <p>
-        <strong><?php esc_html_e('AI Provider:', KWIK_AI_DOMAIN); ?></strong>
+        <strong><?php esc_html_e('AI Provider:', 'kwik-ai-tags'); ?></strong>
         <code><?php
           $provider = get_option('kwik_ai_ai_provider', 'custom');
           $provider_labels = array(
@@ -1135,31 +1135,31 @@ function kwik_ai_tags_settings_page()
         ?></code>
       </p>
       <p>
-        <strong><?php esc_html_e('API Endpoint:', KWIK_AI_DOMAIN); ?></strong>
+        <strong><?php esc_html_e('API Endpoint:', 'kwik-ai-tags'); ?></strong>
         <code><?php
           $endpoint = get_option('kwik_ai_api_endpoint', 'http://localhost:11434');
           echo esc_html($endpoint);
         ?></code>
       </p>
       <p>
-        <strong><?php esc_html_e('Selected Model:', KWIK_AI_DOMAIN); ?></strong>
+        <strong><?php esc_html_e('Selected Model:', 'kwik-ai-tags'); ?></strong>
         <code><?php
           $selected_model = get_option('kwik_ai_model', 'gemma3:27b');
           $has_vision = kwik_ai_tags_model_has_vision($selected_model);
           echo esc_html($selected_model);
           if ($has_vision) {
-            echo ' <span class="kwik-ai-tags-status-connected">(' . esc_html__('Vision Capable', KWIK_AI_DOMAIN) . ')</span>';
+            echo ' <span class="kwik-ai-tags-status-connected">(' . esc_html__('Vision Capable', 'kwik-ai-tags') . ')</span>';
           } else {
-            echo ' <span class="kwik-ai-tags-status-error">(' . esc_html__('No Vision Support', KWIK_AI_DOMAIN) . ')</span>';
+            echo ' <span class="kwik-ai-tags-status-error">(' . esc_html__('No Vision Support', 'kwik-ai-tags') . ')</span>';
           }
         ?></code>
       </p>
       <p>
-        <strong><?php esc_html_e('Connection Status:', KWIK_AI_DOMAIN); ?></strong>
+        <strong><?php esc_html_e('Connection Status:', 'kwik-ai-tags'); ?></strong>
         <?php
         $connection_status = kwik_ai_tags_test_provider_connection();
         if ($connection_status === true) {
-          echo '<span class="kwik-ai-tags-status-connected"><span class="kwik-ai-tags-status-icon">✓</span>' . esc_html__('Connected', KWIK_AI_DOMAIN) . '</span>';
+          echo '<span class="kwik-ai-tags-status-connected"><span class="kwik-ai-tags-status-icon">✓</span>' . esc_html__('Connected', 'kwik-ai-tags') . '</span>';
         } else {
           echo '<span class="kwik-ai-tags-status-error"><span class="kwik-ai-tags-status-icon">✗</span>' . esc_html($connection_status) . '</span>';
         }
@@ -1186,7 +1186,7 @@ function kwik_ai_tags_add_settings_link($links)
   $settings_link = sprintf(
     '<a href="%s">%s</a>',
     esc_url(admin_url('options-general.php?page=kwik-ai-tags-settings')),
-    esc_html__('Settings', KWIK_AI_DOMAIN)
+    esc_html__('Settings', 'kwik-ai-tags')
   );
   
   array_unshift($links, $settings_link);

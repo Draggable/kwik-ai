@@ -21,8 +21,10 @@ define('KWIK_AI_MIN_WORDS', 50);
 // Maximum length for generated descriptions
 define('KWIK_AI_MAX_DESCRIPTION_LENGTH', 2000);
 
-// Plugin domain
-define('KWIK_AI_DOMAIN', 'kwik-ai');
+// Plugin text domain (must match the plugin slug). Kept for backward
+// compatibility; i18n calls use the string literal 'kwik-ai-tags' directly so
+// the WordPress.org i18n tooling can extract them.
+define('KWIK_AI_DOMAIN', 'kwik-ai-tags');
 
 // Default values - used if settings are not configured
 define('KWIK_AI_DEFAULT_OLLAMA_HOST', 'http://localhost:11434');

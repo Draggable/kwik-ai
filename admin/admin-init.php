@@ -74,9 +74,9 @@ function kwik_ai_tags_enqueue_scripts($hook)
     'postId' => $post_id,
     'debug' => WP_DEBUG,
     'strings' => [
-      'error' => __('An error occurred. Please try again.', KWIK_AI_DOMAIN),
-      'noContent' => __('No images or insufficient text found. Please add images or write at least 50 words.', KWIK_AI_DOMAIN),
-      'success' => __('Tags applied successfully!', KWIK_AI_DOMAIN),
+      'error' => __('An error occurred. Please try again.', 'kwik-ai-tags'),
+      'noContent' => __('No images or insufficient text found. Please add images or write at least 50 words.', 'kwik-ai-tags'),
+      'success' => __('Tags applied successfully!', 'kwik-ai-tags'),
     ]
   ]);
 
@@ -86,9 +86,9 @@ function kwik_ai_tags_enqueue_scripts($hook)
     'postId' => $post_id,
     'debug' => WP_DEBUG,
     'strings' => [
-      'error' => __('An error occurred. Please try again.', KWIK_AI_DOMAIN),
-      'noContent' => __('No images found. Please add images to generate a description.', KWIK_AI_DOMAIN),
-      'success' => __('Description applied successfully!', KWIK_AI_DOMAIN),
+      'error' => __('An error occurred. Please try again.', 'kwik-ai-tags'),
+      'noContent' => __('No images found. Please add images to generate a description.', 'kwik-ai-tags'),
+      'success' => __('Description applied successfully!', 'kwik-ai-tags'),
     ]
   ]);
 
@@ -112,21 +112,21 @@ function kwik_ai_tags_enqueue_scripts($hook)
     'pollInterval' => 3000,
     'maxPollMs' => 300000,
     'strings' => [
-      'generatePrompt' => __('Generate Prompt', KWIK_AI_DOMAIN),
-      'generatingPrompt' => __('Writing prompt…', KWIK_AI_DOMAIN),
-      'generate' => __('Generate Image', KWIK_AI_DOMAIN),
-      'generating' => __('Generating image…', KWIK_AI_DOMAIN),
-      'queued' => __('Queued…', KWIK_AI_DOMAIN),
-      'inProgress' => __('Generating…', KWIK_AI_DOMAIN),
-      'applying' => __('Setting featured image…', KWIK_AI_DOMAIN),
-      'setFeatured' => __('Set as Featured Image', KWIK_AI_DOMAIN),
-      'noPost' => __('No post ID found. Please save the post first.', KWIK_AI_DOMAIN),
-      'noPrompt' => __('Generate or enter a prompt first.', KWIK_AI_DOMAIN),
-      'timeout' => __('Image generation timed out. Please try again.', KWIK_AI_DOMAIN),
-      'error' => __('An error occurred. Please try again.', KWIK_AI_DOMAIN),
-      'success' => __('Featured image set!', KWIK_AI_DOMAIN),
-      'sourceAi' => __('Prompt written by your AI provider. Review and edit it before generating — for example, remove any words an image filter might wrongly flag.', KWIK_AI_DOMAIN),
-      'sourceFallback' => __('Heads up: this is a raw excerpt from the post because the text AI provider did not respond. Check your AI provider connection, or edit the prompt manually.', KWIK_AI_DOMAIN),
+      'generatePrompt' => __('Generate Prompt', 'kwik-ai-tags'),
+      'generatingPrompt' => __('Writing prompt…', 'kwik-ai-tags'),
+      'generate' => __('Generate Image', 'kwik-ai-tags'),
+      'generating' => __('Generating image…', 'kwik-ai-tags'),
+      'queued' => __('Queued…', 'kwik-ai-tags'),
+      'inProgress' => __('Generating…', 'kwik-ai-tags'),
+      'applying' => __('Setting featured image…', 'kwik-ai-tags'),
+      'setFeatured' => __('Set as Featured Image', 'kwik-ai-tags'),
+      'noPost' => __('No post ID found. Please save the post first.', 'kwik-ai-tags'),
+      'noPrompt' => __('Generate or enter a prompt first.', 'kwik-ai-tags'),
+      'timeout' => __('Image generation timed out. Please try again.', 'kwik-ai-tags'),
+      'error' => __('An error occurred. Please try again.', 'kwik-ai-tags'),
+      'success' => __('Featured image set!', 'kwik-ai-tags'),
+      'sourceAi' => __('Prompt written by your AI provider. Review and edit it before generating — for example, remove any words an image filter might wrongly flag.', 'kwik-ai-tags'),
+      'sourceFallback' => __('Heads up: this is a raw excerpt from the post because the text AI provider did not respond. Check your AI provider connection, or edit the prompt manually.', 'kwik-ai-tags'),
     ]
   ]);
 

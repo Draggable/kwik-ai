@@ -15,11 +15,11 @@ if (!defined('ABSPATH')) {
 function kwik_ai_description_block_render($attributes)
 {
   if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('KWIK AI: kwik_ai_description_block_render() called'. print_r($attributes, true));
+    kwik_ai_log('KWIK AI: kwik_ai_description_block_render() called'. wp_json_encode($attributes));
   }
   $description = isset($attributes['description']) ? $attributes['description'] : '';
   if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('KWIK AI: Description content: ' . $description);
+    kwik_ai_log('KWIK AI: Description content: ' . $description);
   }
   
   if (empty($description)) {

@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
  * @return bool True if safe to fetch, false otherwise
  */
 function kwik_ai_validate_url_safety($url) {
-  $parsed_url = parse_url($url);
+  $parsed_url = wp_parse_url($url);
 
   if (!$parsed_url || !isset($parsed_url['host'])) {
     return false;

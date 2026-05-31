@@ -210,7 +210,7 @@ function kwik_ai_tags_post_chat_completion(string $url, array $headers, array $p
   // 'max_completion_tokens'. Switch field names and retry.
   if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 400
       && stripos(wp_remote_retrieve_body($response), 'max_completion_tokens') !== false) {
-    error_log('Kwik AI: Server rejected max_tokens; retrying with max_completion_tokens');
+    kwik_ai_log('Kwik AI: Server rejected max_tokens; retrying with max_completion_tokens');
     unset($payload['max_tokens']);
     $token_field = 'max_completion_tokens';
     $payload[$token_field] = $max_tokens;
@@ -231,7 +231,7 @@ function kwik_ai_tags_post_chat_completion(string $url, array $headers, array $p
 
     if ($content === '' && $finish === 'length') {
       $bigger = max($max_tokens * 8, 2048);
-      error_log('Kwik AI: Empty content with finish_reason=length (likely a reasoning model); retrying with ' . $token_field . '=' . $bigger);
+      kwik_ai_log('Kwik AI: Empty content with finish_reason=length (likely a reasoning model); retrying with ' . $token_field . '=' . $bigger);
       $payload[$token_field] = $bigger;
       $response = $post($payload);
     }
@@ -257,11 +257,11 @@ function kwik_ai_tags_query_ai(string $prompt, array $images): ?string
   $headers = kwik_ai_tags_get_api_headers();
 
   // Log only non-sensitive information
-  error_log('Kwik AI: Provider: ' . $provider);
-  error_log('Kwik AI: Endpoint: ' . $endpoint);
-  error_log('Kwik AI: Model: ' . $model);
-  error_log('Kwik AI: Number of images: ' . count($images));
-  error_log('Kwik AI: Auth configured: ' . (count($headers) > 1 ? 'Yes' : 'No'));
+  kwik_ai_log('Kwik AI: Provider: ' . $provider);
+  kwik_ai_log('Kwik AI: Endpoint: ' . $endpoint);
+  kwik_ai_log('Kwik AI: Model: ' . $model);
+  kwik_ai_log('Kwik AI: Number of images: ' . count($images));
+  kwik_ai_log('Kwik AI: Auth configured: ' . (count($headers) > 1 ? 'Yes' : 'No'));
 
   // Build payload based on provider
   $payload = array();
@@ -278,7 +278,7 @@ function kwik_ai_tags_query_ai(string $prompt, array $images): ?string
     ];
     
     // Log payload without images (too large)
-    error_log('Kwik AI: Payload (without images): ' . json_encode(array_merge($payload, ['images' => '[' . count($images) . ' images]'])));
+    kwik_ai_log('Kwik AI: Payload (without images): ' . json_encode(array_merge($payload, ['images' => '[' . count($images) . ' images]'])));
     
     $response = wp_remote_post(
       $url,
@@ -339,7 +339,7 @@ function kwik_ai_tags_query_ai(string $prompt, array $images): ?string
     );
 
     // Log payload summary, not full content
-    error_log('Kwik AI: Payload: ' . json_encode(array_merge($payload, array('messages' => '[' . count($messages) . ' messages]'))));
+    kwik_ai_log('Kwik AI: Payload: ' . json_encode(array_merge($payload, array('messages' => '[' . count($messages) . ' messages]'))));
 
     $response = kwik_ai_tags_post_chat_completion($url, $headers, $payload, 100);
 
@@ -359,26 +359,26 @@ function kwik_ai_tags_query_ai(string $prompt, array $images): ?string
 function kwik_ai_tags_process_ollama_response($response, $prompt)
 {
   if (is_wp_error($response)) {
-    error_log('Kwik AI: WP Error: ' . $response->get_error_message());
+    kwik_ai_log('Kwik AI: WP Error: ' . $response->get_error_message());
     return null;
   }
 
   $response_code = wp_remote_retrieve_response_code($response);
-  error_log('Kwik AI: Response code: ' . $response_code);
+  kwik_ai_log('Kwik AI: Response code: ' . $response_code);
 
   if ($response_code !== 200) {
     $body = wp_remote_retrieve_body($response);
-    error_log('Kwik AI: HTTP error: ' . $response_code . ' - Response body: ' . substr($body, 0, 200));
+    kwik_ai_log('Kwik AI: HTTP error: ' . $response_code . ' - Response body: ' . substr($body, 0, 200));
     return null;
   }
 
   $body = wp_remote_retrieve_body($response);
-  error_log('Kwik AI: Response body (' . strlen($body) . ' chars)');
+  kwik_ai_log('Kwik AI: Response body (' . strlen($body) . ' chars)');
 
   $data = json_decode($body, true);
 
   if (json_last_error() !== JSON_ERROR_NONE) {
-    error_log('Kwik AI: JSON decode error: ' . json_last_error_msg());
+    kwik_ai_log('Kwik AI: JSON decode error: ' . json_last_error_msg());
 
     // Try to handle streaming response manually
     $lines = explode("\n", trim($body));
@@ -399,7 +399,7 @@ function kwik_ai_tags_process_ollama_response($response, $prompt)
     }
 
     if (!empty($full_response)) {
-      error_log('Kwik AI: Reconstructed response: ' . $full_response);
+      kwik_ai_log('Kwik AI: Reconstructed response: ' . $full_response);
       return trim($full_response);
     }
 
@@ -407,7 +407,7 @@ function kwik_ai_tags_process_ollama_response($response, $prompt)
   }
 
   if (!isset($data['response'])) {
-    error_log('Kwik AI: No response field in data');
+    kwik_ai_log('Kwik AI: No response field in data');
     return null;
   }
 
@@ -423,38 +423,38 @@ function kwik_ai_tags_process_ollama_response($response, $prompt)
 function kwik_ai_tags_process_openai_response($response)
 {
   if (is_wp_error($response)) {
-    error_log('Kwik AI: WP Error: ' . $response->get_error_message());
+    kwik_ai_log('Kwik AI: WP Error: ' . $response->get_error_message());
     return null;
   }
 
   $response_code = wp_remote_retrieve_response_code($response);
-  error_log('Kwik AI: Response code: ' . $response_code);
+  kwik_ai_log('Kwik AI: Response code: ' . $response_code);
 
   if ($response_code !== 200) {
     $body = wp_remote_retrieve_body($response);
-    error_log('Kwik AI: HTTP error: ' . $response_code);
+    kwik_ai_log('Kwik AI: HTTP error: ' . $response_code);
     
     // Try to parse error message
     $error_data = json_decode($body, true);
     if (isset($error_data['error']['message'])) {
-      error_log('Kwik AI: Error message: ' . $error_data['error']['message']);
+      kwik_ai_log('Kwik AI: Error message: ' . $error_data['error']['message']);
     }
     
     return null;
   }
 
   $body = wp_remote_retrieve_body($response);
-  error_log('Kwik AI: Response body (' . strlen($body) . ' chars)');
+  kwik_ai_log('Kwik AI: Response body (' . strlen($body) . ' chars)');
 
   $data = json_decode($body, true);
 
   if (json_last_error() !== JSON_ERROR_NONE) {
-    error_log('Kwik AI: JSON decode error: ' . json_last_error_msg());
+    kwik_ai_log('Kwik AI: JSON decode error: ' . json_last_error_msg());
     return null;
   }
 
   if (!isset($data['choices'][0]['message']['content'])) {
-    error_log('Kwik AI: No content in response');
+    kwik_ai_log('Kwik AI: No content in response');
     return null;
   }
 
@@ -478,10 +478,10 @@ function kwik_ai_tags_query_ai_text_only(string $prompt, ?string $system = null,
   $model = kwik_ai_tags_get_text_model();
   $headers = kwik_ai_tags_get_api_headers();
 
-  error_log('Kwik AI: Provider: ' . $provider);
-  error_log('Kwik AI: Endpoint: ' . $endpoint);
-  error_log('Kwik AI: Model: ' . $model);
-  error_log('Kwik AI: Auth configured: ' . (count($headers) > 1 ? 'Yes' : 'No'));
+  kwik_ai_log('Kwik AI: Provider: ' . $provider);
+  kwik_ai_log('Kwik AI: Endpoint: ' . $endpoint);
+  kwik_ai_log('Kwik AI: Model: ' . $model);
+  kwik_ai_log('Kwik AI: Auth configured: ' . (count($headers) > 1 ? 'Yes' : 'No'));
 
   // Build payload based on provider
   if ($provider === 'custom') {
@@ -502,7 +502,7 @@ function kwik_ai_tags_query_ai_text_only(string $prompt, ?string $system = null,
       'stream' => false,
     );
 
-    error_log('Kwik AI: Trying OpenAI-compatible /chat/completions for custom provider');
+    kwik_ai_log('Kwik AI: Trying OpenAI-compatible /chat/completions for custom provider');
 
     $oai_response = kwik_ai_tags_post_chat_completion(
       $endpoint . '/chat/completions',
@@ -520,9 +520,9 @@ function kwik_ai_tags_query_ai_text_only(string $prompt, ?string $system = null,
       if ($oai_code !== 404 && $oai_code !== 405) {
         return kwik_ai_tags_process_openai_response($oai_response);
       }
-      error_log('Kwik AI: /chat/completions returned ' . $oai_code . '; falling back to /api/generate');
+      kwik_ai_log('Kwik AI: /chat/completions returned ' . $oai_code . '; falling back to /api/generate');
     } else {
-      error_log('Kwik AI: /chat/completions error: ' . $oai_response->get_error_message() . '; falling back to /api/generate');
+      kwik_ai_log('Kwik AI: /chat/completions error: ' . $oai_response->get_error_message() . '; falling back to /api/generate');
     }
 
     // Fall back to native Ollama /api/generate.
@@ -573,7 +573,7 @@ function kwik_ai_tags_query_ai_text_only(string $prompt, ?string $system = null,
       'temperature' => 0.7,
     );
 
-    error_log('Kwik AI: Payload: ' . json_encode($payload));
+    kwik_ai_log('Kwik AI: Payload: ' . json_encode($payload));
 
     $response = kwik_ai_tags_post_chat_completion($url, $headers, $payload, $max_tokens);
 
@@ -661,7 +661,7 @@ function kwik_ai_tags_test_ollama_connection()
   $models = kwik_ai_tags_fetch_models_live('custom', $config['url'], $config['api_key']);
 
   if (!is_array($models) || empty($models)) {
-    return __('Could not connect to the AI provider. Please check the endpoint URL and API key.', KWIK_AI_DOMAIN);
+    return __('Could not connect to the AI provider. Please check the endpoint URL and API key.', 'kwik-ai-tags');
   }
 
   // Check if the selected model is available.
@@ -676,7 +676,7 @@ function kwik_ai_tags_test_ollama_connection()
   if (!$has_model) {
     return sprintf(
       /* translators: %s: model name */
-      __('Connected, but the "%s" model was not found. Please select a different model.', KWIK_AI_DOMAIN),
+      __('Connected, but the "%s" model was not found. Please select a different model.', 'kwik-ai-tags'),
       $selected_model
     );
   }
@@ -719,7 +719,8 @@ function kwik_ai_tags_test_openrouter_connection()
 
   $response_code = wp_remote_retrieve_response_code($response);
   if ($response_code !== 200) {
-    return sprintf(__('HTTP %d', KWIK_AI_DOMAIN), $response_code);
+    /* translators: %d: HTTP response status code */
+    return sprintf(__('HTTP %d', 'kwik-ai-tags'), $response_code);
   }
 
   // Check if model is available
@@ -739,7 +740,8 @@ function kwik_ai_tags_test_openrouter_connection()
   }
   
   if (!$has_model) {
-    return sprintf(__('Connected, but "%s" model not found. Please check the model name.', KWIK_AI_DOMAIN), $selected_model);
+    /* translators: %s: AI model name */
+    return sprintf(__('Connected, but "%s" model not found. Please check the model name.', 'kwik-ai-tags'), $selected_model);
   }
   
   return true;
@@ -778,7 +780,8 @@ function kwik_ai_tags_test_openai_connection()
 
   $response_code = wp_remote_retrieve_response_code($response);
   if ($response_code !== 200) {
-    return sprintf(__('HTTP %d', KWIK_AI_DOMAIN), $response_code);
+    /* translators: %d: HTTP response status code */
+    return sprintf(__('HTTP %d', 'kwik-ai-tags'), $response_code);
   }
 
   // Check if model is available
@@ -798,7 +801,8 @@ function kwik_ai_tags_test_openai_connection()
   }
   
   if (!$has_model) {
-    return sprintf(__('Connected, but "%s" model not found. Please check the model name.', KWIK_AI_DOMAIN), $selected_model);
+    /* translators: %s: AI model name */
+    return sprintf(__('Connected, but "%s" model not found. Please check the model name.', 'kwik-ai-tags'), $selected_model);
   }
   
   return true;

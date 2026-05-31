@@ -147,7 +147,7 @@ function kwik_ai_tags_generate_from_image_urls(int $post_id, array $image_urls)
   /* 4. Parse tags */
   /* ----------------------------------------------------- */
   $tags = kwik_ai_tags_parse_tags($raw_response);
-  kwik_ai_log('Kwik AI: Parsed image tags: ' . print_r($tags, true));
+  kwik_ai_log('Kwik AI: Parsed image tags: ' . wp_json_encode($tags));
 
   return $tags;
 }
@@ -224,7 +224,7 @@ Article text:
   /* 3. Parse tags */
   /* ----------------------------------------------------- */
   $tags = kwik_ai_tags_parse_tags($raw_response);
-  kwik_ai_log('Kwik AI: Parsed text tags: ' . print_r($tags, true));
+  kwik_ai_log('Kwik AI: Parsed text tags: ' . wp_json_encode($tags));
 
   return $tags;
 }

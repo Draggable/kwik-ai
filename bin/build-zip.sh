@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+#
+# Build a clean, WordPress.org-ready plugin ZIP.
+#
+# Produces dist/kwik-ai-tags.zip containing a single top-level "kwik-ai-tags/"
+# folder with only the files that should ship (everything in .distignore is
+# excluded). Requires: rsync, zip.
+#
+# Usage: bash bin/build-zip.sh
+set -euo pipefail
+
+SLUG="kwik-ai-tags"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+STAGE="$(mktemp -d)"
+OUT_DIR="$ROOT/dist"
+OUT_ZIP="$OUT_DIR/$SLUG.zip"
+
+# Build rsync --exclude args from .distignore (skip comments/blank lines).
+EXCLUDES=()
+while IFS= read -r line; do
+  [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+  EXCLUDES+=("--exclude=$line")
+done < "$ROOT/.distignore"
+
+rsync -a "${EXCLUDES[@]}" "$ROOT/" "$STAGE/$SLUG/"
+
+mkdir -p "$OUT_DIR"
+rm -f "$OUT_ZIP"
+( cd "$STAGE" && zip -rq "$OUT_ZIP" "$SLUG" )
+rm -rf "$STAGE"
+
+echo "Built: $OUT_ZIP"
+unzip -l "$OUT_ZIP" | tail -n +4 | head -n -2 | awk '{print "  " $4}'

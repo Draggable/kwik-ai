@@ -148,7 +148,7 @@ function kwik_ai_tags_extract_gallery_shortcode_images(string $content, int $pos
         }
       }
 
-      kwik_ai_log('Kwik AI: Found gallery shortcode with attributes: ' . print_r($atts, true));
+      kwik_ai_log('Kwik AI: Found gallery shortcode with attributes: ' . wp_json_encode($atts));
 
       if ($atts) {
         // Check if specific image IDs are provided
@@ -336,9 +336,10 @@ function kwik_ai_tags_image_to_data_uri(string $url): ?string
 {
   kwik_ai_log('Kwik AI: Converting image to data URI: ' . $url);
 
-  // Method 1: Try WordPress HTTP API first (more reliable)
+  // Method 1: Fetch via the WordPress HTTP API.
   $response = wp_remote_get($url, [
     'timeout' => 30,
+    'redirection' => 5,
     'user-agent' => 'WordPress/' . get_bloginfo('version'),
   ]);
 
@@ -355,90 +356,9 @@ function kwik_ai_tags_image_to_data_uri(string $url): ?string
     }
   }
 
-  kwik_ai_log('Kwik AI: wp_remote_get failed, trying file_get_contents');
+  kwik_ai_log('Kwik AI: wp_remote_get failed, trying local file path');
 
-  // Method 2: Try file_get_contents with context (original method improved)
-  $context = stream_context_create([
-    'http' => [
-      'method' => 'GET',
-      'header' => [
-        'User-Agent: WordPress/' . get_bloginfo('version'),
-        'Accept: image/*',
-      ],
-      'timeout' => 30,
-    ]
-  ]);
-
-  $image_data = @file_get_contents($url, false, $context);
-  if ($image_data !== false) {
-    // Try to determine MIME type
-    $mime_type = null;
-
-    // Method 2a: Use finfo if available
-    if (function_exists('finfo_open')) {
-      $finfo = finfo_open(FILEINFO_MIME_TYPE);
-      if ($finfo) {
-        $mime_type = finfo_buffer($finfo, $image_data);
-        finfo_close($finfo);
-      }
-    }
-
-    // Method 2b: Use getimagesizefromstring if available
-    if (!$mime_type && function_exists('getimagesizefromstring')) {
-      $image_info = getimagesizefromstring($image_data);
-      if ($image_info && isset($image_info['mime'])) {
-        $mime_type = $image_info['mime'];
-      }
-    }
-
-    // Method 2c: Guess from URL extension
-    if (!$mime_type) {
-      $ext = strtolower(pathinfo(parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION));
-      $mime_map = [
-        'jpg' => 'image/jpeg',
-        'jpeg' => 'image/jpeg',
-        'png' => 'image/png',
-        'gif' => 'image/gif',
-        'webp' => 'image/webp',
-        'bmp' => 'image/bmp',
-        'svg' => 'image/svg+xml',
-      ];
-      $mime_type = $mime_map[$ext] ?? 'image/jpeg'; // Default to JPEG
-    }
-
-    kwik_ai_log('Kwik AI: Successfully got image via file_get_contents, type: ' . $mime_type);
-    // Return just base64 data for Ollama (not full data URI)
-    return base64_encode($image_data);
-  }
-
-  kwik_ai_log('Kwik AI: file_get_contents failed, trying cURL');
-
-  // Method 3: Try cURL if available
-  if (function_exists('curl_init')) {
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    curl_setopt($ch, CURLOPT_USERAGENT, 'WordPress/' . get_bloginfo('version'));
-
-    $image_data = curl_exec($ch);
-    $content_type = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
-    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-
-    if ($image_data !== false && $http_code === 200 && $content_type) {
-      // Validate content is actually an image
-      if (strpos($content_type, 'image/') === 0) {
-        kwik_ai_log('Kwik AI: Successfully got image via cURL, type: ' . $content_type);
-        return base64_encode($image_data);
-      }
-    }
-  }
-
-  kwik_ai_log('Kwik AI: cURL failed');
-
-  // Method 4: If it's a local file path, try direct file access
+  // Method 2: If it's a local file path, try direct file access
   if (strpos($url, home_url()) === 0) {
     $file_path = str_replace(home_url(), ABSPATH, $url);
     $file_path = str_replace('//', '/', $file_path);

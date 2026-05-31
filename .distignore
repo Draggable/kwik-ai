@@ -1,0 +1,43 @@
+# Files and directories excluded from the distributed plugin ZIP.
+# Build a clean archive with: wp dist-archive .
+
+# Version control / CI
+.git
+.github
+.gitignore
+.distignore
+
+# Dependencies & build tooling
+node_modules
+vendor
+composer.json
+composer.lock
+package.json
+package-lock.json
+webpack.config.js
+.babelrc
+phpcs.xml
+phpunit.xml
+
+# Source / build artifacts (only the bundled assets/js is shipped)
+assets/src
+dist
+
+# Tests & dev scripts
+tests
+test-web-scraping.php
+bin
+
+# Developer documentation (readme.txt ships instead)
+README.md
+CHANGELOG.md
+MARKETING.md
+TROUBLESHOOTING.md
+BRANCH-GUIDE.md
+BLOCK-IMPLEMENTATION.md
+SECURITY-AUDIT.md
+SECURITY-PATCHES.md
+SECURITY-PATCHES-APPLIED.md
+
+# Duplicate license file (LICENSE is kept)
+LICENSE-2.0-or-later

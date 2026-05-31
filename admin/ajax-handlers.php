@@ -45,16 +45,16 @@ function kwik_ai_tags_ajax_generate()
 
   if (!current_user_can('edit_posts')) {
     kwik_ai_log('Kwik AI: User does not have edit_posts capability');
-    wp_die(esc_html__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+    wp_die(esc_html__('You do not have sufficient permissions.', 'kwik-ai-tags'));
   }
 
   // Rate limiting: 1 request per 15 seconds per user
   if (!kwik_ai_check_rate_limit('kwik_ai_tags_generate', 15)) {
-    wp_send_json_error(__('Please wait a moment before generating tags again.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Please wait a moment before generating tags again.', 'kwik-ai-tags'));
   }
 
   if (!isset($_POST['post_id'])) {
-    wp_send_json_error(__('Missing post ID.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Missing post ID.', 'kwik-ai-tags'));
   }
   $post_id = intval($_POST['post_id']);
   if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -65,7 +65,7 @@ function kwik_ai_tags_ajax_generate()
     if (defined('WP_DEBUG') && WP_DEBUG) {
       kwik_ai_log('Kwik AI: Invalid post ID');
     }
-    wp_send_json_error(__('Invalid post ID.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Invalid post ID.', 'kwik-ai-tags'));
   }
 
   // Check if post has images or sufficient text content
@@ -85,7 +85,7 @@ function kwik_ai_tags_ajax_generate()
     if (defined('WP_DEBUG') && WP_DEBUG) {
       kwik_ai_log('Kwik AI: Insufficient content for analysis');
     }
-    wp_send_json_error(__('Please add images or write at least 50 words to generate AI tags.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Please add images or write at least 50 words to generate AI tags.', 'kwik-ai-tags'));
   }
 
   if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -93,21 +93,21 @@ function kwik_ai_tags_ajax_generate()
   }
   $tags = kwik_ai_tags_generate_for_post($post_id);
   if (defined('WP_DEBUG') && WP_DEBUG) {
-    kwik_ai_log('Kwik AI: Generated tags: ' . print_r($tags, true));
+    kwik_ai_log('Kwik AI: Generated tags: ' . wp_json_encode($tags));
   }
 
   if ($tags === false) {
     if (defined('WP_DEBUG') && WP_DEBUG) {
       kwik_ai_log('Kwik AI: Tag generation failed');
     }
-    wp_send_json_error(__('Failed to generate tags. Please check your AI provider connection and try again.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Failed to generate tags. Please check your AI provider connection and try again.', 'kwik-ai-tags'));
   }
 
   if (empty($tags)) {
     if (defined('WP_DEBUG') && WP_DEBUG) {
       kwik_ai_log('Kwik AI: No tags generated');
     }
-    wp_send_json_error(__('No tags were generated. Try adding more descriptive images.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('No tags were generated. Try adding more descriptive images.', 'kwik-ai-tags'));
   }
 
   if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -124,28 +124,28 @@ function kwik_ai_tags_ajax_apply()
   check_ajax_referer('kwik_ai_tags_ajax', 'nonce');
 
   if (!current_user_can('edit_posts')) {
-    wp_die(esc_html__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+    wp_die(esc_html__('You do not have sufficient permissions.', 'kwik-ai-tags'));
   }
 
   if (!isset($_POST['post_id']) || !isset($_POST['tags'])) {
-    wp_send_json_error(__('Missing required fields.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Missing required fields.', 'kwik-ai-tags'));
   }
 
   $post_id = intval($_POST['post_id']);
   $tags = sanitize_text_field(wp_unslash($_POST['tags']));
 
   if (!$post_id || get_post_status($post_id) === false) {
-    wp_send_json_error(__('Invalid post ID.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Invalid post ID.', 'kwik-ai-tags'));
   }
 
   if (!$tags) {
-    wp_send_json_error(__('No tags provided.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('No tags provided.', 'kwik-ai-tags'));
   }
 
   $tag_array = array_filter(array_map('trim', explode(',', $tags)));
 
   if (empty($tag_array)) {
-    wp_send_json_error(__('No valid tags to apply.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('No valid tags to apply.', 'kwik-ai-tags'));
   }
 
   // Sanitize each tag
@@ -157,7 +157,8 @@ function kwik_ai_tags_ajax_apply()
     wp_send_json_error($result->get_error_message());
   }
 
-  wp_send_json_success(sprintf(__('Successfully applied %d tags to the post!', KWIK_AI_DOMAIN), count($tag_array)));
+  /* translators: %d: number of tags applied */
+  wp_send_json_success(sprintf(__('Successfully applied %d tags to the post!', 'kwik-ai-tags'), count($tag_array)));
 }
 
 /**
@@ -173,16 +174,16 @@ function kwik_ai_description_ajax_generate()
 
   if (!current_user_can('edit_posts')) {
     kwik_ai_log('Kwik AI: User does not have edit_posts capability');
-    wp_die(esc_html__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+    wp_die(esc_html__('You do not have sufficient permissions.', 'kwik-ai-tags'));
   }
 
   // Rate limiting: 1 request per 15 seconds per user
   if (!kwik_ai_check_rate_limit('kwik_ai_description_generate', 15)) {
-    wp_send_json_error(__('Please wait a moment before generating descriptions again.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Please wait a moment before generating descriptions again.', 'kwik-ai-tags'));
   }
 
   if (!isset($_POST['post_id'])) {
-    wp_send_json_error(__('Missing post ID.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Missing post ID.', 'kwik-ai-tags'));
   }
   $post_id = intval($_POST['post_id']);
   if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -193,7 +194,7 @@ function kwik_ai_description_ajax_generate()
     if (defined('WP_DEBUG') && WP_DEBUG) {
       kwik_ai_log('Kwik AI: Invalid post ID');
     }
-    wp_send_json_error(__('Invalid post ID.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Invalid post ID.', 'kwik-ai-tags'));
   }
 
   $max_words = isset($_POST['max_words']) ? absint($_POST['max_words']) : 35;
@@ -215,12 +216,12 @@ function kwik_ai_description_ajax_generate()
     if (defined('WP_DEBUG') && WP_DEBUG) {
       kwik_ai_log('Kwik AI: Excerpt generation failed');
     }
-    wp_send_json_error(__('Failed to generate excerpt. Please check your AI provider connection and try again.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Failed to generate excerpt. Please check your AI provider connection and try again.', 'kwik-ai-tags'));
   }
 
   if (empty($excerpt)) {
     kwik_ai_log('Kwik AI: No excerpt generated');
-    wp_send_json_error(__('No excerpt was generated. Try adding more content to the post first.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('No excerpt was generated. Try adding more content to the post first.', 'kwik-ai-tags'));
   }
 
   // Sanitize AI-generated content before returning it to the editor.
@@ -239,28 +240,28 @@ function kwik_ai_description_ajax_apply()
   check_ajax_referer('kwik_ai_description_ajax', 'nonce');
 
   if (!current_user_can('edit_posts')) {
-    wp_die(esc_html__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+    wp_die(esc_html__('You do not have sufficient permissions.', 'kwik-ai-tags'));
   }
 
   if (!isset($_POST['post_id']) || !isset($_POST['description'])) {
-    wp_send_json_error(__('Missing required fields.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Missing required fields.', 'kwik-ai-tags'));
   }
 
   $post_id = intval($_POST['post_id']);
   $description = sanitize_textarea_field(wp_unslash($_POST['description']));
 
   if (!$post_id || get_post_status($post_id) === false) {
-    wp_send_json_error(__('Invalid post ID.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Invalid post ID.', 'kwik-ai-tags'));
   }
 
   if (!$description) {
-    wp_send_json_error(__('No description provided.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('No description provided.', 'kwik-ai-tags'));
   }
 
   // Description will be inserted into the editor by JavaScript
   // No need to modify post_content here to avoid duplication
 
-  wp_send_json_success(__('Description ready to be inserted into the editor!', KWIK_AI_DOMAIN));
+  wp_send_json_success(__('Description ready to be inserted into the editor!', 'kwik-ai-tags'));
 }
 
 /**
@@ -311,7 +312,7 @@ function kwik_ai_tags_ajax_fetch_models()
   check_ajax_referer('kwik_ai_tags_ajax', 'nonce');
 
   if (!current_user_can('manage_options')) {
-    wp_send_json_error(__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('You do not have sufficient permissions.', 'kwik-ai-tags'));
   }
 
   list($provider, $endpoint, $api_key) = kwik_ai_tags_get_connection_params_from_request();
@@ -325,7 +326,7 @@ function kwik_ai_tags_ajax_fetch_models()
   }
 
   if (!is_array($models) || empty($models)) {
-    wp_send_json_error(__('Failed to fetch models. Please check your endpoint URL and API key.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Failed to fetch models. Please check your endpoint URL and API key.', 'kwik-ai-tags'));
   }
 
   wp_send_json_success(array(
@@ -345,20 +346,20 @@ function kwik_ai_tags_ajax_test_connection()
   check_ajax_referer('kwik_ai_tags_ajax', 'nonce');
 
   if (!current_user_can('manage_options')) {
-    wp_send_json_error(__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('You do not have sufficient permissions.', 'kwik-ai-tags'));
   }
 
   list($provider, $endpoint, $api_key) = kwik_ai_tags_get_connection_params_from_request();
   $model = isset($_POST['model']) ? sanitize_text_field(wp_unslash($_POST['model'])) : '';
 
   if (($provider === 'openrouter' || $provider === 'openai') && empty($api_key)) {
-    wp_send_json_error(__('An API key is required for this provider.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('An API key is required for this provider.', 'kwik-ai-tags'));
   }
 
   $models = kwik_ai_tags_fetch_models_live($provider, $endpoint, $api_key);
 
   if (!is_array($models) || empty($models)) {
-    wp_send_json_error(__('Could not connect. Please check your endpoint URL and API key.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Could not connect. Please check your endpoint URL and API key.', 'kwik-ai-tags'));
   }
 
   // Verify the selected model is actually offered by the provider.
@@ -375,14 +376,14 @@ function kwik_ai_tags_ajax_test_connection()
   $count = count($models);
   $message = sprintf(
     /* translators: %d: number of available models */
-    _n('Connected — %d model available.', 'Connected — %d models available.', $count, KWIK_AI_DOMAIN),
+    _n('Connected — %d model available.', 'Connected — %d models available.', $count, 'kwik-ai-tags'),
     $count
   );
 
   if ($model !== '' && !$model_found) {
     $message .= ' ' . sprintf(
       /* translators: %s: model name */
-      __('Note: the selected model "%s" was not found in the list.', KWIK_AI_DOMAIN),
+      __('Note: the selected model "%s" was not found in the list.', 'kwik-ai-tags'),
       $model
     );
   }
@@ -409,25 +410,25 @@ function kwik_ai_featured_image_ajax_prompt()
   check_ajax_referer('kwik_ai_featured_image_ajax', 'nonce');
 
   if (!current_user_can('edit_posts')) {
-    wp_die(esc_html__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+    wp_die(esc_html__('You do not have sufficient permissions.', 'kwik-ai-tags'));
   }
 
   // Rate limit prompt generation since it calls the text AI provider.
   if (!kwik_ai_check_rate_limit('kwik_ai_featured_image_prompt', 10)) {
-    wp_send_json_error(__('Please wait a moment before generating another prompt.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Please wait a moment before generating another prompt.', 'kwik-ai-tags'));
   }
 
   if (!isset($_POST['post_id'])) {
-    wp_send_json_error(__('Missing post ID.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Missing post ID.', 'kwik-ai-tags'));
   }
   $post_id = intval($_POST['post_id']);
 
   if (!$post_id || get_post_status($post_id) === false) {
-    wp_send_json_error(__('Invalid post ID.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Invalid post ID.', 'kwik-ai-tags'));
   }
 
   if (!current_user_can('edit_post', $post_id)) {
-    wp_send_json_error(__('You cannot edit this post.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('You cannot edit this post.', 'kwik-ai-tags'));
   }
 
   $guidance = isset($_POST['guidance'])
@@ -437,7 +438,7 @@ function kwik_ai_featured_image_ajax_prompt()
   $result = kwik_ai_featured_image_generate_prompt($post_id, $guidance);
 
   if (empty($result['prompt'])) {
-    wp_send_json_error(__('Could not build a prompt. Add a title or content to the post.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Could not build a prompt. Add a title or content to the post.', 'kwik-ai-tags'));
   }
 
   wp_send_json_success(array(
@@ -458,25 +459,25 @@ function kwik_ai_featured_image_ajax_generate()
   check_ajax_referer('kwik_ai_featured_image_ajax', 'nonce');
 
   if (!current_user_can('edit_posts')) {
-    wp_die(esc_html__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+    wp_die(esc_html__('You do not have sufficient permissions.', 'kwik-ai-tags'));
   }
 
   // Rate limit job submission (not status polls) to avoid hammering FAL.
   if (!kwik_ai_check_rate_limit('kwik_ai_featured_image_generate', 15)) {
-    wp_send_json_error(__('Please wait a moment before generating another image.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Please wait a moment before generating another image.', 'kwik-ai-tags'));
   }
 
   if (!isset($_POST['post_id'])) {
-    wp_send_json_error(__('Missing post ID.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Missing post ID.', 'kwik-ai-tags'));
   }
   $post_id = intval($_POST['post_id']);
 
   if (!$post_id || get_post_status($post_id) === false) {
-    wp_send_json_error(__('Invalid post ID.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Invalid post ID.', 'kwik-ai-tags'));
   }
 
   if (!current_user_can('edit_post', $post_id)) {
-    wp_send_json_error(__('You cannot edit this post.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('You cannot edit this post.', 'kwik-ai-tags'));
   }
 
   $prompt = isset($_POST['prompt'])
@@ -484,7 +485,7 @@ function kwik_ai_featured_image_ajax_generate()
     : '';
 
   if (trim($prompt) === '') {
-    wp_send_json_error(__('Please generate or enter a prompt before creating an image.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Please generate or enter a prompt before creating an image.', 'kwik-ai-tags'));
   }
 
   $result = kwik_ai_featured_image_submit($post_id, $prompt);
@@ -510,11 +511,11 @@ function kwik_ai_featured_image_ajax_status()
   check_ajax_referer('kwik_ai_featured_image_ajax', 'nonce');
 
   if (!current_user_can('edit_posts')) {
-    wp_die(esc_html__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+    wp_die(esc_html__('You do not have sufficient permissions.', 'kwik-ai-tags'));
   }
 
   if (empty($_POST['request_id'])) {
-    wp_send_json_error(__('Missing request ID.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Missing request ID.', 'kwik-ai-tags'));
   }
   $request_id = sanitize_text_field(wp_unslash($_POST['request_id']));
 
@@ -522,7 +523,7 @@ function kwik_ai_featured_image_ajax_status()
   $job = get_transient($transient_key);
 
   if (!is_array($job) || (int) $job['user_id'] !== get_current_user_id()) {
-    wp_send_json_error(__('This image request could not be found. Please generate again.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('This image request could not be found. Please generate again.', 'kwik-ai-tags'));
   }
 
   $status = kwik_ai_fal_check_status($job['status_url']);
@@ -564,11 +565,11 @@ function kwik_ai_featured_image_ajax_apply()
   check_ajax_referer('kwik_ai_featured_image_ajax', 'nonce');
 
   if (!current_user_can('edit_posts') || !current_user_can('upload_files')) {
-    wp_die(esc_html__('You do not have sufficient permissions.', KWIK_AI_DOMAIN));
+    wp_die(esc_html__('You do not have sufficient permissions.', 'kwik-ai-tags'));
   }
 
   if (empty($_POST['request_id'])) {
-    wp_send_json_error(__('Missing request ID.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('Missing request ID.', 'kwik-ai-tags'));
   }
   $request_id = sanitize_text_field(wp_unslash($_POST['request_id']));
 
@@ -576,16 +577,16 @@ function kwik_ai_featured_image_ajax_apply()
   $job = get_transient($transient_key);
 
   if (!is_array($job) || (int) $job['user_id'] !== get_current_user_id()) {
-    wp_send_json_error(__('This image request could not be found. Please generate again.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('This image request could not be found. Please generate again.', 'kwik-ai-tags'));
   }
 
   $post_id = (int) $job['post_id'];
   if (!$post_id || !current_user_can('edit_post', $post_id)) {
-    wp_send_json_error(__('You cannot edit this post.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('You cannot edit this post.', 'kwik-ai-tags'));
   }
 
   if (empty($job['image_url'])) {
-    wp_send_json_error(__('The image is not ready yet. Please wait for generation to finish.', KWIK_AI_DOMAIN));
+    wp_send_json_error(__('The image is not ready yet. Please wait for generation to finish.', 'kwik-ai-tags'));
   }
 
   $attachment_id = kwik_ai_featured_image_set_as_thumbnail($post_id, $job['image_url']);
@@ -599,6 +600,6 @@ function kwik_ai_featured_image_ajax_apply()
   wp_send_json_success(array(
     'attachment_id' => $attachment_id,
     'thumbnail'     => wp_get_attachment_image_url($attachment_id, 'medium'),
-    'message'       => __('Featured image set!', KWIK_AI_DOMAIN),
+    'message'       => __('Featured image set!', 'kwik-ai-tags'),
   ));
 }
