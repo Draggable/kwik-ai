@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/kevinchappell/kwik-ai/compare/v1.0.0...v1.0.1) (2026-05-31)
+
+
+### Bug Fixes
+
+* plugin name ([4a60c09](https://github.com/kevinchappell/kwik-ai/commit/4a60c099c7f2a488f4eadb637149f6777caeabb0))
+
 # 1.0.0 (2026-05-31)
 
 
