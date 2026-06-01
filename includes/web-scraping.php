@@ -88,7 +88,7 @@ function kwik_ai_fetch_url_content(string $url): ?string
   // Try WordPress HTTP API with redirect disabled to prevent redirect-based SSRF
   $response = wp_remote_get($url, [
     'timeout' => 30,
-    'user-agent' => 'Mozilla/5.0 (compatible; KwikAI/1.0; +https://kwik-ai.com)',
+    'user-agent' => 'Mozilla/5.0 (compatible; KwikAI/1.0; +https://draggable.io/products/kwik-ai)',
     'headers' => [
       'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     ],
@@ -108,7 +108,7 @@ function kwik_ai_fetch_url_content(string $url): ?string
     'http' => [
       'method' => 'GET',
       'header' => [
-        'User-Agent: Mozilla/5.0 (compatible; KwikAI/1.0; +https://kwik-ai.com)',
+        'User-Agent: Mozilla/5.0 (compatible; KwikAI/1.0; +https://draggable.io/products/kwik-ai)',
         'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       ],
       'timeout' => 30,

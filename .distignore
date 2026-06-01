@@ -30,8 +30,6 @@ dist
 .wordpress-org
 kwik-ai-header.png
 kwik-ai-icon.png
-Screenshot From 2026-05-30 22-21-37.png
-Screenshot From 2026-05-30 22-23-07.png
 
 # Tests & dev scripts
 tests
@@ -43,11 +41,11 @@ README.md
 CHANGELOG.md
 MARKETING.md
 TROUBLESHOOTING.md
+CONTRIBUTING.md
+SECURITY.md
+CODE_OF_CONDUCT.md
 BRANCH-GUIDE.md
 BLOCK-IMPLEMENTATION.md
 SECURITY-AUDIT.md
 SECURITY-PATCHES.md
 SECURITY-PATCHES-APPLIED.md
-
-# Duplicate license file (LICENSE is kept)
-LICENSE-2.0-or-later
