@@ -1,6 +1,6 @@
 {
   "name": "kwik-ai",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "AI-powered tag and description generation for WordPress",
   "main": "index.js",
   "scripts": {

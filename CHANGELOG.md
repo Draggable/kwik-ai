@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/kevinchappell/kwik-ai/compare/v1.0.3...v1.0.4) (2026-06-01)
+
+
+### Bug Fixes
+
+* description controls style, test time constants ([0df93ab](https://github.com/kevinchappell/kwik-ai/commit/0df93ab337d6b64ad27674a7c0bc27e27320dd3d))
+
 ## [1.0.3](https://github.com/kevinchappell/kwik-ai/compare/v1.0.2...v1.0.3) (2026-06-01)
 
 
