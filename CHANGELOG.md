@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/kevinchappell/kwik-ai/compare/v1.0.2...v1.0.3) (2026-06-01)
+
+
+### Bug Fixes
+
+* text-domain and scraper reported url ([5eedc56](https://github.com/kevinchappell/kwik-ai/commit/5eedc56dffa82eb579a9206214a9bac1c10b4ff2))
+
 ## [1.0.2](https://github.com/kevinchappell/kwik-ai/compare/v1.0.1...v1.0.2) (2026-05-31)
 
 
