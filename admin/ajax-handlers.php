@@ -68,6 +68,10 @@ function kwik_ai_tags_ajax_generate()
     wp_send_json_error(__('Invalid post ID.', 'kwik-ai'));
   }
 
+  if (!current_user_can('edit_post', $post_id)) {
+    wp_send_json_error(__('You cannot edit this post.', 'kwik-ai'));
+  }
+
   // Check if post has images or sufficient text content
   $attachments = get_attached_media('image', $post_id);
   $post_content = get_post_field('post_content', $post_id);
@@ -138,6 +142,10 @@ function kwik_ai_tags_ajax_apply()
     wp_send_json_error(__('Invalid post ID.', 'kwik-ai'));
   }
 
+  if (!current_user_can('edit_post', $post_id)) {
+    wp_send_json_error(__('You cannot edit this post.', 'kwik-ai'));
+  }
+
   if (!$tags) {
     wp_send_json_error(__('No tags provided.', 'kwik-ai'));
   }
@@ -197,6 +205,49 @@ function kwik_ai_description_ajax_generate()
     wp_send_json_error(__('Invalid post ID.', 'kwik-ai'));
   }
 
+  if (!current_user_can('edit_post', $post_id)) {
+    wp_send_json_error(__('You cannot edit this post.', 'kwik-ai'));
+  }
+
+  $urls = [];
+  $posted_urls = filter_input(INPUT_POST, 'urls', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY);
+  $posted_urls = is_array($posted_urls) ? wp_unslash($posted_urls) : [];
+  foreach ($posted_urls as $url) {
+    $url = esc_url_raw(trim((string) $url));
+    if ($url !== '') {
+      $urls[] = $url;
+    }
+  }
+  $urls = array_values(array_unique($urls));
+
+  if (!empty($urls)) {
+    $min_words = isset($_POST['min_words']) ? absint($_POST['min_words']) : 50;
+    $max_words = isset($_POST['max_words']) ? absint($_POST['max_words']) : 200;
+    $min_words = max(50, min(500, $min_words));
+    $max_words = max($min_words, min(500, $max_words));
+
+    $description = kwik_ai_description_generate_from_urls($post_id, $urls, $min_words, $max_words);
+    if ($description === false || empty($description)) {
+      wp_send_json_error(__('Failed to generate description from URLs. Please check the URLs and your AI provider connection.', 'kwik-ai'));
+    }
+
+    wp_send_json_success(['description' => sanitize_textarea_field($description)]);
+  }
+
+  if (isset($_POST['min_words'])) {
+    $min_words = absint($_POST['min_words']);
+    $max_words = isset($_POST['max_words']) ? absint($_POST['max_words']) : 200;
+    $min_words = max(50, min(500, $min_words));
+    $max_words = max($min_words, min(500, $max_words));
+
+    $description = kwik_ai_description_generate_for_post($post_id, $min_words, $max_words);
+    if ($description === false || empty($description)) {
+      wp_send_json_error(__('Failed to generate description. Please check your AI provider connection and try again.', 'kwik-ai'));
+    }
+
+    wp_send_json_success(['description' => sanitize_textarea_field($description)]);
+  }
+
   $max_words = isset($_POST['max_words']) ? absint($_POST['max_words']) : 35;
   $max_words = max(20, min(80, $max_words));
 
@@ -252,6 +303,10 @@ function kwik_ai_description_ajax_apply()
 
   if (!$post_id || get_post_status($post_id) === false) {
     wp_send_json_error(__('Invalid post ID.', 'kwik-ai'));
+  }
+
+  if (!current_user_can('edit_post', $post_id)) {
+    wp_send_json_error(__('You cannot edit this post.', 'kwik-ai'));
   }
 
   if (!$description) {

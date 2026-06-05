@@ -247,4 +247,64 @@ class SecurityTest extends TestCase
             'image-processing.php should validate that fetched content has image MIME type'
         );
     }
+
+    public function testUrlSafetyValidatesResolvedPrivateRanges()
+    {
+        $content = $this->getFileContent('includes/web-scraping.php');
+
+        $this->assertMatchesRegularExpression(
+            '/kwik_ai_resolve_host_ips\s*\(/',
+            $content,
+            'web-scraping.php should resolve hostnames before fetching user-provided URLs'
+        );
+
+        $this->assertMatchesRegularExpression(
+            '/FILTER_FLAG_NO_PRIV_RANGE\s*\|\s*FILTER_FLAG_NO_RES_RANGE/',
+            $content,
+            'web-scraping.php should reject private and reserved IP ranges'
+        );
+
+        $this->assertMatchesRegularExpression(
+            '/dns_get_record\s*\(\s*\$host\s*,\s*DNS_AAAA\s*\)/',
+            $content,
+            'web-scraping.php should include IPv6 DNS records in SSRF validation'
+        );
+    }
+
+    public function testAjaxHandlersCheckSpecificPostCapability()
+    {
+        $content = $this->getFileContent('admin/ajax-handlers.php');
+
+        $handlers = [
+            'kwik_ai_tags_ajax_generate',
+            'kwik_ai_tags_ajax_apply',
+            'kwik_ai_description_ajax_generate',
+            'kwik_ai_description_ajax_apply',
+        ];
+
+        foreach ($handlers as $handler) {
+            $this->assertMatchesRegularExpression(
+                '/' . $handler . '\s*\(\s*\).*?current_user_can\s*\(\s*[\'"]edit_post[\'"]\s*,\s*\$post_id\s*\)/s',
+                $content,
+                "$handler should verify the current user can edit the specific post"
+            );
+        }
+    }
+
+    public function testDescriptionAjaxSupportsUrlDescriptions()
+    {
+        $content = $this->getFileContent('admin/ajax-handlers.php');
+
+        $this->assertMatchesRegularExpression(
+            '/filter_input\s*\(\s*INPUT_POST\s*,\s*[\'"]urls[\'"].*?kwik_ai_description_generate_from_urls\s*\(/s',
+            $content,
+            'description AJAX should use submitted URLs for URL-based description generation'
+        );
+
+        $this->assertMatchesRegularExpression(
+            '/isset\s*\(\s*\$_POST\[\'min_words\'\]\s*\).*?kwik_ai_description_generate_for_post\s*\(/s',
+            $content,
+            'description AJAX should support block word-range description generation when URLs are absent'
+        );
+    }
 }

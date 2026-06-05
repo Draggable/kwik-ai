@@ -22,20 +22,66 @@ function kwik_ai_validate_url_safety($url) {
     return false;
   }
 
-  $host = $parsed_url['host'];
-
-  // Block IPv6 loopback and link-local
-  if (strpos($host, '::1') === 0 || strpos($host, 'fe80:') === 0) {
-    kwik_ai_log('Kwik AI: Blocked SSRF attempt to IPv6 private address: ' . $host);
-    return false;
-  }
-
-  // Additional check: ensure URL uses http/https
   if (!isset($parsed_url['scheme']) || !in_array(strtolower($parsed_url['scheme']), ['http', 'https'])) {
     return false;
   }
 
+  $host = trim($parsed_url['host'], '[]');
+  $host = rtrim(strtolower($host), '.');
+
+  if ($host === '' || $host === 'localhost') {
+    kwik_ai_log('Kwik AI: Blocked SSRF attempt to local hostname: ' . $host);
+    return false;
+  }
+
+  $resolved_ips = kwik_ai_resolve_host_ips($host);
+  if (empty($resolved_ips)) {
+    kwik_ai_log('Kwik AI: Could not resolve host for SSRF validation: ' . $host);
+    return false;
+  }
+
+  foreach ($resolved_ips as $ip) {
+    if (kwik_ai_is_private_ip($ip)) {
+      kwik_ai_log('Kwik AI: Blocked SSRF attempt to private/reserved IP: ' . $ip);
+      return false;
+    }
+  }
+
   return true;
+}
+
+/**
+ * Resolve a hostname to every available IPv4/IPv6 address.
+ *
+ * @param string $host Hostname or IP address
+ * @return array<int,string>
+ */
+function kwik_ai_resolve_host_ips(string $host): array
+{
+  if (filter_var($host, FILTER_VALIDATE_IP)) {
+    return [$host];
+  }
+
+  $ips = [];
+  $ipv4_records = gethostbynamel($host);
+  if (is_array($ipv4_records)) {
+    $ips = array_merge($ips, $ipv4_records);
+  }
+
+  if (function_exists('dns_get_record')) {
+    $aaaa_records = dns_get_record($host, DNS_AAAA);
+    if (is_array($aaaa_records)) {
+      foreach ($aaaa_records as $record) {
+        if (!empty($record['ipv6'])) {
+          $ips[] = $record['ipv6'];
+        }
+      }
+    }
+  }
+
+  return array_values(array_unique(array_filter($ips, static function ($ip) {
+    return (bool) filter_var($ip, FILTER_VALIDATE_IP);
+  })));
 }
 
 /**
@@ -46,30 +92,15 @@ function kwik_ai_validate_url_safety($url) {
  */
 function kwik_ai_is_private_ip(string $ip): bool
 {
-  // Block private IP ranges (RFC 1918)
-  $private_ranges = [
-    '/^10\./',                    // 10.0.0.0/8
-    '/^172\.(1[6-9]|2[0-9]|3[0-1])\./',  // 172.16.0.0/12
-    '/^192\.168\./',              // 192.168.0.0/16
-    '/^127\./',                   // Loopback
-    '/^169\.254\./',              // Link-local
-    '/^0\./',                     // Current network
-    '/^224\./',                   // Multicast
-    '/^240\./',                   // Reserved
-  ];
-
-  foreach ($private_ranges as $pattern) {
-    if (preg_match($pattern, $ip)) {
-      return true;
-    }
-  }
-
-  // Block IPv6 loopback and link-local
-  if (strpos($ip, '::1') === 0 || strpos($ip, 'fe80:') === 0) {
+  if (!filter_var($ip, FILTER_VALIDATE_IP)) {
     return true;
   }
 
-  return false;
+  return !filter_var(
+    $ip,
+    FILTER_VALIDATE_IP,
+    FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+  );
 }
 
 /**
