@@ -52,6 +52,53 @@ function kwik_ai_tags_deduplicate_sized_images(array $image_urls): array
 }
 
 /**
+ * Filter attached media down to images actually used by the post.
+ *
+ * get_attached_media() returns every image whose post_parent is this post —
+ * including old uploads that have since been removed from the content. Sending
+ * those orphaned images to the AI wastes requests and produces tags for images
+ * the reader never sees. An image is considered in use when it is the post's
+ * featured image or when its file name appears anywhere in the content (which
+ * also matches resized variants, since the size suffix is stripped).
+ *
+ * @param array  $attachments Attachment objects from get_attached_media().
+ * @param string $content     Post content.
+ * @param int    $post_id     Post ID (for the featured image lookup).
+ * @return array              Attachment URLs that the post actually references.
+ */
+function kwik_ai_tags_filter_referenced_attachments(array $attachments, string $content, int $post_id): array
+{
+  $featured_id = (int) get_post_thumbnail_id($post_id);
+  $image_urls = [];
+
+  foreach ($attachments as $attachment) {
+    $url = wp_get_attachment_url($attachment->ID);
+    if (!$url) {
+      continue;
+    }
+
+    // Always include the featured image — it represents the post even when it
+    // isn't embedded in the body.
+    if ($featured_id && (int) $attachment->ID === $featured_id) {
+      $image_urls[] = $url;
+      continue;
+    }
+
+    // Otherwise include it only when the content references the file, so images
+    // detached from the post are not sent to the AI. Strip the extension and any
+    // -WxH size suffix so a resized variant in the content still matches.
+    $basename = wp_basename((string) wp_parse_url($url, PHP_URL_PATH));
+    $needle = preg_replace('/(-\d+x\d+)?\.[a-zA-Z0-9]+$/', '', $basename);
+
+    if ($needle !== '' && strpos($content, $needle) !== false) {
+      $image_urls[] = $url;
+    }
+  }
+
+  return $image_urls;
+}
+
+/**
  * Extract image URLs from WordPress content (blocks and shortcodes)
  *
  * @param string $content Post content
@@ -358,11 +405,9 @@ function kwik_ai_tags_image_to_data_uri(string $url): ?string
 
   kwik_ai_log('Kwik AI: wp_remote_get failed, trying local file path');
 
-  // Method 2: If it's a local file path, try direct file access
-  if (strpos($url, home_url()) === 0) {
-    $file_path = str_replace(home_url(), ABSPATH, $url);
-    $file_path = str_replace('//', '/', $file_path);
-
+  // Method 2: If it's a local upload, try direct file access.
+  $file_path = kwik_ai_tags_url_to_local_path($url);
+  if ($file_path) {
     kwik_ai_log('Kwik AI: Trying local file path: ' . $file_path);
 
     if (file_exists($file_path) && is_readable($file_path)) {
@@ -377,4 +422,39 @@ function kwik_ai_tags_image_to_data_uri(string $url): ?string
   }
 
   return null; // All methods failed
+}
+
+/**
+ * Resolve the local filesystem path for an image URL.
+ *
+ * Uses the attachment APIs and the configured uploads directory rather than
+ * assuming the site URL maps directly onto ABSPATH, so it works on
+ * subdirectory, multisite, and offloaded/custom uploads setups.
+ *
+ * @param string $url
+ * @return string|null Absolute path, or null if the URL is not a local upload.
+ */
+function kwik_ai_tags_url_to_local_path(string $url): ?string
+{
+  // Prefer the attachment APIs when the URL maps to a known media item.
+  $attachment_id = attachment_url_to_postid($url);
+  if ($attachment_id) {
+    $path = get_attached_file($attachment_id);
+    if ($path) {
+      return $path;
+    }
+  }
+
+  // Fall back to mapping the uploads URL onto its filesystem directory. This
+  // also covers resized/cropped variants that are not attachments themselves.
+  $uploads = wp_upload_dir();
+  if (
+    empty($uploads['error'])
+    && !empty($uploads['baseurl'])
+    && strpos($url, $uploads['baseurl']) === 0
+  ) {
+    return $uploads['basedir'] . substr($url, strlen($uploads['baseurl']));
+  }
+
+  return null;
 }
