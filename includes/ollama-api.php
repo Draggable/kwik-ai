@@ -241,6 +241,54 @@ function kwik_ai_tags_post_chat_completion(string $url, array $headers, array $p
 }
 
 /**
+ * Build the OpenAI-compatible vision messages array for an image tag request.
+ *
+ * Each image is emitted as an `image_url` content part. kwik_ai_tags_image_to_data_uri()
+ * returns raw base64 (no `data:` prefix), which is what Ollama's native
+ * /api/generate wants but not what the OpenAI `image_url` schema expects, so a
+ * `data:image/...;base64,` prefix is added here when it is missing.
+ *
+ * @param string $prompt
+ * @param array  $images Array of base64 (or data-URI) image strings.
+ * @return array         Messages array for a /chat/completions payload.
+ */
+function kwik_ai_tags_build_vision_messages(string $prompt, array $images): array
+{
+  $user_content = array();
+
+  foreach ($images as $image) {
+    // The OpenAI image_url schema needs a full data URI. We lose the original
+    // mime type in conversion, so declare jpeg — vision servers sniff the
+    // decoded bytes rather than trusting this label.
+    $data_uri = (strpos($image, 'data:') === 0)
+      ? $image
+      : 'data:image/jpeg;base64,' . $image;
+
+    $user_content[] = array(
+      'type' => 'image_url',
+      'image_url' => array('url' => $data_uri),
+    );
+  }
+
+  // Add text prompt last so it follows the images.
+  $user_content[] = array(
+    'type' => 'text',
+    'text' => $prompt,
+  );
+
+  return array(
+    array(
+      'role' => 'system',
+      'content' => 'You are an expert at generating concise, relevant tags for content. Respond ONLY with a comma-separated list of tags.',
+    ),
+    array(
+      'role' => 'user',
+      'content' => $user_content,
+    ),
+  );
+}
+
+/**
  * Send a request to the AI provider's generate endpoint.
  *
  * Supports Ollama, OpenRouter, and OpenAI.
@@ -263,13 +311,44 @@ function kwik_ai_tags_query_ai(string $prompt, array $images): ?string
   kwik_ai_log('Kwik AI: Number of images: ' . count($images));
   kwik_ai_log('Kwik AI: Auth configured: ' . (count($headers) > 1 ? 'Yes' : 'No'));
 
-  // Build payload based on provider
-  $payload = array();
-
   if ($provider === 'custom') {
-    // Custom /api/generate endpoint
-    $url = $endpoint . '/api/generate';
+    // "Custom" servers come in two flavors: OpenAI-compatible (Open WebUI,
+    // LM Studio, vLLM, LocalAI — expose /chat/completions) and native Ollama
+    // (exposes /api/generate). Try the OpenAI-compatible endpoint first, to
+    // match how the model list and text requests are handled, and fall back to
+    // Ollama's native endpoint only when that path is absent (404/405/error).
+    // Without this, OpenAI-compatible custom servers reject the image request
+    // with a 405 Method Not Allowed at /api/generate.
+    $messages = kwik_ai_tags_build_vision_messages($prompt, $images);
+    $oai_payload = array(
+      'model' => $model,
+      'messages' => $messages,
+      'stream' => false,
+    );
 
+    kwik_ai_log('Kwik AI: Trying OpenAI-compatible /chat/completions for custom image request');
+
+    $oai_response = kwik_ai_tags_post_chat_completion(
+      $endpoint . '/chat/completions',
+      $headers,
+      $oai_payload,
+      100
+    );
+
+    // A 404/405 means "wrong endpoint" (fall back to Ollama); any other code
+    // (200, 400, 401, 500…) means the endpoint exists, so let
+    // process_openai_response handle it rather than masking a real error.
+    if (!is_wp_error($oai_response)) {
+      $oai_code = wp_remote_retrieve_response_code($oai_response);
+      if ($oai_code !== 404 && $oai_code !== 405) {
+        return kwik_ai_tags_process_openai_response($oai_response);
+      }
+      kwik_ai_log('Kwik AI: /chat/completions returned ' . $oai_code . '; falling back to /api/generate for images');
+    } else {
+      kwik_ai_log('Kwik AI: /chat/completions error: ' . $oai_response->get_error_message() . '; falling back to /api/generate for images');
+    }
+
+    // Fall back to native Ollama /api/generate, which takes raw base64 images.
     $payload = [
       'model' => $model,
       'prompt' => $prompt,
@@ -281,7 +360,7 @@ function kwik_ai_tags_query_ai(string $prompt, array $images): ?string
     kwik_ai_log('Kwik AI: Payload (without images): ' . json_encode(array_merge($payload, ['images' => '[' . count($images) . ' images]'])));
 
     $response = wp_remote_post(
-      $url,
+      $endpoint . '/api/generate',
       [
         'body' => wp_json_encode($payload),
         'headers' => array_merge($headers, array('Content-Type' => 'application/json')),
@@ -295,40 +374,7 @@ function kwik_ai_tags_query_ai(string $prompt, array $images): ?string
     // OpenRouter/OpenAI /chat/completions endpoint
     $url = $endpoint . '/chat/completions';
 
-    // Build messages array
-    $messages = array();
-
-    // System message
-    $messages[] = array(
-      'role' => 'system',
-      'content' => 'You are an expert at generating concise, relevant tags for content. Respond ONLY with a comma-separated list of tags.',
-    );
-
-    // User message - build content based on whether we have images
-    $user_content = array();
-
-    if (!empty($images)) {
-      // Add image data
-      foreach ($images as $image) {
-        $user_content[] = array(
-          'type' => 'image_url',
-          'image_url' => array(
-            'url' => $image, // data URI
-          ),
-        );
-      }
-    }
-
-    // Add text prompt
-    $user_content[] = array(
-      'type' => 'text',
-      'text' => $prompt,
-    );
-
-    $messages[] = array(
-      'role' => 'user',
-      'content' => $user_content,
-    );
+    $messages = kwik_ai_tags_build_vision_messages($prompt, $images);
 
     // Build payload (token limit added by the helper, which handles the
     // max_tokens vs max_completion_tokens difference between models).

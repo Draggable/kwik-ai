@@ -143,12 +143,9 @@ function kwik_ai_tags_meta_box_callback($post)
         }
         ?><br>
         Total Images: <?php
-        $image_urls = [];
-        foreach ($attachments as $attachment) {
-          $url = wp_get_attachment_url($attachment->ID);
-          if ($url)
-            $image_urls[] = $url;
-        }
+        // Mirror tag generation: only attached images the post actually
+        // references are sent, then merged with block/content images.
+        $image_urls = kwik_ai_tags_filter_referenced_attachments($attachments, $content, $post->ID);
         $image_urls = array_merge($image_urls, $block_images);
         $image_urls = array_unique($image_urls);
         $image_urls = kwik_ai_tags_deduplicate_sized_images($image_urls);
@@ -157,9 +154,13 @@ function kwik_ai_tags_meta_box_callback($post)
        Word Count: <?php
         $word_count = str_word_count(wp_strip_all_tags($content));
         echo esc_html($word_count);
+        // Text is a co-source above KWIK_AI_MIN_WORDS, and a fallback (down to
+        // KWIK_AI_MIN_WORDS_FALLBACK) when no image tags are produced.
         $text_analysis_status = $word_count >= KWIK_AI_MIN_WORDS
           ? esc_html__('text analysis enabled', 'kwik-ai')
-          : esc_html__('text analysis disabled', 'kwik-ai');
+          : ($word_count >= KWIK_AI_MIN_WORDS_FALLBACK
+            ? esc_html__('text analysis enabled (fallback)', 'kwik-ai')
+            : esc_html__('text analysis disabled', 'kwik-ai'));
         echo ' (' . esc_html($text_analysis_status) . ')';
         ?>
       </div>

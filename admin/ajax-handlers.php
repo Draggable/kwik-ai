@@ -81,11 +81,11 @@ function kwik_ai_tags_ajax_generate()
     kwik_ai_log('Kwik AI: Found ' . count($attachments) . ' attached images, ' . count($block_images) . ' block images, and ' . $word_count . ' words');
   }
 
-  if ($total_images === 0 && $word_count < KWIK_AI_MIN_WORDS) {
+  if ($total_images === 0 && $word_count < KWIK_AI_MIN_WORDS_FALLBACK) {
     if (defined('WP_DEBUG') && WP_DEBUG) {
       kwik_ai_log('Kwik AI: Insufficient content for analysis');
     }
-    wp_send_json_error(__('Please add images or write at least 50 words to generate AI tags.', 'kwik-ai'));
+    wp_send_json_error(__('Please add an image or write a bit more text to generate AI tags.', 'kwik-ai'));
   }
 
   if (defined('WP_DEBUG') && WP_DEBUG) {

@@ -52,6 +52,53 @@ function kwik_ai_tags_deduplicate_sized_images(array $image_urls): array
 }
 
 /**
+ * Filter attached media down to images actually used by the post.
+ *
+ * get_attached_media() returns every image whose post_parent is this post —
+ * including old uploads that have since been removed from the content. Sending
+ * those orphaned images to the AI wastes requests and produces tags for images
+ * the reader never sees. An image is considered in use when it is the post's
+ * featured image or when its file name appears anywhere in the content (which
+ * also matches resized variants, since the size suffix is stripped).
+ *
+ * @param array  $attachments Attachment objects from get_attached_media().
+ * @param string $content     Post content.
+ * @param int    $post_id     Post ID (for the featured image lookup).
+ * @return array              Attachment URLs that the post actually references.
+ */
+function kwik_ai_tags_filter_referenced_attachments(array $attachments, string $content, int $post_id): array
+{
+  $featured_id = (int) get_post_thumbnail_id($post_id);
+  $image_urls = [];
+
+  foreach ($attachments as $attachment) {
+    $url = wp_get_attachment_url($attachment->ID);
+    if (!$url) {
+      continue;
+    }
+
+    // Always include the featured image — it represents the post even when it
+    // isn't embedded in the body.
+    if ($featured_id && (int) $attachment->ID === $featured_id) {
+      $image_urls[] = $url;
+      continue;
+    }
+
+    // Otherwise include it only when the content references the file, so images
+    // detached from the post are not sent to the AI. Strip the extension and any
+    // -WxH size suffix so a resized variant in the content still matches.
+    $basename = wp_basename((string) wp_parse_url($url, PHP_URL_PATH));
+    $needle = preg_replace('/(-\d+x\d+)?\.[a-zA-Z0-9]+$/', '', $basename);
+
+    if ($needle !== '' && strpos($content, $needle) !== false) {
+      $image_urls[] = $url;
+    }
+  }
+
+  return $image_urls;
+}
+
+/**
  * Extract image URLs from WordPress content (blocks and shortcodes)
  *
  * @param string $content Post content

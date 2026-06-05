@@ -21,6 +21,8 @@ function kwik_ai_tags_generate_for_post(int $post_id)
 
   $all_tags = [];
 
+  $post_content = get_post_field('post_content', $post_id);
+
   /* ----------------------------------------------------- */
   /* 1. Try to get tags from images */
   /* ----------------------------------------------------- */
@@ -28,19 +30,16 @@ function kwik_ai_tags_generate_for_post(int $post_id)
   // Get both attached images and images from block content
   $image_urls = [];
 
-  // Traditional attached images
+  // Traditional attached images. get_attached_media() returns every image
+  // whose post_parent is this post — including old uploads that have since been
+  // removed from the content. Send only the ones actually used by the post so
+  // detached images aren't analyzed (and don't fail an OpenAI-compatible
+  // endpoint that the orphaned request would otherwise hit).
   $attachments = get_attached_media('image', $post_id);
-  kwik_ai_log('Kwik AI: Found ' . count($attachments) . ' attached images');
-
-  foreach ($attachments as $attachment) {
-    $url = wp_get_attachment_url($attachment->ID);
-    if ($url) {
-      $image_urls[] = $url;
-    }
-  }
+  $image_urls = kwik_ai_tags_filter_referenced_attachments($attachments, $post_content, $post_id);
+  kwik_ai_log('Kwik AI: Using ' . count($image_urls) . ' of ' . count($attachments) . ' attached images referenced by the post');
 
   // Images from block content (modern WordPress)
-  $post_content = get_post_field('post_content', $post_id);
   $block_images = kwik_ai_tags_extract_block_images($post_content, $post_id);
   kwik_ai_log('Kwik AI: Found ' . count($block_images) . ' block images');
 
@@ -61,12 +60,17 @@ function kwik_ai_tags_generate_for_post(int $post_id)
   /* ----------------------------------------------------- */
   /* 2. Try to get tags from text content */
   /* ----------------------------------------------------- */
-  $post_content = get_post_field('post_content', $post_id);
   $word_count = str_word_count(wp_strip_all_tags($post_content));
 
   kwik_ai_log('Kwik AI: Post has ' . $word_count . ' words');
 
-  if ($word_count >= KWIK_AI_MIN_WORDS) {
+  // Always try text when there's enough of it. When the images produced no tags
+  // (none found, all detached, or the provider failed), drop to a lower floor
+  // so the post can still be tagged from its words rather than relying solely
+  // on images.
+  $text_floor = empty($all_tags) ? KWIK_AI_MIN_WORDS_FALLBACK : KWIK_AI_MIN_WORDS;
+
+  if ($word_count >= $text_floor) {
     $text_tags = kwik_ai_tags_generate_from_text($post_id, $post_content);
     if ($text_tags) {
       $all_tags = array_merge($all_tags, $text_tags);

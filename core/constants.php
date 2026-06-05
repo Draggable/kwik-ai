@@ -18,6 +18,11 @@ define('KWIK_AI_MAX_TAGS', 8);
 // Minimum words required for text analysis
 define('KWIK_AI_MIN_WORDS', 50);
 
+// Lower word floor used when images produced no tags (none found, all detached,
+// or the provider failed). Lets a post still be tagged from its text instead of
+// depending solely on images.
+define('KWIK_AI_MIN_WORDS_FALLBACK', 10);
+
 // Maximum length for generated descriptions
 define('KWIK_AI_MAX_DESCRIPTION_LENGTH', 2000);
 
