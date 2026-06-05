@@ -1,69 +1,69 @@
-## [1.0.5](https://github.com/kevinchappell/kwik-ai/compare/v1.0.4...v1.0.5) (2026-06-05)
+## [1.0.5](https://github.com/Draggable/kwik-ai/compare/v1.0.4...v1.0.5) (2026-06-05)
 
 
 ### Bug Fixes
 
-* generate tags when images are removed from post ([24b1738](https://github.com/kevinchappell/kwik-ai/commit/24b1738ba91eec0df054139978651810839ded05))
-* resolve local image paths via attachment/uploads APIs ([8041ff1](https://github.com/kevinchappell/kwik-ai/commit/8041ff1d4699c8dc32362e5bb249e42628d6a17b))
+* generate tags when images are removed from post ([24b1738](https://github.com/Draggable/kwik-ai/commit/24b1738ba91eec0df054139978651810839ded05))
+* resolve local image paths via attachment/uploads APIs ([8041ff1](https://github.com/Draggable/kwik-ai/commit/8041ff1d4699c8dc32362e5bb249e42628d6a17b))
 
-## [1.0.4](https://github.com/kevinchappell/kwik-ai/compare/v1.0.3...v1.0.4) (2026-06-01)
-
-
-### Bug Fixes
-
-* description controls style, test time constants ([0df93ab](https://github.com/kevinchappell/kwik-ai/commit/0df93ab337d6b64ad27674a7c0bc27e27320dd3d))
-
-## [1.0.3](https://github.com/kevinchappell/kwik-ai/compare/v1.0.2...v1.0.3) (2026-06-01)
+## [1.0.4](https://github.com/Draggable/kwik-ai/compare/v1.0.3...v1.0.4) (2026-06-01)
 
 
 ### Bug Fixes
 
-* text-domain and scraper reported url ([5eedc56](https://github.com/kevinchappell/kwik-ai/commit/5eedc56dffa82eb579a9206214a9bac1c10b4ff2))
+* description controls style, test time constants ([0df93ab](https://github.com/Draggable/kwik-ai/commit/0df93ab337d6b64ad27674a7c0bc27e27320dd3d))
 
-## [1.0.2](https://github.com/kevinchappell/kwik-ai/compare/v1.0.1...v1.0.2) (2026-05-31)
-
-
-### Bug Fixes
-
-* readme short description length ([24dca12](https://github.com/kevinchappell/kwik-ai/commit/24dca125728bce547b4911e7266c8278d490d77d))
-
-## [1.0.1](https://github.com/kevinchappell/kwik-ai/compare/v1.0.0...v1.0.1) (2026-05-31)
+## [1.0.3](https://github.com/Draggable/kwik-ai/compare/v1.0.2...v1.0.3) (2026-06-01)
 
 
 ### Bug Fixes
 
-* plugin name ([4a60c09](https://github.com/kevinchappell/kwik-ai/commit/4a60c099c7f2a488f4eadb637149f6777caeabb0))
+* text-domain and scraper reported url ([5eedc56](https://github.com/Draggable/kwik-ai/commit/5eedc56dffa82eb579a9206214a9bac1c10b4ff2))
+
+## [1.0.2](https://github.com/Draggable/kwik-ai/compare/v1.0.1...v1.0.2) (2026-05-31)
+
+
+### Bug Fixes
+
+* readme short description length ([24dca12](https://github.com/Draggable/kwik-ai/commit/24dca125728bce547b4911e7266c8278d490d77d))
+
+## [1.0.1](https://github.com/Draggable/kwik-ai/compare/v1.0.0...v1.0.1) (2026-05-31)
+
+
+### Bug Fixes
+
+* plugin name ([4a60c09](https://github.com/Draggable/kwik-ai/commit/4a60c099c7f2a488f4eadb637149f6777caeabb0))
 
 # 1.0.0 (2026-05-31)
 
 
 ### Bug Fixes
 
-* add guard clauses ([3c1f0a6](https://github.com/kevinchappell/kwik-ai/commit/3c1f0a655aa120b06d694ae1f5f4e33c397cedb9))
-* **ci:** repair phpcs.xml ruleset and fix security sniff violations ([5c1416a](https://github.com/kevinchappell/kwik-ai/commit/5c1416a74424e58e4d6dec5212a310079062f56e))
-* description block, exclude react from build ([cd8c3d2](https://github.com/kevinchappell/kwik-ai/commit/cd8c3d26ac1710e02e9e5f9b99db80909ebb5569))
-* **HH-2:** separate API key sanitization callbacks per provider ([769762a](https://github.com/kevinchappell/kwik-ai/commit/769762add2bf304483df46168e88f5b97c6b4811))
-* **HH-3:** enable SSL verification on cURL image fetching ([7fddd75](https://github.com/kevinchappell/kwik-ai/commit/7fddd75b7d93c100d7c2c87cca099f43ab88d2a7))
-* **HH-4:** correct function name mismatches causing fatal errors ([4702162](https://github.com/kevinchappell/kwik-ai/commit/470216204c22ee8bff8455ec9a1958f1913edccf))
-* **LL-2:** sanitize AI-generated content before storing in block attributes ([7520af5](https://github.com/kevinchappell/kwik-ai/commit/7520af51c09ceec1f963c3c9783655b32f6ca457))
-* **LL-3:** add rate limiting to AJAX endpoints ([78aad37](https://github.com/kevinchappell/kwik-ai/commit/78aad373ceaf8d549c1517ccb7dbd49d4bc4db2d))
-* **MM-1,MM-3:** escape debug output + gate all error_log calls ([ecd0c5a](https://github.com/kevinchappell/kwik-ai/commit/ecd0c5a0cd3447026ca36a4fbb095dbe03e57145))
-* **MM-4,LL-4:** remove unused nonce fields + gate debug section ([6adac32](https://github.com/kevinchappell/kwik-ai/commit/6adac3285aba4c1d04d8a70d0bc624c32ef46a86))
-* **MM-5,MM-6,LL-1:** strengthen encryption + remove stale constants ([5c892ab](https://github.com/kevinchappell/kwik-ai/commit/5c892ab42ab04e9cedadbf5e2923d3ae4f00d6a8))
-* **MM-7:** harden SSRF protection against DNS rebinding ([b74469d](https://github.com/kevinchappell/kwik-ai/commit/b74469da65135e7ae6f83c4eab79c48167b76e37))
-* node v24 required for semantic release ([af534f6](https://github.com/kevinchappell/kwik-ai/commit/af534f649202e03b543f04525344b598cf5958fa))
-* permissions ([1890855](https://github.com/kevinchappell/kwik-ai/commit/189085546cd5358f6e7ce547a683eaf1bfc0f3c0))
-* plugin check issues, prepare for submission to repository ([58794eb](https://github.com/kevinchappell/kwik-ai/commit/58794eb2de048aa57c12d25b7043d60b68c26411))
+* add guard clauses ([3c1f0a6](https://github.com/Draggable/kwik-ai/commit/3c1f0a655aa120b06d694ae1f5f4e33c397cedb9))
+* **ci:** repair phpcs.xml ruleset and fix security sniff violations ([5c1416a](https://github.com/Draggable/kwik-ai/commit/5c1416a74424e58e4d6dec5212a310079062f56e))
+* description block, exclude react from build ([cd8c3d2](https://github.com/Draggable/kwik-ai/commit/cd8c3d26ac1710e02e9e5f9b99db80909ebb5569))
+* **HH-2:** separate API key sanitization callbacks per provider ([769762a](https://github.com/Draggable/kwik-ai/commit/769762add2bf304483df46168e88f5b97c6b4811))
+* **HH-3:** enable SSL verification on cURL image fetching ([7fddd75](https://github.com/Draggable/kwik-ai/commit/7fddd75b7d93c100d7c2c87cca099f43ab88d2a7))
+* **HH-4:** correct function name mismatches causing fatal errors ([4702162](https://github.com/Draggable/kwik-ai/commit/470216204c22ee8bff8455ec9a1958f1913edccf))
+* **LL-2:** sanitize AI-generated content before storing in block attributes ([7520af5](https://github.com/Draggable/kwik-ai/commit/7520af51c09ceec1f963c3c9783655b32f6ca457))
+* **LL-3:** add rate limiting to AJAX endpoints ([78aad37](https://github.com/Draggable/kwik-ai/commit/78aad373ceaf8d549c1517ccb7dbd49d4bc4db2d))
+* **MM-1,MM-3:** escape debug output + gate all error_log calls ([ecd0c5a](https://github.com/Draggable/kwik-ai/commit/ecd0c5a0cd3447026ca36a4fbb095dbe03e57145))
+* **MM-4,LL-4:** remove unused nonce fields + gate debug section ([6adac32](https://github.com/Draggable/kwik-ai/commit/6adac3285aba4c1d04d8a70d0bc624c32ef46a86))
+* **MM-5,MM-6,LL-1:** strengthen encryption + remove stale constants ([5c892ab](https://github.com/Draggable/kwik-ai/commit/5c892ab42ab04e9cedadbf5e2923d3ae4f00d6a8))
+* **MM-7:** harden SSRF protection against DNS rebinding ([b74469d](https://github.com/Draggable/kwik-ai/commit/b74469da65135e7ae6f83c4eab79c48167b76e37))
+* node v24 required for semantic release ([af534f6](https://github.com/Draggable/kwik-ai/commit/af534f649202e03b543f04525344b598cf5958fa))
+* permissions ([1890855](https://github.com/Draggable/kwik-ai/commit/189085546cd5358f6e7ce547a683eaf1bfc0f3c0))
+* plugin check issues, prepare for submission to repository ([58794eb](https://github.com/Draggable/kwik-ai/commit/58794eb2de048aa57c12d25b7043d60b68c26411))
 
 
 ### Features
 
-* add release flow ([a0fe375](https://github.com/kevinchappell/kwik-ai/commit/a0fe37542522a54e8889a5c0f768e8d9655e0730))
-* AI excerpt generation + recover minified JS and fix build ([1895c88](https://github.com/kevinchappell/kwik-ai/commit/1895c88104c5c76a3424699d8a2531f01c5cdf2b))
-* image generation ([29d18ee](https://github.com/kevinchappell/kwik-ai/commit/29d18ee4f3049508239af1ac2d04411b26848fae))
-* merge multi-ai-providers branch ([1371a9a](https://github.com/kevinchappell/kwik-ai/commit/1371a9ad243f5f6f6c9cd65e409a86ff7078b88c))
-* model selector ([7077ccc](https://github.com/kevinchappell/kwik-ai/commit/7077ccc5f9aca4f1ded228c734709cb5150fdc59))
-* test connection flow ([f77fd43](https://github.com/kevinchappell/kwik-ai/commit/f77fd43e2d74706d705a6d9ade482bece6a30671))
+* add release flow ([a0fe375](https://github.com/Draggable/kwik-ai/commit/a0fe37542522a54e8889a5c0f768e8d9655e0730))
+* AI excerpt generation + recover minified JS and fix build ([1895c88](https://github.com/Draggable/kwik-ai/commit/1895c88104c5c76a3424699d8a2531f01c5cdf2b))
+* image generation ([29d18ee](https://github.com/Draggable/kwik-ai/commit/29d18ee4f3049508239af1ac2d04411b26848fae))
+* merge multi-ai-providers branch ([1371a9a](https://github.com/Draggable/kwik-ai/commit/1371a9ad243f5f6f6c9cd65e409a86ff7078b88c))
+* model selector ([7077ccc](https://github.com/Draggable/kwik-ai/commit/7077ccc5f9aca4f1ded228c734709cb5150fdc59))
+* test connection flow ([f77fd43](https://github.com/Draggable/kwik-ai/commit/f77fd43e2d74706d705a6d9ade482bece6a30671))
 
 # KWIK AI Tags Plugin - Changelog
 

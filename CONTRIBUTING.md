@@ -10,7 +10,7 @@ You'll need PHP 7.4+, Node.js, Composer, and a local WordPress install.
 
 ```bash
 # Clone into your WordPress plugins directory
-git clone https://github.com/kevinchappell/kwik-ai.git
+git clone https://github.com/Draggable/kwik-ai.git
 cd kwik-ai
 
 # Install dev dependencies (also installs the git hooks via lefthook)

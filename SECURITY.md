@@ -11,7 +11,7 @@ you are running the most recent release before reporting an issue.
 discussions, or pull requests.**
 
 Instead, report them privately through GitHub's
-[private vulnerability reporting](https://github.com/kevinchappell/kwik-ai/security/advisories/new):
+[private vulnerability reporting](https://github.com/Draggable/kwik-ai/security/advisories/new):
 
 1. Go to the **Security** tab of the repository.
 2. Click **Report a vulnerability**.
