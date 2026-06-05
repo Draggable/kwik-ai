@@ -1,3 +1,11 @@
+## [1.0.5](https://github.com/kevinchappell/kwik-ai/compare/v1.0.4...v1.0.5) (2026-06-05)
+
+
+### Bug Fixes
+
+* generate tags when images are removed from post ([24b1738](https://github.com/kevinchappell/kwik-ai/commit/24b1738ba91eec0df054139978651810839ded05))
+* resolve local image paths via attachment/uploads APIs ([8041ff1](https://github.com/kevinchappell/kwik-ai/commit/8041ff1d4699c8dc32362e5bb249e42628d6a17b))
+
 ## [1.0.4](https://github.com/kevinchappell/kwik-ai/compare/v1.0.3...v1.0.4) (2026-06-01)
 
 
