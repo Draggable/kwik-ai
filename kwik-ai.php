@@ -3,7 +3,7 @@
  * Plugin Name: Kwik AI
  * Plugin URI: https://draggable.io/products/kwik-ai
  * Description: Auto-tag posts with AI, generate post descriptions from images or scraped URLs, and create AI featured images. Supports Ollama, OpenRouter, and OpenAI.
- * Version: 1.0.5
+ * Version: 1.0.6
  * Author: Draggable
  * Author URI: https://draggable.io
  * Requires at least: 5.6

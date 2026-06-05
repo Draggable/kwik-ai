@@ -1,3 +1,10 @@
+## [1.0.6](https://github.com/Draggable/kwik-ai/compare/v1.0.5...v1.0.6) (2026-06-05)
+
+
+### Bug Fixes
+
+* validate private ip ranges forweb scraper, fix url description handler ([9fa8747](https://github.com/Draggable/kwik-ai/commit/9fa874761192185936d2dea1fadd9400994410d5))
+
 ## [1.0.5](https://github.com/Draggable/kwik-ai/compare/v1.0.4...v1.0.5) (2026-06-05)
 
 
