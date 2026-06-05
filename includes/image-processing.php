@@ -358,11 +358,9 @@ function kwik_ai_tags_image_to_data_uri(string $url): ?string
 
   kwik_ai_log('Kwik AI: wp_remote_get failed, trying local file path');
 
-  // Method 2: If it's a local file path, try direct file access
-  if (strpos($url, home_url()) === 0) {
-    $file_path = str_replace(home_url(), ABSPATH, $url);
-    $file_path = str_replace('//', '/', $file_path);
-
+  // Method 2: If it's a local upload, try direct file access.
+  $file_path = kwik_ai_tags_url_to_local_path($url);
+  if ($file_path) {
     kwik_ai_log('Kwik AI: Trying local file path: ' . $file_path);
 
     if (file_exists($file_path) && is_readable($file_path)) {
@@ -377,4 +375,39 @@ function kwik_ai_tags_image_to_data_uri(string $url): ?string
   }
 
   return null; // All methods failed
+}
+
+/**
+ * Resolve the local filesystem path for an image URL.
+ *
+ * Uses the attachment APIs and the configured uploads directory rather than
+ * assuming the site URL maps directly onto ABSPATH, so it works on
+ * subdirectory, multisite, and offloaded/custom uploads setups.
+ *
+ * @param string $url
+ * @return string|null Absolute path, or null if the URL is not a local upload.
+ */
+function kwik_ai_tags_url_to_local_path(string $url): ?string
+{
+  // Prefer the attachment APIs when the URL maps to a known media item.
+  $attachment_id = attachment_url_to_postid($url);
+  if ($attachment_id) {
+    $path = get_attached_file($attachment_id);
+    if ($path) {
+      return $path;
+    }
+  }
+
+  // Fall back to mapping the uploads URL onto its filesystem directory. This
+  // also covers resized/cropped variants that are not attachments themselves.
+  $uploads = wp_upload_dir();
+  if (
+    empty($uploads['error'])
+    && !empty($uploads['baseurl'])
+    && strpos($url, $uploads['baseurl']) === 0
+  ) {
+    return $uploads['basedir'] . substr($url, strlen($uploads['baseurl']));
+  }
+
+  return null;
 }
