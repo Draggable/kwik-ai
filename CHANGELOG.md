@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/Draggable/kwik-ai/compare/v1.0.7...v1.1.0) (2026-06-12)
+
+
+### Features
+
+* add optional guidance for ai generation descriptions from links ([4f6ebe3](https://github.com/Draggable/kwik-ai/commit/4f6ebe34b2c8bdfd2d7135090f1f078bc73ac897))
+
 ## [1.0.7](https://github.com/Draggable/kwik-ai/compare/v1.0.6...v1.0.7) (2026-06-12)
 
 
