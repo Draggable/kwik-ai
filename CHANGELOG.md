@@ -1,3 +1,10 @@
+## [1.0.7](https://github.com/Draggable/kwik-ai/compare/v1.0.6...v1.0.7) (2026-06-12)
+
+
+### Bug Fixes
+
+* use WordPress HTTP and Filesystem APIs instead of file_get_contents ([3fa65b7](https://github.com/Draggable/kwik-ai/commit/3fa65b7ac48f11aaff9f065391e361da7fcf33ed))
+
 ## [1.0.6](https://github.com/Draggable/kwik-ai/compare/v1.0.5...v1.0.6) (2026-06-05)
 
 
