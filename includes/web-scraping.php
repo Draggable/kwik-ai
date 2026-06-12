@@ -110,7 +110,7 @@ function kwik_ai_is_private_ip(string $ip): bool
  * return a safe IP during validation, then a private IP during fetch.
  *
  * @param string $url URL to fetch
- * @return string|false Content or false on failure
+ * @return string|null Content or null on failure
  */
 function kwik_ai_fetch_url_content(string $url): ?string
 {
@@ -132,28 +132,12 @@ function kwik_ai_fetch_url_content(string $url): ?string
     return $content;
   }
 
-  kwik_ai_log('Kwik AI: wp_remote_get failed, trying file_get_contents');
-
-  // Try file_get_contents with context
-  $context = stream_context_create([
-    'http' => [
-      'method' => 'GET',
-      'header' => [
-        'User-Agent: Mozilla/5.0 (compatible; KwikAI/1.0; +https://draggable.io/products/kwik-ai)',
-        'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      ],
-      'timeout' => 30,
-    ]
-  ]);
-
-  $content = @file_get_contents($url, false, $context);
-  if ($content !== false) {
-    kwik_ai_log('Kwik AI: Successfully fetched content via file_get_contents (' . strlen($content) . ' chars)');
-    return $content;
+  if (is_wp_error($response)) {
+    kwik_ai_log('Kwik AI: wp_remote_get failed: ' . $response->get_error_message());
+  } else {
+    kwik_ai_log('Kwik AI: wp_remote_get returned HTTP ' . wp_remote_retrieve_response_code($response));
   }
-
-  kwik_ai_log('Kwik AI: file_get_contents failed');
-  return false;
+  return null;
 }
 
 /**

@@ -405,13 +405,19 @@ function kwik_ai_tags_image_to_data_uri(string $url): ?string
 
   kwik_ai_log('Kwik AI: wp_remote_get failed, trying local file path');
 
-  // Method 2: If it's a local upload, try direct file access.
+  // Method 2: If it's a local upload, read it via the WP_Filesystem API.
   $file_path = kwik_ai_tags_url_to_local_path($url);
   if ($file_path) {
     kwik_ai_log('Kwik AI: Trying local file path: ' . $file_path);
 
-    if (file_exists($file_path) && is_readable($file_path)) {
-      $image_data = file_get_contents($file_path);
+    global $wp_filesystem;
+    if (!$wp_filesystem) {
+      require_once ABSPATH . 'wp-admin/includes/file.php';
+      WP_Filesystem();
+    }
+
+    if ($wp_filesystem && $wp_filesystem->exists($file_path) && $wp_filesystem->is_readable($file_path)) {
+      $image_data = $wp_filesystem->get_contents($file_path);
       if ($image_data !== false) {
         $mime_type = mime_content_type($file_path) ?: 'image/jpeg';
         kwik_ai_log('Kwik AI: Successfully got local file, type: ' . $mime_type);
