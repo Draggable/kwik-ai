@@ -81,9 +81,10 @@ function kwik_ai_excerpt_generate_for_post(int $post_id, int $max_words = 35, st
  * @param int $post_id
  * @param int $min_words Minimum number of words for the description
  * @param int $max_words Maximum number of words for the description
+ * @param string $guidance Optional editor guidance (perspective, focus, etc.)
  * @return string|false
  */
-function kwik_ai_description_generate_for_post(int $post_id, int $min_words = 50, int $max_words = 200)
+function kwik_ai_description_generate_for_post(int $post_id, int $min_words = 50, int $max_words = 200, string $guidance = '')
 {
   kwik_ai_log('Kwik AI: Starting description generation for post ' . $post_id . ' with word count ' . $min_words . '-' . $max_words);
 
@@ -124,7 +125,7 @@ function kwik_ai_description_generate_for_post(int $post_id, int $min_words = 50
   /* ----------------------------------------------------- */
   /* 2. Generate description from images */
   /* ----------------------------------------------------- */
-  $description = kwik_ai_description_generate_from_image_urls($post_id, $image_urls, $min_words, $max_words);
+  $description = kwik_ai_description_generate_from_image_urls($post_id, $image_urls, $min_words, $max_words, $guidance);
 
   if (!$description) {
     kwik_ai_log('Kwik AI: Failed to generate description from images');
@@ -149,9 +150,10 @@ function kwik_ai_description_generate_for_post(int $post_id, int $min_words = 50
  * @param array $image_urls Array of image URLs
  * @param int $min_words Minimum number of words for the description
  * @param int $max_words Maximum number of words for the description
+ * @param string $guidance Optional editor guidance (perspective, focus, etc.)
  * @return string|false
  */
-function kwik_ai_description_generate_from_image_urls(int $post_id, array $image_urls, int $min_words = 50, int $max_words = 200)
+function kwik_ai_description_generate_from_image_urls(int $post_id, array $image_urls, int $min_words = 50, int $max_words = 200, string $guidance = '')
 {
   kwik_ai_log('Kwik AI: Generating description from ' . count($image_urls) . ' image URLs with word count ' . $min_words . '-' . $max_words);
 
@@ -185,7 +187,11 @@ function kwik_ai_description_generate_from_image_urls(int $post_id, array $image
   $post_type_obj = get_post_type_object($post_type);
   $post_type_name = $post_type_obj ? $post_type_obj->labels->singular_name : 'post';
 
-  $prompt = 'Analyze these images and generate an engaging description for a ' . $post_type_name . '. Describe this work of art. Write in a natural, descriptive style without overusing adjectives. Avoid uncommon punctuation such as Em dash. Keep the description between ' . $min_words . '-' . $max_words . ' words. Respond with only the description text, no extra formatting or labels.';
+  $prompt = 'Analyze these images and generate an engaging description for a ' . $post_type_name . '. Describe this work of art. Write in a natural, descriptive style without overusing adjectives. Avoid uncommon punctuation such as Em dash. Keep the description between ' . $min_words . '-' . $max_words . ' words.';
+  if ($guidance !== '') {
+    $prompt .= ' Follow this additional guidance from the editor: ' . $guidance;
+  }
+  $prompt .= ' Respond with only the description text, no extra formatting or labels.';
   kwik_ai_log('Kwik AI: Using description prompt: ' . $prompt);
 
   /* ----------------------------------------------------- */
@@ -218,12 +224,15 @@ function kwik_ai_description_generate_from_image_urls(int $post_id, array $image
  * Generate description from URLs by first summarizing content and then creating a description
  *
  * @param int $post_id
- * * @param array $urls Array of URLs to scrape content from
+ * @param array $urls Array of URLs to scrape content from
+ * @param int $min_words Minimum number of words for the description
+ * @param int $max_words Maximum number of words for the description
+ * @param string $guidance Optional editor guidance (perspective, focus, etc.)
  * @return string|false
  */
-function kwik_ai_description_generate_from_urls(int $post_id, array $urls, int $min_words = 50, int $max_words = 200)
+function kwik_ai_description_generate_from_urls(int $post_id, array $urls, int $min_words = 50, int $max_words = 200, string $guidance = '')
 {
-  kwik_ai_log('Kwik AI: Generating description from ' . count($urls) . ' URLs with word count ' . $min_words . '-' . $max_words);
+  kwik_ai_log('Kwik AI: Generating description from ' . count($urls) . ' URLs with word count ' . $min_words . '-' . $max_words . ($guidance !== '' ? ' and editor guidance' : ''));
 
   /* ----------------------------------------------------- */
   /* 1. Scrape and summarize content from each URL */
@@ -232,7 +241,7 @@ function kwik_ai_description_generate_from_urls(int $post_id, array $urls, int $
   foreach ($urls as $url) {
     kwik_ai_log('Kwik AI: Processing URL: ' . $url);
 
-    $summary = kwik_ai_scrape_and_summarize_url($url);
+    $summary = kwik_ai_scrape_and_summarize_url($url, $guidance);
     if ($summary) {
       $summaries[] = $summary;
       kwik_ai_log('Kwik AI: Successfully summarized content from URL');
@@ -259,7 +268,11 @@ function kwik_ai_description_generate_from_urls(int $post_id, array $urls, int $
   $combined_summaries = implode("\n\n", $summaries);
 
   // Create a two-step prompt: first summarize all content, then generate description
-  $summary_prompt = 'Summarize the following content in a clear and concise way. Focus on the main points and key information. Respond with only the summary text, no extra formatting or labels.' . "\n\n" . $combined_summaries;
+  $summary_prompt = 'Summarize the following content in a clear and concise way. Focus on the main points and key information. Respond with only the summary text, no extra formatting or labels.';
+  if ($guidance !== '') {
+    $summary_prompt .= ' Follow this additional guidance from the editor: ' . $guidance;
+  }
+  $summary_prompt .= "\n\n" . $combined_summaries;
   
   kwik_ai_log('Kwik AI: Using summary prompt: ' . $summary_prompt);
 
@@ -274,7 +287,11 @@ function kwik_ai_description_generate_from_urls(int $post_id, array $urls, int $
   kwik_ai_log('Kwik AI: Generated combined summary: ' . substr($final_summary, 0, 100) . '...');
 
   // Now generate the final description based on the summary
-  $description_prompt = 'Based on the following summary, generate an engaging description for a ' . $post_type_name . '. Write in a natural, descriptive style without overusing adjectives. Avoid uncommon punctuation such as Em dash. Keep the description between ' . $min_words . '-' . $max_words . ' words. Respond with only the description text, no extra formatting or labels.' . "\n\n" . $final_summary;
+  $description_prompt = 'Based on the following summary, generate an engaging description for a ' . $post_type_name . '. Write in a natural, descriptive style without overusing adjectives. Avoid uncommon punctuation such as Em dash. Keep the description between ' . $min_words . '-' . $max_words . ' words.';
+  if ($guidance !== '') {
+    $description_prompt .= ' Follow this additional guidance from the editor: ' . $guidance;
+  }
+  $description_prompt .= ' Respond with only the description text, no extra formatting or labels.' . "\n\n" . $final_summary;
   kwik_ai_log('Kwik AI: Using description prompt: ' . $description_prompt);
 
   /* ----------------------------------------------------- */

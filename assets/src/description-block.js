@@ -14,6 +14,7 @@ import 'rc-slider/assets/index.css';
     Spinner,
     Notice,
     TextControl,
+    TextareaControl,
     RangeControl
   } = wp.components;
   const {
@@ -26,7 +27,7 @@ import 'rc-slider/assets/index.css';
   /**
    * Generate description via AJAX
    */
-  function generateDescription(postId, urls, minWords, maxWords, onSuccess, onError) {
+  function generateDescription(postId, urls, minWords, maxWords, guidance, onSuccess, onError) {
     if (!postId) {
       onError(kwikAiDescriptionBlock.strings.error);
       return;
@@ -41,7 +42,8 @@ import 'rc-slider/assets/index.css';
         post_id: postId,
         urls: urls,
         min_words: minWords,
-        max_words: maxWords
+        max_words: maxWords,
+        guidance: guidance
       },
       timeout: 120000, // 2 minutes
       success: function (response) {
@@ -74,10 +76,11 @@ import 'rc-slider/assets/index.css';
    * AI Description Block Component
    */
   function AIDescriptionEdit({ attributes, setAttributes }) {
-    const { description, urls = [], minWords = 50, maxWords = 200 } = attributes;
+    const { description, urls = [], minWords = 50, maxWords = 200, guidance = '' } = attributes;
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState('');
     const [urlInputs, setUrlInputs] = useState(urls.length > 0 ? [...urls, ''] : ['']);
+    const [showOptions, setShowOptions] = useState(false);
 
     const blockProps = useBlockProps({
       className: 'kwik-ai-description-block'
@@ -107,12 +110,14 @@ import 'rc-slider/assets/index.css';
         validUrls,
         minWords,
         maxWords,
+        guidance,
         (generatedDescription) => {
           setAttributes({
             description: generatedDescription,
             urls: validUrls,
             minWords: minWords,
-            maxWords: maxWords
+            maxWords: maxWords,
+            guidance: guidance
           });
           setIsGenerating(false);
         },
@@ -214,6 +219,17 @@ import 'rc-slider/assets/index.css';
               <label>Target Description Length: {minWords} - {maxWords} words</label>
               <Slider range value={[minWords, maxWords]} onChange={handleRangeChange} min={50} max={500} style={{ marginTop: '10px' }} />
             </div>
+            <div style={{ marginBottom: '15px' }}>
+              <TextareaControl
+                label={__('Guidance (optional)', 'kwik-ai')}
+                help={__('Guide the summary: provide a perspective, audience, or what to focus on.', 'kwik-ai')}
+                placeholder={__('e.g. Focus on the techniques used, written from a collector’s perspective', 'kwik-ai')}
+                value={guidance}
+                onChange={(value) => setAttributes({ guidance: value })}
+                rows={3}
+                maxLength={500}
+              />
+            </div>
             <div>
               <Button
                 isPrimary
@@ -286,6 +302,15 @@ import 'rc-slider/assets/index.css';
             >
               Add URL
             </Button>
+            <TextareaControl
+              label={__('Guidance (optional)', 'kwik-ai')}
+              help={__('Guide the summary: provide a perspective, audience, or what to focus on.', 'kwik-ai')}
+              placeholder={__('e.g. Focus on the techniques used, written from a collector’s perspective', 'kwik-ai')}
+              value={guidance}
+              onChange={(value) => setAttributes({ guidance: value })}
+              rows={3}
+              maxLength={500}
+            />
             <Button
               isSecondary
               onClick={handleGenerate}
@@ -310,7 +335,33 @@ import 'rc-slider/assets/index.css';
               allowedFormats={['core/bold', 'core/italic']}
             />
           </div>
+          {showOptions && (
+            <div className="kwik-ai-description-options components-placeholder__fieldset">
+              <div style={{ marginBottom: '15px' }}>
+                <label>Target Description Length: {minWords} - {maxWords} words</label>
+                <Slider range value={[minWords, maxWords]} onChange={handleRangeChange} min={50} max={500} style={{ marginTop: '10px' }} />
+              </div>
+              <TextareaControl
+                label={__('Guidance (optional)', 'kwik-ai')}
+                help={__('Guide the summary: provide a perspective, audience, or what to focus on.', 'kwik-ai')}
+                placeholder={__('e.g. Focus on the techniques used, written from a collector’s perspective', 'kwik-ai')}
+                value={guidance}
+                onChange={(value) => setAttributes({ guidance: value })}
+                rows={3}
+                maxLength={500}
+              />
+            </div>
+          )}
           <div className="kwik-ai-description-controls">
+            <Button
+              isSmall
+              isSecondary
+              icon={showOptions ? 'arrow-up-alt2' : 'arrow-down-alt2'}
+              onClick={() => setShowOptions(!showOptions)}
+              aria-expanded={showOptions}
+            >
+              {__('Options', 'kwik-ai')}
+            </Button>
             <Button
               isSmall
               isSecondary
@@ -374,6 +425,10 @@ import 'rc-slider/assets/index.css';
       maxWords: {
         type: 'number',
         default: 200,
+      },
+      guidance: {
+        type: 'string',
+        default: '',
       },
       postId: {
         type: 'number',

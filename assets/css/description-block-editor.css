@@ -46,11 +46,15 @@
 
 .kwik-ai-description-controls {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   padding-top: 8px;
   border-top: 1px solid #e0e0e0;
+}
 
-
+.kwik-ai-description-options {
+  padding: 12px 0;
+  border-top: 1px solid #e0e0e0;
 }
 
 

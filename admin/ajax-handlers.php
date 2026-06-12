@@ -220,13 +220,19 @@ function kwik_ai_description_ajax_generate()
   }
   $urls = array_values(array_unique($urls));
 
+  $guidance = isset($_POST['guidance']) ? sanitize_textarea_field(wp_unslash($_POST['guidance'])) : '';
+  // Cap guidance length to keep prompts a reasonable size
+  if (strlen($guidance) > 500) {
+    $guidance = substr($guidance, 0, 500);
+  }
+
   if (!empty($urls)) {
     $min_words = isset($_POST['min_words']) ? absint($_POST['min_words']) : 50;
     $max_words = isset($_POST['max_words']) ? absint($_POST['max_words']) : 200;
     $min_words = max(50, min(500, $min_words));
     $max_words = max($min_words, min(500, $max_words));
 
-    $description = kwik_ai_description_generate_from_urls($post_id, $urls, $min_words, $max_words);
+    $description = kwik_ai_description_generate_from_urls($post_id, $urls, $min_words, $max_words, $guidance);
     if ($description === false || empty($description)) {
       wp_send_json_error(__('Failed to generate description from URLs. Please check the URLs and your AI provider connection.', 'kwik-ai'));
     }
@@ -240,7 +246,7 @@ function kwik_ai_description_ajax_generate()
     $min_words = max(50, min(500, $min_words));
     $max_words = max($min_words, min(500, $max_words));
 
-    $description = kwik_ai_description_generate_for_post($post_id, $min_words, $max_words);
+    $description = kwik_ai_description_generate_for_post($post_id, $min_words, $max_words, $guidance);
     if ($description === false || empty($description)) {
       wp_send_json_error(__('Failed to generate description. Please check your AI provider connection and try again.', 'kwik-ai'));
     }

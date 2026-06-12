@@ -144,9 +144,10 @@ function kwik_ai_fetch_url_content(string $url): ?string
  * Scrape and summarize content from a URL
  *
  * @param string $url
+ * @param string $guidance Optional editor guidance (perspective, focus, etc.) for the summary
  * @return string|false
  */
-function kwik_ai_scrape_and_summarize_url(string $url)
+function kwik_ai_scrape_and_summarize_url(string $url, string $guidance = '')
 {
   kwik_ai_log('Kwik AI: Scraping content from URL: ' . $url);
 
@@ -177,7 +178,7 @@ function kwik_ai_scrape_and_summarize_url(string $url)
   }
 
   // Summarize the content using Ollama
-  $summary = kwik_ai_summarize_content($main_content);
+  $summary = kwik_ai_summarize_content($main_content, $guidance);
   if (!$summary) {
     kwik_ai_log('Kwik AI: Failed to summarize content from URL: ' . $url);
     return false;
@@ -303,16 +304,21 @@ function kwik_ai_extract_main_content(string $html): ?string
  * Summarize content using Ollama
  *
  * @param string $content
+ * @param string $guidance Optional editor guidance (perspective, focus, etc.) for the summary
  * @return string|false
  */
-function kwik_ai_summarize_content(string $content): ?string
+function kwik_ai_summarize_content(string $content, string $guidance = ''): ?string
 {
   if (defined('WP_DEBUG') && WP_DEBUG) {
-    kwik_ai_log('Kwik AI: Summarizing content (' . strlen($content) . ' chars)');
+    kwik_ai_log('Kwik AI: Summarizing content (' . strlen($content) . ' chars)' . ($guidance !== '' ? ' with guidance' : ''));
   }
 
   // Create a prompt for summarization
-  $prompt = 'Summarize the following content in a clear and concise way. Focus on the main points and key information. Keep the summary to 2-3 sentences. Respond with only the summary text, no extra formatting or labels.' . "\n\n" . $content;
+  $prompt = 'Summarize the following content in a clear and concise way. Focus on the main points and key information. Keep the summary to 2-3 sentences. Respond with only the summary text, no extra formatting or labels.';
+  if ($guidance !== '') {
+    $prompt .= ' Follow this additional guidance from the editor: ' . $guidance;
+  }
+  $prompt .= "\n\n" . $content;
 
   // Query AI provider for summary
   $summary = kwik_ai_tags_query_ai_text_only($prompt);
