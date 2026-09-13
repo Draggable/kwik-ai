@@ -3,28 +3,43 @@ name: WP.org Deploy
 # Full plugin deploy to the WordPress.org SVN repo: publishes the code to
 # trunk, creates tags/<version>, and syncs the page assets.
 #
-# Triggers on the version tags that semantic-release creates (v*). NOTE: tags
-# pushed by the default GITHUB_TOKEN do NOT start other workflows, so for this
-# to fire automatically the Release workflow must push with a PAT (secret
-# GH_PAT). Without a PAT, run this manually from the Actions tab
-# (workflow_dispatch) after a release.
+# Normally called by the Release workflow right after semantic-release tags a
+# new version (workflow_call). It can also be run by hand from the Actions tab
+# (workflow_dispatch) to re-deploy or backfill a version. Either way it checks
+# out the v<version> git tag, so the shipped files carry that version.
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version to deploy (e.g. 3.1.0); the git tag v<version> must exist.'
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to deploy (e.g. 3.1.0). Defaults to the triggering tag.'
-        required: false
+        description: 'Version to deploy (e.g. 3.1.0); the git tag v<version> must exist.'
+        required: true
+        type: string
 
 jobs:
   deploy:
     name: Deploy to WordPress.org
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Resolve version
+        id: version
+        env:
+          RAW: ${{ inputs.version }}
+        # Accept "1.2.3" or "v1.2.3" and normalise to the bare number.
+        run: |
+          v="${RAW#v}"
+          echo "version=${v}" >> "$GITHUB_OUTPUT"
+          echo "Deploying ${v} from tag v${v}"
+
+      - name: Checkout release tag
         uses: actions/checkout@v4
+        with:
+          ref: refs/tags/v${{ steps.version.outputs.version }}
 
       - name: Deploy to WordPress.org
         uses: 10up/action-wordpress-plugin-deploy@stable
@@ -33,6 +48,4 @@ jobs:
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
           SLUG: kwik-ai
           ASSETS_DIR: .wordpress-org/assets
-          # For manual runs, fall back to the typed version; on tag pushes the
-          # action uses the tag name automatically.
-          VERSION: ${{ github.event.inputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}

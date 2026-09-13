@@ -20,7 +20,12 @@ jobs:
   release:
     runs-on: ubuntu-latest
     # Don't re-trigger on the release commit semantic-release pushes back.
+    # (Pushes made with GITHUB_TOKEN never start workflows anyway; this is a
+    # safety net in case the commit is ever pushed some other way.)
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    outputs:
+      # Empty when semantic-release decided no release was needed.
+      version: ${{ steps.release.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,9 +44,35 @@ jobs:
         run: npm ci
 
       - name: Release
+        id: release
         env:
-          # Use a PAT when present so the version tag this pushes triggers the
-          # WP.org Deploy workflow (tags pushed by GITHUB_TOKEN do not start
-          # other workflows). Falls back to GITHUB_TOKEN if GH_PAT is unset.
-          GITHUB_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
+          # The built-in token is minted per run and never expires, so nothing
+          # here needs rotating. Tags it pushes don't trigger other workflows,
+          # which is why the WP.org deploy is chained as a job below instead
+          # of listening for the tag push.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          before="$(git rev-parse HEAD)"
+          npx semantic-release
+          # semantic-release commits the version bump and tags it locally before
+          # pushing, so a moved HEAD carrying a v* tag means a release happened.
+          if [ "$(git rev-parse HEAD)" != "$before" ]; then
+            tag="$(git tag --points-at HEAD --list 'v*' | head -n1)"
+            if [ -n "$tag" ]; then
+              echo "Released ${tag}"
+              echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "No release published."
+          fi
+
+  deploy:
+    name: WP.org Deploy
+    needs: release
+    if: needs.release.outputs.version != ''
+    permissions:
+      contents: read
+    uses: ./.github/workflows/wporg-deploy.yml
+    with:
+      version: ${{ needs.release.outputs.version }}
+    secrets: inherit
