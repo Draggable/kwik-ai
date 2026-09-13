@@ -23,6 +23,14 @@ define('KWIK_AI_MIN_WORDS', 50);
 // depending solely on images.
 define('KWIK_AI_MIN_WORDS_FALLBACK', 10);
 
+// Maximum number of post images analyzed for tags. Each image is sent in its
+// own request (some providers accept only one image per prompt, and keeping
+// one image in memory at a time avoids exhausting memory_limit on shared hosts).
+define('KWIK_AI_MAX_IMAGES', 10);
+
+// Maximum tags kept from image analysis before text tags are added
+define('KWIK_AI_MAX_IMAGE_TAGS', 5);
+
 // Maximum length for generated descriptions
 define('KWIK_AI_MAX_DESCRIPTION_LENGTH', 2000);
 

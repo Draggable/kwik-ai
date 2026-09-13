@@ -373,6 +373,105 @@ function kwik_ai_tags_extract_images_from_html(string $html): array
 }
 
 /**
+ * Pick which version of an image to send to the AI.
+ *
+ * Original uploads are often several megabytes, far more than a vision model
+ * needs, and base64-encoding them is what exhausts PHP memory on hosts with a
+ * modest memory_limit. WordPress already generates smaller versions of every
+ * upload, so when the URL belongs to a media library item this returns the
+ * first available size from a preference list instead of resizing anything at
+ * request time. Falls back to the given URL for external images or when no
+ * intermediate size exists (the original is then already small).
+ *
+ * @param string $url Image URL (original or a -WxH sized variant).
+ * @return string     URL of the image to analyze.
+ */
+function kwik_ai_tags_get_analysis_image_url(string $url): string
+{
+  // Sized variants (image-800x282.jpg) don't resolve to an attachment; look
+  // up the original file name instead.
+  $original_url = preg_replace('/-\d+x\d+(\.[a-zA-Z0-9]+)$/', '$1', $url);
+
+  $attachment_id = attachment_url_to_postid($original_url);
+  if (!$attachment_id) {
+    return $url;
+  }
+
+  /**
+   * Filter the intermediate image sizes tried, in order of preference, when
+   * choosing which version of an attachment to send for analysis.
+   *
+   * @param string[] $sizes         Registered size names.
+   * @param int      $attachment_id Attachment being analyzed.
+   */
+  $sizes = apply_filters('kwik_ai_analysis_image_sizes', array('1536x1536', 'large', 'medium_large', 'medium'), $attachment_id);
+
+  $analysis_url = $url;
+  foreach ((array) $sizes as $size) {
+    $src = wp_get_attachment_image_src($attachment_id, $size);
+    // $src[3] is true only when a resized file actually exists for this size;
+    // otherwise WordPress hands back the original.
+    if (is_array($src) && !empty($src[0]) && !empty($src[3])) {
+      kwik_ai_log('Kwik AI: Using "' . $size . '" size (' . $src[1] . 'x' . $src[2] . ') of attachment ' . $attachment_id);
+      $analysis_url = $src[0];
+      break;
+    }
+  }
+
+  /**
+   * Filter the final URL sent for analysis, e.g. to point at a CDN or a
+   * publicly reachable host when the site itself is not.
+   *
+   * @param string $analysis_url  Chosen image URL.
+   * @param string $url           URL the post referenced.
+   * @param int    $attachment_id Attachment ID.
+   */
+  return (string) apply_filters('kwik_ai_analysis_image_url', $analysis_url, $url, $attachment_id);
+}
+
+/**
+ * Whether an image URL can be handed to the AI provider to fetch itself.
+ *
+ * Providers that fetch images (OpenAI, OpenRouter, vLLM-style servers) can
+ * only reach public hosts. Local development names, loopback and private
+ * addresses would fail on the provider's side, so those go through the
+ * base64 path instead. This is not an SSRF check (the provider does the
+ * fetching); it just avoids sending a request that cannot succeed.
+ *
+ * @param string $url
+ * @return bool
+ */
+function kwik_ai_tags_is_public_image_url(string $url): bool
+{
+  $parts = wp_parse_url($url);
+  if (!is_array($parts) || empty($parts['scheme']) || empty($parts['host'])) {
+    return false;
+  }
+
+  if (!in_array(strtolower($parts['scheme']), array('http', 'https'), true)) {
+    return false;
+  }
+
+  $host = strtolower(trim($parts['host'], '[]'));
+
+  // IP literals: only public ranges.
+  if (filter_var($host, FILTER_VALIDATE_IP)) {
+    return !kwik_ai_is_private_ip($host);
+  }
+
+  // Bare names (no dot) and development TLDs never resolve from outside.
+  if (strpos($host, '.') === false) {
+    return false;
+  }
+  $tld = substr($host, strrpos($host, '.') + 1);
+  if (in_array($tld, array('test', 'local', 'localhost', 'internal', 'lan', 'home', 'example', 'invalid'), true)) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * Convert an image URL to a Base‑64 data URI.
  * Multiple methods for better compatibility.
  *
