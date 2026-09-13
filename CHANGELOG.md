@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/Draggable/kwik-ai/compare/v1.1.0...v1.1.1) (2026-09-13)
+
+
+### Bug Fixes
+
+* send images one at a time using existing sizes or public URLs ([e947a04](https://github.com/Draggable/kwik-ai/commit/e947a04ceffbff407e110dab416254b9650fbcc2))
+
 # [1.1.0](https://github.com/Draggable/kwik-ai/compare/v1.0.7...v1.1.0) (2026-06-12)
 
 
