@@ -339,5 +339,38 @@ if (!function_exists('did_action')) {
     }
 }
 
+if (!function_exists('wp_parse_url')) {
+    function wp_parse_url($url, $component = -1) {
+        return parse_url($url, $component);
+    }
+}
+
+// Attachment lookups used by kwik_ai_tags_get_analysis_image_url(). Tests
+// populate these globals: url => attachment ID, and ID => size => src array.
+$GLOBALS['kwik_ai_test_attachments'] = array();
+$GLOBALS['kwik_ai_test_image_sizes'] = array();
+
+if (!function_exists('attachment_url_to_postid')) {
+    function attachment_url_to_postid($url) {
+        return isset($GLOBALS['kwik_ai_test_attachments'][$url])
+            ? (int) $GLOBALS['kwik_ai_test_attachments'][$url]
+            : 0;
+    }
+}
+
+if (!function_exists('wp_get_attachment_image_src')) {
+    function wp_get_attachment_image_src($attachment_id, $size = 'thumbnail') {
+        $sizes = isset($GLOBALS['kwik_ai_test_image_sizes'][$attachment_id])
+            ? $GLOBALS['kwik_ai_test_image_sizes'][$attachment_id]
+            : array();
+        if (isset($sizes[$size])) {
+            return $sizes[$size];
+        }
+        // WordPress returns the original (is_intermediate = false) when the
+        // requested size was never generated.
+        return isset($sizes['full']) ? $sizes['full'] : false;
+    }
+}
+
 // Load plugin files
 require_once __DIR__ . '/../kwik-ai.php';

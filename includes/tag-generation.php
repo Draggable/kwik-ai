@@ -96,9 +96,22 @@ function kwik_ai_tags_generate_for_post(int $post_id)
 }
 
 /**
- * Generate tags from image URLs
+ * Generate tags from image URLs.
  *
- * @param int $post_id
+ * Each image is analyzed in its own request, using an already-generated
+ * intermediate size rather than the original upload. That keeps memory and
+ * payload size small (an original photo can be 1MB+; the "large" size is a
+ * fraction of that) and works with providers that accept only one image per
+ * prompt. The per-image tag lists are then merged, ranking tags that appear
+ * across several images first.
+ *
+ * When the image lives on a public host, the URL itself is sent and the
+ * provider fetches it, so WordPress never downloads or encodes the file. If
+ * the provider cannot use URLs (native Ollama, a private site, hotlink
+ * protection) the image is fetched and sent as base64 instead, and the
+ * remaining images skip straight to base64.
+ *
+ * @param int   $post_id
  * @param array $image_urls Array of image URLs
  * @return array|false
  */
@@ -106,54 +119,152 @@ function kwik_ai_tags_generate_from_image_urls(int $post_id, array $image_urls)
 {
   kwik_ai_log('Kwik AI: Generating tags from ' . count($image_urls) . ' image URLs');
 
-  /* ----------------------------------------------------- */
-  /* 1. Convert each image URL to a Base‑64 data URI */
-  /* ----------------------------------------------------- */
-  $data_uris = [];
-  foreach ($image_urls as $image_url) {
-    kwik_ai_log('Kwik AI: Processing image URL: ' . $image_url);
+  /**
+   * Filter the maximum number of images analyzed per post.
+   *
+   * @param int $max_images Default KWIK_AI_MAX_IMAGES.
+   * @param int $post_id    Post being tagged.
+   */
+  $max_images = (int) apply_filters('kwik_ai_max_images_per_post', KWIK_AI_MAX_IMAGES, $post_id);
+  if ($max_images > 0 && count($image_urls) > $max_images) {
+    kwik_ai_log('Kwik AI: Limiting analysis to the first ' . $max_images . ' images');
+    $image_urls = array_slice($image_urls, 0, $max_images);
+  }
 
-    $data_uri = kwik_ai_tags_image_to_data_uri($image_url);
-    if ($data_uri) {
-      $data_uris[] = $data_uri;
-      kwik_ai_log('Kwik AI: Successfully converted image to data URI');
-    } else {
-      kwik_ai_log('Kwik AI: Failed to convert image to data URI: ' . $image_url);
+  $prompt = 'Analyze this image and generate up to 5 concise, relevant tags that describe the main subjects, objects, activities, or themes shown. Focus on nouns and descriptive terms. Respond with a comma‑separated list only, no extra text.';
+
+  /**
+   * Filter whether public image URLs may be sent for the provider to fetch,
+   * instead of always downloading and base64-encoding the image.
+   *
+   * @param bool $send_urls Default true.
+   * @param int  $post_id   Post being tagged.
+   */
+  $send_urls = (bool) apply_filters('kwik_ai_send_image_urls', true, $post_id);
+  $urls_accepted = null; // Unknown until the first URL attempt.
+
+  $per_image_tags = [];
+  $attempted = 0;
+
+  foreach ($image_urls as $image_url) {
+    $analysis_url = kwik_ai_tags_get_analysis_image_url($image_url);
+    kwik_ai_log('Kwik AI: Processing image URL: ' . $analysis_url);
+
+    $raw_response = null;
+
+    // Preferred: let the provider fetch the image.
+    if ($send_urls && $urls_accepted !== false && kwik_ai_tags_is_public_image_url($analysis_url)) {
+      $attempted++;
+      kwik_ai_log('Kwik AI: Sending image URL to AI provider');
+      $raw_response = kwik_ai_tags_query_ai($prompt, [$analysis_url]);
+      kwik_ai_log('Kwik AI: Image response: ' . ($raw_response ?: 'NULL'));
+
+      if ($raw_response) {
+        $urls_accepted = true;
+      } else {
+        $urls_accepted = false;
+        kwik_ai_log('Kwik AI: Provider did not return a result for the image URL; using base64 for this and the remaining images');
+      }
+    }
+
+    // Fallback: download the image and send its data.
+    if (!$raw_response) {
+      $data_uri = kwik_ai_tags_image_to_data_uri($analysis_url);
+      if (!$data_uri) {
+        kwik_ai_log('Kwik AI: Failed to convert image to data URI: ' . $analysis_url);
+        continue;
+      }
+      $attempted++;
+
+      kwik_ai_log('Kwik AI: Sending image data to AI provider');
+      $raw_response = kwik_ai_tags_query_ai($prompt, [$data_uri]);
+      unset($data_uri); // Release the base64 payload before the next image.
+      kwik_ai_log('Kwik AI: Image response: ' . ($raw_response ?: 'NULL'));
+    }
+
+    if (!$raw_response) {
+      continue;
+    }
+
+    $tags = kwik_ai_tags_parse_tags($raw_response);
+    kwik_ai_log('Kwik AI: Parsed image tags: ' . wp_json_encode($tags));
+    if (!empty($tags)) {
+      $per_image_tags[] = $tags;
     }
   }
 
-  kwik_ai_log('Kwik AI: Converted ' . count($data_uris) . ' images to data URIs');
-
-  if (empty($data_uris)) {
-    kwik_ai_log('Kwik AI: No data URIs generated from image URLs');
+  if ($attempted === 0) {
+    kwik_ai_log('Kwik AI: No images could be sent for analysis');
     return false;
   }
 
-  /* ----------------------------------------------------- */
-  /* 2. Build prompt for images */
-  /* ----------------------------------------------------- */
-  $prompt = 'Analyze these images and generate up to 5 concise, relevant tags that describe the main subjects, objects, activities, or themes shown. Focus on nouns and descriptive terms. Respond with a comma‑separated list only, no extra text.';
-  kwik_ai_log('Kwik AI: Using image prompt: ' . $prompt);
-
-  /* ----------------------------------------------------- */
-  /* 3. Send request to AI provider */
-  /* ----------------------------------------------------- */
-  kwik_ai_log('Kwik AI: Sending image request to AI provider');
-  $raw_response = kwik_ai_tags_query_ai($prompt, $data_uris);
-  kwik_ai_log('Kwik AI: Ollama image response: ' . ($raw_response ?: 'NULL'));
-
-  if (!$raw_response) {
-    kwik_ai_log('Kwik AI: No response from Ollama for images');
+  if (empty($per_image_tags)) {
+    kwik_ai_log('Kwik AI: No tags generated from any image');
     return false;
   }
 
-  /* ----------------------------------------------------- */
-  /* 4. Parse tags */
-  /* ----------------------------------------------------- */
-  $tags = kwik_ai_tags_parse_tags($raw_response);
-  kwik_ai_log('Kwik AI: Parsed image tags: ' . wp_json_encode($tags));
+  $merged = kwik_ai_tags_merge_image_tags($per_image_tags, KWIK_AI_MAX_IMAGE_TAGS);
+  kwik_ai_log('Kwik AI: Merged image tags from ' . count($per_image_tags) . ' images: ' . wp_json_encode($merged));
 
-  return $tags;
+  return $merged;
+}
+
+/**
+ * Merge per-image tag lists into one ranked list.
+ *
+ * Tags are compared case-insensitively and counted once per image. A tag seen
+ * in more images ranks higher; ties keep first-seen order, so the earliest
+ * image's tags lead. The first spelling encountered is kept.
+ *
+ * @param array $per_image_tags Array of tag arrays, one per image.
+ * @param int   $limit          Maximum tags to return (0 = no limit).
+ * @return array
+ */
+function kwik_ai_tags_merge_image_tags(array $per_image_tags, int $limit = 0): array
+{
+  $counts = [];
+  $labels = [];
+  $order = [];
+
+  foreach ($per_image_tags as $tags) {
+    $seen_in_image = [];
+    foreach ((array) $tags as $tag) {
+      $tag = trim((string) $tag);
+      if ($tag === '') {
+        continue;
+      }
+      $key = strtolower($tag);
+      if (isset($seen_in_image[$key])) {
+        continue;
+      }
+      $seen_in_image[$key] = true;
+
+      if (!isset($counts[$key])) {
+        $counts[$key] = 0;
+        $labels[$key] = $tag;
+        $order[$key] = count($order);
+      }
+      $counts[$key]++;
+    }
+  }
+
+  uksort($counts, function ($a, $b) use ($counts, $order) {
+    if ($counts[$a] !== $counts[$b]) {
+      return $counts[$b] <=> $counts[$a];
+    }
+    return $order[$a] <=> $order[$b];
+  });
+
+  $merged = [];
+  foreach (array_keys($counts) as $key) {
+    $merged[] = $labels[$key];
+  }
+
+  if ($limit > 0) {
+    $merged = array_slice($merged, 0, $limit);
+  }
+
+  return $merged;
 }
 
 /**

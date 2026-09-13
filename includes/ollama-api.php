@@ -201,6 +201,17 @@ function kwik_ai_tags_post_chat_completion(string $url, array $headers, array $p
     ));
   };
 
+  // Reasoning models spend the token budget on hidden reasoning and come back
+  // empty at small limits (handled by the retry below). Remember, per model
+  // and for this request only, that the larger budget is needed so a post
+  // with several images doesn't pay for a doomed first attempt on every one.
+  static $needs_large_budget = array();
+  $model_key = isset($payload['model']) ? (string) $payload['model'] : '';
+  $large_budget = max($max_tokens * 8, 2048);
+  if ($model_key !== '' && !empty($needs_large_budget[$model_key])) {
+    $max_tokens = $large_budget;
+  }
+
   // Most models accept the legacy 'max_tokens'; start there for compatibility.
   $token_field = 'max_tokens';
   $payload[$token_field] = $max_tokens;
@@ -229,10 +240,12 @@ function kwik_ai_tags_post_chat_completion(string $url, array $headers, array $p
       ? $data['choices'][0]['finish_reason']
       : '';
 
-    if ($content === '' && $finish === 'length') {
-      $bigger = max($max_tokens * 8, 2048);
-      kwik_ai_log('Kwik AI: Empty content with finish_reason=length (likely a reasoning model); retrying with ' . $token_field . '=' . $bigger);
-      $payload[$token_field] = $bigger;
+    if ($content === '' && $finish === 'length' && $max_tokens < $large_budget) {
+      kwik_ai_log('Kwik AI: Empty content with finish_reason=length (likely a reasoning model); retrying with ' . $token_field . '=' . $large_budget);
+      if ($model_key !== '') {
+        $needs_large_budget[$model_key] = true;
+      }
+      $payload[$token_field] = $large_budget;
       $response = $post($payload);
     }
   }
@@ -241,15 +254,28 @@ function kwik_ai_tags_post_chat_completion(string $url, array $headers, array $p
 }
 
 /**
+ * Whether an image entry is an http(s) URL (as opposed to base64 data).
+ *
+ * @param string $image
+ * @return bool
+ */
+function kwik_ai_tags_image_is_url(string $image): bool
+{
+  return preg_match('#^https?://#i', $image) === 1;
+}
+
+/**
  * Build the OpenAI-compatible vision messages array for an image tag request.
  *
- * Each image is emitted as an `image_url` content part. kwik_ai_tags_image_to_data_uri()
- * returns raw base64 (no `data:` prefix), which is what Ollama's native
- * /api/generate wants but not what the OpenAI `image_url` schema expects, so a
- * `data:image/...;base64,` prefix is added here when it is missing.
+ * Each image is emitted as an `image_url` content part. An entry may be an
+ * http(s) URL, which is passed through for the provider to fetch, or base64
+ * data. kwik_ai_tags_image_to_data_uri() returns raw base64 (no `data:`
+ * prefix), which is what Ollama's native /api/generate wants but not what the
+ * OpenAI `image_url` schema expects, so a `data:image/...;base64,` prefix is
+ * added here when it is missing.
  *
  * @param string $prompt
- * @param array  $images Array of base64 (or data-URI) image strings.
+ * @param array  $images Array of image URLs, base64 strings, or data URIs.
  * @return array         Messages array for a /chat/completions payload.
  */
 function kwik_ai_tags_build_vision_messages(string $prompt, array $images): array
@@ -257,12 +283,16 @@ function kwik_ai_tags_build_vision_messages(string $prompt, array $images): arra
   $user_content = array();
 
   foreach ($images as $image) {
-    // The OpenAI image_url schema needs a full data URI. We lose the original
-    // mime type in conversion, so declare jpeg — vision servers sniff the
-    // decoded bytes rather than trusting this label.
-    $data_uri = (strpos($image, 'data:') === 0)
-      ? $image
-      : 'data:image/jpeg;base64,' . $image;
+    if (kwik_ai_tags_image_is_url($image)) {
+      $data_uri = $image;
+    } else {
+      // The OpenAI image_url schema needs a full data URI. We lose the original
+      // mime type in conversion, so declare jpeg — vision servers sniff the
+      // decoded bytes rather than trusting this label.
+      $data_uri = (strpos($image, 'data:') === 0)
+        ? $image
+        : 'data:image/jpeg;base64,' . $image;
+    }
 
     $user_content[] = array(
       'type' => 'image_url',
@@ -346,6 +376,15 @@ function kwik_ai_tags_query_ai(string $prompt, array $images): ?string
       kwik_ai_log('Kwik AI: /chat/completions returned ' . $oai_code . '; falling back to /api/generate for images');
     } else {
       kwik_ai_log('Kwik AI: /chat/completions error: ' . $oai_response->get_error_message() . '; falling back to /api/generate for images');
+    }
+
+    // Native Ollama only accepts base64 images; it cannot fetch URLs. Tell the
+    // caller so it can retry with image data instead.
+    foreach ($images as $image) {
+      if (kwik_ai_tags_image_is_url($image)) {
+        kwik_ai_log('Kwik AI: /api/generate cannot fetch image URLs; caller must supply base64');
+        return null;
+      }
     }
 
     // Fall back to native Ollama /api/generate, which takes raw base64 images.
